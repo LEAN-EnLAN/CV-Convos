@@ -1,0 +1,331 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import {
+    Upload, FileText, X, Loader2, Sparkles,
+    FileCheck, Zap, Shield, Clock
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
+
+interface FileUploaderProps {
+    onSuccess: (data: any) => void;
+}
+
+const features = [
+    {
+        icon: Zap,
+        title: "Generación Instantánea",
+        description: "CV profesional en segundos"
+    },
+    {
+        icon: Shield,
+        title: "100% Privado",
+        description: "Tus datos no se almacenan"
+    },
+    {
+        icon: Clock,
+        title: "Ahorrá Tiempo",
+        description: "Sin formularios interminables"
+    }
+];
+
+export function FileUploader({ onSuccess }: FileUploaderProps) {
+    const [files, setFiles] = useState<File[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [currentStep, setCurrentStep] = useState('');
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop: (acceptedFiles) => {
+            if (files.length + acceptedFiles.length > 10) {
+                toast.error('Límite de 10 archivos por sesión');
+                return;
+            }
+            setFiles((prev) => [...prev, ...acceptedFiles]);
+            toast.success(`${acceptedFiles.length} archivo(s) agregado(s)`);
+        },
+        accept: {
+            'application/pdf': ['.pdf'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            'text/plain': ['.txt'],
+        },
+    });
+
+    const removeFile = (index: number) => {
+        setFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const simulateProgress = () => {
+        const steps = [
+            { progress: 15, text: 'Analizando documentos...' },
+            { progress: 35, text: 'Extrayendo experiencia laboral...' },
+            { progress: 55, text: 'Identificando habilidades...' },
+            { progress: 75, text: 'Organizando información...' },
+            { progress: 90, text: 'Generando CV profesional...' },
+        ];
+
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i < steps.length) {
+                setUploadProgress(steps[i].progress);
+                setCurrentStep(steps[i].text);
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 800);
+
+        return interval;
+    };
+
+    const handleUpload = async () => {
+        if (files.length === 0) return;
+
+        setIsUploading(true);
+        setUploadProgress(0);
+        const progressInterval = simulateProgress();
+
+        const formData = new FormData();
+        files.forEach((file) => formData.append('files', file));
+
+        try {
+            const response = await fetch('http://localhost:8000/api/generate-cv', {
+                method: 'POST',
+                body: formData,
+            });
+
+            clearInterval(progressInterval);
+            setUploadProgress(100);
+            setCurrentStep('¡CV generado con éxito!');
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Error al generar el CV');
+            }
+
+            const data = await response.json();
+
+            setTimeout(() => {
+                onSuccess(data);
+                toast.success('¡Tu CV profesional está listo!');
+            }, 500);
+        } catch (error: any) {
+            clearInterval(progressInterval);
+            console.error(error);
+            toast.error(error.message || 'Error al generar el CV. Intentá de nuevo.');
+        } finally {
+            setTimeout(() => {
+                setIsUploading(false);
+                setUploadProgress(0);
+                setCurrentStep('');
+            }, 600);
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex flex-col">
+            {/* Hero Section */}
+            <div className="relative overflow-hidden">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 -z-10">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
+                </div>
+
+                <div className="max-w-6xl mx-auto px-6 py-12">
+                    {/* Header with Logo Placeholder */}
+                    <header className="flex items-center justify-between mb-16">
+                        <div className="flex items-center gap-3">
+                            {/* PLACEHOLDER: Logo de la empresa */}
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
+                                <span className="text-xl font-bold text-primary-foreground">CV</span>
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight">CV-ConVos</h1>
+                                <p className="text-xs text-muted-foreground">Tu CV, tu historia</p>
+                            </div>
+                        </div>
+
+                        {/* PLACEHOLDER: Logo cliente/partner */}
+                        <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-border">
+                            <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center">
+                                <span className="text-xs font-medium text-muted-foreground">LOGO</span>
+                            </div>
+                            <span className="text-sm text-muted-foreground">Tu Empresa</span>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <div className="grid lg:grid-cols-2 gap-12 items-center">
+                        {/* Left: Text Content */}
+                        <div className="space-y-8">
+                            <div className="space-y-4">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                                    <Sparkles className="w-4 h-4" />
+                                    Potenciado por IA
+                                </div>
+                                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
+                                    Transformá tu carrera{' '}
+                                    <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
+                                        con un CV que destaque
+                                    </span>
+                                </h2>
+                                <p className="text-lg text-muted-foreground max-w-lg">
+                                    Subí tus documentos anteriores, certificados o perfil de LinkedIn.
+                                    Nuestra IA construye tu historia profesional en segundos.
+                                </p>
+                            </div>
+
+                            {/* Features */}
+                            <div className="grid sm:grid-cols-3 gap-4">
+                                {features.map((feature) => (
+                                    <div
+                                        key={feature.title}
+                                        className="flex flex-col gap-2 p-4 rounded-xl bg-card border border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                            <feature.icon className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-sm">{feature.title}</h3>
+                                            <p className="text-xs text-muted-foreground">{feature.description}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Right: Upload Card */}
+                        <div className="relative">
+                            <Card className="relative overflow-hidden border-2 border-dashed hover:border-primary/50 transition-colors duration-300 bg-card/80 backdrop-blur-sm">
+                                <div
+                                    {...getRootProps()}
+                                    className={`p-8 sm:p-12 text-center cursor-pointer transition-all duration-300 ${isDragActive ? 'bg-primary/5 scale-[0.99]' : ''
+                                        }`}
+                                >
+                                    <input {...getInputProps()} />
+
+                                    <div className="space-y-6">
+                                        <div className={`
+                                            w-20 h-20 mx-auto rounded-2xl flex items-center justify-center
+                                            transition-all duration-500
+                                            ${isDragActive
+                                                ? 'bg-primary text-primary-foreground scale-110 rotate-3'
+                                                : 'bg-gradient-to-br from-primary/10 to-accent/10'
+                                            }
+                                        `}>
+                                            <Upload className={`w-10 h-10 ${isDragActive ? 'text-primary-foreground' : 'text-primary'}`} />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <p className="text-xl font-semibold">
+                                                {isDragActive
+                                                    ? '¡Soltá los archivos acá!'
+                                                    : 'Arrastrá tus archivos'}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                o hacé clic para seleccionar
+                                            </p>
+                                            <p className="text-xs text-muted-foreground/70">
+                                                PDF, DOCX o TXT • Hasta 10 archivos
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* File List */}
+                                {files.length > 0 && (
+                                    <div className="px-6 pb-6 space-y-4">
+                                        <div className="h-px bg-border" />
+
+                                        <div className="space-y-2 max-h-[200px] overflow-y-auto no-scrollbar">
+                                            {files.map((file, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex items-center justify-between p-3 bg-muted/50 rounded-xl border border-border group hover:border-primary/30 transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                                            <FileCheck className="w-5 h-5 text-primary" />
+                                                        </div>
+                                                        <div className="overflow-hidden">
+                                                            <p className="text-sm font-medium truncate">{file.name}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {(file.size / 1024).toFixed(1)} KB
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); removeFile(index); }}
+                                                        className="p-2 hover:bg-destructive/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <X className="w-4 h-4 text-destructive" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        {isUploading && (
+                                            <div className="space-y-2">
+                                                <Progress value={uploadProgress} className="h-2" />
+                                                <p className="text-sm text-center text-muted-foreground animate-pulse">
+                                                    {currentStep}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Submit Button */}
+                                        <Button
+                                            onClick={(e) => { e.stopPropagation(); handleUpload(); }}
+                                            disabled={isUploading}
+                                            size="lg"
+                                            className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:scale-[1.02]"
+                                        >
+                                            {isUploading ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                    Procesando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles className="mr-2 h-5 w-5" />
+                                                    Generar CV Profesional
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                            </Card>
+
+                            {/* Decorative Elements */}
+                            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl -z-10" />
+                            <div className="absolute -top-4 -left-4 w-16 h-16 bg-accent/10 rounded-full blur-xl -z-10" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <footer className="mt-auto py-6 px-6 border-t border-border/50 bg-muted/30">
+                <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary-foreground">CV</span>
+                        </div>
+                        <span className="text-sm font-medium">CV-ConVos</span>
+                        <span className="text-xs text-muted-foreground">© 2026</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center sm:text-right">
+                        100% gratuito • Sin registro • Tus datos son privados
+                    </p>
+                </div>
+            </footer>
+        </div>
+    );
+}

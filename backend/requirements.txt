@@ -1,0 +1,13 @@
+# CV-ConVos v1.0 - Backend Dependencies
+
+fastapi
+uvicorn
+python-multipart
+pypdf
+python-docx
+python-dotenv
+groq
+pydantic
+pydantic-settings
+motor
+httpx
