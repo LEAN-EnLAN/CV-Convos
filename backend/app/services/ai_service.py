@@ -76,6 +76,7 @@ The output MUST be a valid JSON object following this schema:
 - If multiple files are provided, consolidate the information.
 - Use the methodology STAR for achievements.
 - DEDUCE soft skills (like leadership, communication, problem-solving) based on the experience descriptions and highlights.
+- IMPORTANT: You MUST maintain the ORIGINAL LANGUAGE of the source text for all fields. If the CV is in Spanish, the output values must be in Spanish. DO NOT TRANSLATE.
 - If information is missing, leave it as an empty string or empty list, but DO NOT invent facts.
 - Output ONLY the JSON object.
 
@@ -103,7 +104,7 @@ async def extract_cv_data(text: str):
         completion = client.chat.completions.create(
             model=model_name,
             messages=[
-                {"role": "system", "content": "You are a professional CV parser. You MUST return ONLY JSON documentation. No conversational text. No markdown formatting. Use the '_analysis' field to think deeply about the candidate's skills and experience before extracting fixed fields."},
+                {"role": "system", "content": "You are a professional CV parser. You MUST return ONLY JSON documentation. Use the '_analysis' field to think deeply about the candidate's skills and experience. IMPORTANT: Maintain the ORIGINAL LANGUAGE of the input text. DO NOT TRANSLATE."},
                 {"role": "user", "content": EXTRACT_CV_PROMPT.format(text=text)}
             ],
             temperature=0.2, # Un poco más de temperatura para permitir deducciones más ricas
@@ -143,6 +144,7 @@ INSTRUCTIONS:
 - If target is 'shrink': Concise everything. Reduce word count by 30-40%. Use punchy action verbs. Keep only the most impressive highlights.
 - If target is 'improve': Better vocabulary, clearer impact, STAR method.
 - DO NOT change facts (dates, company names, titles).
+- CRITICAL: You MUST maintain the ORIGINAL LANGUAGE of the CV data. If the input is in Spanish, the output MUST be in Spanish. DO NOT translate to English or any other language.
 - Return ONLY the JSON object.
 """
 
@@ -157,7 +159,7 @@ async def optimize_cv_data(cv_data: dict, target: str = "shrink"):
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You are a professional HR assistant. Return ONLY JSON."},
+                {"role": "system", "content": "You are a professional HR assistant. You MUST maintain the ORIGINAL LANGUAGE of the input data. DO NOT TRANSLATE. Return ONLY JSON."},
                 {"role": "user", "content": OPTIMIZE_CV_PROMPT.format(cv_json=cv_json, target=target)}
             ],
             temperature=0.1,
@@ -168,4 +170,61 @@ async def optimize_cv_data(cv_data: dict, target: str = "shrink"):
         return json.loads(content)
     except Exception as e:
         print(f"ERROR in optimize_cv_data: {str(e)}")
+        return None
+
+CRITIQUE_CV_PROMPT = """
+You are a Ruthless Senior Technical Recruiter and ATS Expert. 
+Your goal is to perform a deep-scan of the provided CV and identify exactly 3-5 high-impact improvements.
+
+The output MUST be a valid JSON object with the following structure:
+{{
+  "critique": [
+    {{
+      "id": "unique-id-1",
+      "target_field": "personalInfo.summary", 
+      "category": "Impact|Brevity|Grammar|Formatting",
+      "severity": "Critical|Suggested|Nitpick",
+      "title": "Short punchy title",
+      "description": "Clear explanation of the problem in the recruiter's voice.",
+      "impact_reason": "Why this change will help the candidate get more interviews.",
+      "original_text": "The exact text to be replaced",
+      "suggested_text": "The improved version ready to be used"
+    }}
+  ]
+}}
+
+CRITICAL RULES:
+1. Target fields must use dot notation (e.g., 'experience.0.description', 'personalInfo.summary', 'education.1.degree').
+2. Be specific. Don't say "improve experience", say "Quantify results in your role at Google".
+3. Maintain the ORIGINAL LANGUAGE of the CV. If the CV is in Spanish, the feedback and suggestions MUST be in Spanish.
+4. If a field is already excellent, do not suggest changes for it.
+5. Focus on Metrics (STAR method), Action Verbs, and Clarity.
+6. The 'target_field' must exactly match the key path in the input JSON.
+
+CV DATA:
+{cv_json}
+"""
+
+async def critique_cv_data(cv_data: dict):
+    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
+        return None
+        
+    try:
+        client = Groq(api_key=settings.GROQ_API_KEY)
+        cv_json = json.dumps(cv_data, indent=2)
+        
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a professional CV Auditor. You provide high-impact, specific improvements. You MUST maintain the ORIGINAL LANGUAGE of the input data. RETURN ONLY JSON."},
+                {"role": "user", "content": CRITIQUE_CV_PROMPT.format(cv_json=cv_json)}
+            ],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        
+        content = completion.choices[0].message.content
+        return json.loads(content)
+    except Exception as e:
+        print(f"ERROR in critique_cv_data: {str(e)}")
         return None

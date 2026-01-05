@@ -205,10 +205,13 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                             <Card className="relative overflow-hidden border-2 border-dashed hover:border-primary/50 transition-colors duration-300 bg-card/80 backdrop-blur-sm">
                                 <div
                                     {...getRootProps()}
-                                    className={`p-8 sm:p-12 text-center cursor-pointer transition-all duration-300 ${isDragActive ? 'bg-primary/5 scale-[0.99]' : ''
+                                    className={`p-8 sm:p-12 text-center cursor-pointer transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl ${isDragActive ? 'bg-primary/5 scale-[0.99]' : ''
                                         }`}
+                                    tabIndex={0}
+                                    role="button"
+                                    aria-label="Zona de carga de archivos. Arrastrá o hacé clic para subir tus documentos."
                                 >
-                                    <input {...getInputProps()} />
+                                    <input {...getInputProps()} tabIndex={-1} />
 
                                     <div className="space-y-6">
                                         <div className={`
@@ -262,7 +265,8 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                                                     </div>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); removeFile(index); }}
-                                                        className="p-2 hover:bg-destructive/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                        className="p-2 hover:bg-destructive/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-destructive"
+                                                        aria-label={`Eliminar archivo ${file.name}`}
                                                     >
                                                         <X className="w-4 h-4 text-destructive" />
                                                     </button>
@@ -285,7 +289,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                                             onClick={(e) => { e.stopPropagation(); handleUpload(); }}
                                             disabled={isUploading}
                                             size="lg"
-                                            className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:scale-[1.02]"
+                                            className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                         >
                                             {isUploading ? (
                                                 <>

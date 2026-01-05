@@ -4,129 +4,88 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Status](https://img.shields.io/badge/status-MVP%20Complete-green.svg)]()
 
-AI-powered CV constructor that transforms existing documents (PDF, DOCX, TXT) into professional, ATS-friendly resumes using Large Language Models (Groq's Llama 3.3-70b).
+## 🎯 ¿Qué es CV-ConVos?
 
-## What's New in v1.0
+Constructor de CVs potenciado por IA que transforma documentos existentes (PDF, DOCX, TXT) en currículums profesionales optimizados para ATS usando LLMs (Groq Llama 3.3-70b).
 
-- **MVP Complete**: Full core functionality implemented including AI-powered extraction, real-time editor, and PDF export.
-- **AI-Powered Extraction**: Multi-file upload with text extraction and STAR methodology structuring.
-- **Real-Time Editor & Preview**: Dynamic updates with template switching (Modern/Professional) and A4 layout management.
-- **Advanced AI Optimization**: "Magic Shrink" (30-40% content synthesis) and "Improve Content" features.
-- **Native Export**: High-fidelity PDF generation using window.print() and CSS print media queries.
-- **Privacy-First**: No mandatory user registration or long-term data storage.
+## ✨ Características Principales
 
-## Features
+- **Extracción con IA**: Upload múltiple de archivos con extracción de texto y estructuración usando metodología STAR
+- **Editor en Tiempo Real**: Edición en vivo con preview instantáneo, CRUD completo para todas las secciones
+- **Sistema de Templates**: Dos templates base (Modern y Professional) con gestión de layout A4
+- **Optimización Avanzada con IA**: "Magic Shrink" (síntesis 30-40%) y "Mejorar Contenido"
+- **Exportación PDF Nativa**: Generación de alta fidelidad directamente en el navegador
+- **Privacy-First**: Uso anónimo sin almacenamiento de datos
 
-- ✅ **AI-Powered Extraction**: Upload multiple files (PDF, DOCX, TXT) for intelligent text extraction and CV structuring using STAR methodology.
-- ✅ **Real-Time Editor & Preview**: Live editing with instant preview, supporting full CRUD operations for personal info, experience, education, skills, and projects.
-- ✅ **Template System**: Two high-quality base templates (Modern and Professional) with A4 layout management.
-- ✅ **Advanced AI Optimization**: "Magic Shrink" for content synthesis and "Improve Content" for enhanced writing.
-- ✅ **Native PDF Export**: High-fidelity PDF generation directly in the browser.
-- ✅ **Privacy-First Design**: Anonymous usage with no data storage requirements.
+## 🚀 Quick Start
 
-## Tech Stack
+### Prerrequisitos
+- Node.js 18+
+- Python 3.8+
+- API Key de Groq (registrate en [groq.com](https://groq.com))
 
-### Frontend
-- **Next.js 15+** (App Router)
-- **React 19**
-- **TypeScript 5.x**
-- **Tailwind CSS 4**
-- **Shadcn UI** (Radix UI components)
-- **Lucide React** (Icons)
-- **Sonner** (Toasts)
-- **React-Dropzone** (File uploads)
+### Instalación Rápida
 
-### Backend
-- **FastAPI** (Python)
-- **Groq** (Llama 3.3-70b-versatile)
-- **PyPDF2, python-docx** (Document parsing)
-- **Pydantic / Pydantic Settings** (Configuration)
-
-## Installation
-
-### Prerequisites
-- Node.js 18+ (for frontend)
-- Python 3.8+ (for backend)
-- Groq API key (sign up at [groq.com](https://groq.com))
-
-### Frontend Setup
 ```bash
-cd frontend
-npm install
-```
+# Clonar el repo
+git clone https://github.com/tu-usuario/cv-convos.git
+cd cv-convos
 
-### Backend Setup
-```bash
+# Setup Backend
 cd backend
 pip install -r requirements.txt
+cp .env.example .env  # Agregar tu GROQ_API_KEY
+
+# Setup Frontend (en nueva terminal)
+cd frontend
+npm install
+
+# Iniciar servicios
+# Terminal 1 - Backend
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
 ```
 
-## Usage
+Abre `http://localhost:3000` en tu navegador.
 
-1. **Start the Backend**:
-   ```bash
-   cd backend
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-2. **Start the Frontend**:
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-
-3. **Open your browser** and navigate to `http://localhost:3000`
-
-4. **Upload Documents**: Drag and drop PDF, DOCX, or TXT files containing your CV information.
-
-5. **AI Processing**: The system will extract and structure your content using AI.
-
-6. **Edit & Customize**: Use the real-time editor to modify sections, switch templates, and optimize content.
-
-7. **Export PDF**: Generate and download your professional CV.
-
-## Project Structure
+## 🏗️ Arquitectura del Proyecto
 
 ```
-/
-├── frontend/
+cv-convos/
+├── frontend/          # Next.js 15+ + React 19 + TypeScript
 │   ├── src/
-│   │   ├── app/
-│   │   │   ├── page.tsx (main entry)
-│   │   │   ├── layout.tsx
-│   │   │   └── globals.css
+│   │   ├── app/                    # App Router
 │   │   ├── components/
-│   │   │   ├── cv-builder/
-│   │   │   │   ├── Builder.tsx (workspace layer)
-│   │   │   │   ├── Editor.tsx (editor component)
-│   │   │   │   ├── FileUploader.tsx (uploader layer)
-│   │   │   │   └── templates/
-│   │   │   │       ├── ModernTemplate.tsx
-│   │   │   │       └── ProfessionalTemplate.tsx
-│   │   │   └── ui/ (Shadcn UI components)
-│   │   └── types/
-│   │       └── cv.ts (type definitions)
+│   │   │   ├── cv-builder/         # Core del builder
+│   │   │   └── ui/                 # Shadcn UI components
+│   │   ├── hooks/                  # Custom hooks
+│   │   ├── lib/                    # Utilidades
+│   │   └── types/                  # TypeScript definitions
 │   └── package.json
-├── backend/
+├── backend/           # FastAPI + Python
 │   ├── app/
-│   │   ├── main.py (FastAPI entry point)
-│   │   ├── api/
-│   │   │   └── endpoints.py (/generate-cv, /optimize-cv routes)
-│   │   ├── core/
-│   │   │   └── config.py (configuration management)
-│   │   └── services/
-│   │       ├── parser_service.py (document parsing)
-│   │       └── ai_service.py (LLM integration)
+│   │   ├── api/                    # Endpoints
+│   │   ├── core/                   # Configuración
+│   │   └── services/               # Lógica de negocio
 │   └── requirements.txt
-└── README.md
+└── docs/              # Documentación adicional
 ```
 
-## API Endpoints
+## 📚 Documentación Detallada
 
-### POST `/generate-cv`
-Generates a structured CV from uploaded documents using AI.
+- **[Frontend](./frontend/README.md)** - Setup, arquitectura, estilos, componentes
+- **[Backend](./backend/README.md)** - API docs, configuración Groq, servicios
 
-**Request Body**:
+## 🔌 API Endpoints
+
+### POST `/api/generate-cv`
+Genera un CV estructurado desde documentos subidos.
+
+**Request:**
 ```json
 {
   "files": ["base64_encoded_file1", "base64_encoded_file2"],
@@ -134,11 +93,11 @@ Generates a structured CV from uploaded documents using AI.
 }
 ```
 
-**Response**:
+**Response:**
 ```json
 {
   "cv_data": {
-    "personal_info": {...},
+    "personalInfo": {...},
     "experience": [...],
     "education": [...],
     "skills": [...],
@@ -147,61 +106,67 @@ Generates a structured CV from uploaded documents using AI.
 }
 ```
 
-### POST `/optimize-cv`
-Optimizes existing CV content using AI (Magic Shrink or Improve Content).
+### POST `/api/optimize-cv`
+Optimiza contenido existente del CV (Magic Shrink o Improve Content).
 
-**Request Body**:
-```json
-{
-  "cv_data": {...},
-  "optimization_type": "shrink" | "improve",
-  "section": "experience" // optional, for section-specific optimization
-}
-```
+### POST `/api/critique-cv`
+Genera feedback y sugerencias de mejora para el CV.
 
-**Response**:
-```json
-{
-  "optimized_cv": {...}
-}
-```
+## 🛠️ Tech Stack
 
-## Environment Variables
+### Frontend
+- Next.js 15+ (App Router)
+- React 19
+- TypeScript 5.x
+- Tailwind CSS 4
+- Shadcn UI (Radix UI)
+- Lucide React
+- Sonner (Toasts)
+- React-Dropzone
 
-### Backend (.env)
-```env
-GROQ_API_KEY=your_groq_api_key_here
-```
+### Backend
+- FastAPI (Python)
+- Groq (Llama 3.3-70b-versatile)
+- PyPDF2, python-docx (Parsing)
+- Pydantic (Validación)
 
-## Development Setup
+## 🤝 Contribuir
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-repo/cv-convos.git
-   cd cv-convos
-   ```
+¡Las contribuciones son bienvenidas! Revisa la [guía de contribución](./CONTRIBUTING.md) para más detalles.
 
-2. **Install dependencies** (see Installation section above).
+## 📄 Licencia
 
-3. **Set up environment variables**:
-   - Copy `backend/.env` and add your Groq API key.
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
 
-4. **Run the development servers** (see Usage section).
+## 🙏 Agradecimientos
 
-5. **Testing**:
-   - Frontend: `npm test` (if configured)
-   - Backend: `pytest` (if configured)
+- Groq por proveer la API de LLMs de alta velocidad
+- Shadcn UI por los componentes base
+- La comunidad open source
 
-## Contributing
+## 📞 Contacto & Soporte
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- Issues: [GitHub Issues](https://github.com/tu-usuario/cv-convos/issues)
+- Discusiones: [GitHub Discussions](https://github.com/tu-usuario/cv-convos/discussions)
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## 🗺️ Roadmap / Próximos Pasos
 
-## License
+### v1.1 (Próximo Release)
+- Sistema de autenticación de usuarios
+- Guardar CVs en la nube
+- Historial de versiones
+- Templates adicionales (Creative, Minimalist)
+- Exportación a DOCX
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### v1.2
+- Integración con LinkedIn
+- ATS score checker
+- Keyword optimization
+- Cover letter generator
+
+### v2.0 (Largo Plazo)
+- Sistema de suscripción premium
+- Templates personalizados
+- Integración con más LLM providers
+- Colaboración en tiempo real
+- API pública para integraciones

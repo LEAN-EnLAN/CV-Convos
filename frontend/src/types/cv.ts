@@ -70,3 +70,19 @@ export interface CVData {
 }
 
 export type CVTemplate = 'professional' | 'modern' | 'minimalist' | 'creative';
+
+export interface ImprovementCard {
+    id: string;
+    target_field: string;
+    category: 'Impact' | 'Brevity' | 'Grammar' | 'Formatting';
+    severity: 'Critical' | 'Suggested' | 'Nitpick';
+    title: string;
+    description: string;
+    impact_reason: string;
+    original_text: string;
+    suggested_text: string;
+}
+
+export interface CritiqueResponse {
+    critique: ImprovementCard[];
+}

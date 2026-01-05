@@ -40,3 +40,14 @@ async def optimize_cv(cv_data: dict, target: str = "shrink"):
         raise HTTPException(status_code=500, detail="AI optimization failed")
         
     return optimized_data
+
+@router.post("/critique-cv")
+async def critique_cv(cv_data: dict):
+    from app.services.ai_service import critique_cv_data
+    
+    critique_results = await critique_cv_data(cv_data)
+    
+    if not critique_results:
+        raise HTTPException(status_code=500, detail="AI critique failed")
+        
+    return critique_results

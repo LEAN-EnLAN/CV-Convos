@@ -7,10 +7,12 @@ import { ProfessionalTemplate } from './templates/ProfessionalTemplate';
 import { ModernTemplate } from './templates/ModernTemplate';
 import { Button } from '@/components/ui/button';
 import { useReactToPrint } from 'react-to-print';
+import { useCVHistory } from '@/hooks/use-cv-history';
 import {
-    Layout, RotateCcw, Printer, ChevronDown,
+    Layout, RotateCcw, RotateCw, Printer, ChevronDown,
     Palette, FileText, Sparkles, Eye, PenLine,
-    Download, Share2, Settings2, Maximize2, Minimize2
+    Download, Share2, Settings2, Maximize2, Minimize2,
+    Undo2, Redo2
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -66,7 +68,7 @@ const densityOptions = [
 type Density = typeof densityOptions[number]['id'];
 
 export function Builder({ initialData, onReset }: BuilderProps) {
-    const [data, setData] = useState<CVData>(initialData);
+    const { state: data, set: setData, undo, redo, canUndo, canRedo } = useCVHistory<CVData>(initialData);
     const [template, setTemplate] = useState<CVTemplate>('modern');
     const [density, setDensity] = useState<Density>('standard');
     const [activeView, setActiveView] = useState<'editor' | 'preview'>('editor');
@@ -291,7 +293,14 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                         w-full sm:w-[420px] lg:w-[480px] border-r bg-card shrink-0 
                         ${activeView === 'preview' ? 'hidden sm:block' : 'block'}
                     `}>
-                        <Editor data={data} onChange={setData} />
+                        <Editor
+                            data={data}
+                            onChange={setData}
+                            undo={undo}
+                            redo={redo}
+                            canUndo={canUndo}
+                            canRedo={canRedo}
+                        />
                     </div>
 
                     {/* Right Side: Preview - Hidden on mobile when editor is active */}
