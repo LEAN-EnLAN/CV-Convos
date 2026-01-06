@@ -32,7 +32,8 @@ import {
 import {
     User, Briefcase, GraduationCap, Code, Plus, Trash2,
     Mail, Phone, MapPin, FileText, Sparkles, Wand2,
-    Loader2, Scissors, Zap, Undo2, Redo2
+    Loader2, Scissors, Zap, Undo2, Redo2,
+    Linkedin, Github, Globe, Twitter, Clock, Languages, Award, Heart
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -318,6 +319,73 @@ export function Editor({
 
                                         <Separator className="my-2" />
 
+                                        <div className="space-y-3">
+                                            <Label className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
+                                                <Globe className="w-3 h-3" /> Redes & Enlaces
+                                            </Label>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="relative">
+                                                    <Linkedin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="LinkedIn URL"
+                                                        value={data.personalInfo.linkedin || ''}
+                                                        onChange={(e) => updatePersonalInfo('linkedin', e.target.value)}
+                                                        className="pl-9 h-9 text-xs bg-background/50"
+                                                    />
+                                                </div>
+                                                <div className="relative">
+                                                    <Github className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="GitHub URL"
+                                                        value={data.personalInfo.github || ''}
+                                                        onChange={(e) => updatePersonalInfo('github', e.target.value)}
+                                                        className="pl-9 h-9 text-xs bg-background/50"
+                                                    />
+                                                </div>
+                                                <div className="relative">
+                                                    <Globe className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="Portfolio / Website"
+                                                        value={data.personalInfo.website || ''}
+                                                        onChange={(e) => updatePersonalInfo('website', e.target.value)}
+                                                        className="pl-9 h-9 text-xs bg-background/50"
+                                                    />
+                                                </div>
+                                                <div className="relative">
+                                                    <Twitter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="Twitter / X"
+                                                        value={data.personalInfo.twitter || ''}
+                                                        onChange={(e) => updatePersonalInfo('twitter', e.target.value)}
+                                                        className="pl-9 h-9 text-xs bg-background/50"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 pt-2">
+                                                <Label htmlFor="availability" className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" /> Disponibilidad
+                                                </Label>
+                                                <Select
+                                                    value={data.personalInfo.availability || ''}
+                                                    onValueChange={(val) => updatePersonalInfo('availability', val)}
+                                                >
+                                                    <SelectTrigger className="h-9 text-xs bg-background/50">
+                                                        <SelectValue placeholder="Seleccionar disponibilidad" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Full-time">Full-time</SelectItem>
+                                                        <SelectItem value="Part-time">Part-time</SelectItem>
+                                                        <SelectItem value="Freelance">Freelance</SelectItem>
+                                                        <SelectItem value="Contract">Por Contrato</SelectItem>
+                                                        <SelectItem value="Remote">Remoto</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <Separator className="my-2" />
+
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <Label htmlFor="summary" className="text-xs font-semibold uppercase text-muted-foreground">
@@ -513,30 +581,44 @@ export function Editor({
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-1 gap-2">
                                             {data.skills.map((skill, index) => (
-                                                <div key={skill.id} className="flex items-center gap-2 p-2 bg-muted/20 rounded-md border group hover:border-orange-200 transition-colors">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0 ml-1" />
-                                                    <Input
-                                                        className="h-7 border-none shadow-none focus-visible:ring-0 bg-transparent text-sm font-medium px-1"
-                                                        placeholder="Skill"
-                                                        value={skill.name}
-                                                        onChange={(e) => updateArrayField('skills', index, 'name', e.target.value)}
-                                                    />
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div key={skill.id} className="space-y-2 p-3 bg-muted/20 rounded-xl border group hover:border-orange-200 transition-all">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+                                                        <Input
+                                                            className="h-7 border-none shadow-none focus-visible:ring-0 bg-transparent text-sm font-bold px-1 flex-1"
+                                                            placeholder="Skill (ej: React)"
+                                                            value={skill.name}
+                                                            onChange={(e) => updateArrayField('skills', index, 'name', e.target.value)}
+                                                        />
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                                            className="h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                                             onClick={() => removeArrayItem('skills', index)}
                                                         >
                                                             <Trash2 className="w-3 h-3" />
                                                         </Button>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 px-1">
+                                                        <input
+                                                            type="range"
+                                                            min="0"
+                                                            max="100"
+                                                            value={skill.proficiency || 0}
+                                                            onChange={(e) => updateArrayField('skills', index, 'proficiency', parseInt(e.target.value))}
+                                                            className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                                        />
+                                                        <span className="text-[10px] font-mono text-muted-foreground w-7 text-right">
+                                                            {skill.proficiency || 0}%
+                                                        </span>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
 
                                         <Button
-                                            onClick={() => addArrayItem('skills', { name: '', level: 'Intermediate', category: '' })}
+                                            onClick={() => addArrayItem('skills', { name: '', level: 'Intermediate', proficiency: 80, category: '' })}
                                             className="w-full h-9 border-dashed border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-400 gap-2"
                                             variant="outline"
                                         >
@@ -603,6 +685,196 @@ export function Editor({
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
+
+                            {/* Languages Section */}
+                            <AccordionItem value="languages" className="border-b">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
+                                            <Languages className="w-4 h-4" />
+                                        </div>
+                                        <div className="text-left flex items-center gap-2">
+                                            <p className="text-sm font-bold text-foreground/80">Idiomas</p>
+                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-sky-50 text-sky-600 border-none font-medium">
+                                                {data.languages?.length || 0}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="px-5 pb-6 pt-2">
+                                    <div className="space-y-3">
+                                        {data.languages?.map((lang, index) => (
+                                            <div key={lang.id} className="flex items-center gap-2">
+                                                <Input
+                                                    placeholder="Idioma (ej: Inglés)"
+                                                    value={lang.language}
+                                                    onChange={(e) => updateArrayField('languages', index, 'language', e.target.value)}
+                                                    className="h-9 text-sm font-semibold flex-1"
+                                                />
+                                                <Select
+                                                    value={lang.fluency}
+                                                    onValueChange={(val) => updateArrayField('languages', index, 'fluency', val)}
+                                                >
+                                                    <SelectTrigger className="w-[140px] h-9 text-xs">
+                                                        <SelectValue placeholder="Nivel" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Native">Nativo</SelectItem>
+                                                        <SelectItem value="Fluent">Fluido</SelectItem>
+                                                        <SelectItem value="Conversational">Conversacional</SelectItem>
+                                                        <SelectItem value="Basic">Básico</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                                                    onClick={() => removeArrayItem('languages', index)}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        <Button
+                                            onClick={() => addArrayItem('languages', { language: '', fluency: 'Conversational' })}
+                                            className="w-full h-9 border-dashed border-sky-300 text-sky-600 hover:bg-sky-50 hover:text-sky-700 hover:border-sky-400 gap-2"
+                                            variant="outline"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            Agregar Idioma
+                                        </Button>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+
+                            {/* Certifications Section */}
+                            <AccordionItem value="certifications" className="border-b">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                            <Award className="w-4 h-4" />
+                                        </div>
+                                        <div className="text-left flex items-center gap-2">
+                                            <p className="text-sm font-bold text-foreground/80">Certificaciones</p>
+                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-amber-50 text-amber-600 border-none font-medium">
+                                                {data.certifications?.length || 0}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="px-5 pb-6 pt-2">
+                                    <div className="space-y-4">
+                                        {data.certifications?.map((cert, index) => (
+                                            <Card key={cert.id} className="p-3 relative group hover:shadow-md transition-all border-l-4 border-l-amber-400">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={() => removeArrayItem('certifications', index)}
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </Button>
+
+                                                <div className="space-y-2 pr-6">
+                                                    <Input
+                                                        placeholder="Nombre de la Certificación"
+                                                        value={cert.name}
+                                                        onChange={(e) => updateArrayField('certifications', index, 'name', e.target.value)}
+                                                        className="h-8 text-sm font-semibold border-none focus-visible:ring-0 px-0"
+                                                    />
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <Input
+                                                            placeholder="Emisor (ej: Google)"
+                                                            value={cert.issuer}
+                                                            onChange={(e) => updateArrayField('certifications', index, 'issuer', e.target.value)}
+                                                            className="h-7 text-xs"
+                                                        />
+                                                        <Input
+                                                            placeholder="Fecha (ej: 2024)"
+                                                            value={cert.date}
+                                                            onChange={(e) => updateArrayField('certifications', index, 'date', e.target.value)}
+                                                            className="h-7 text-xs"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        ))}
+                                        <Button
+                                            onClick={() => addArrayItem('certifications', { name: '', issuer: '', date: '' })}
+                                            className="w-full h-9 border-dashed border-amber-300 text-amber-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-400 gap-2"
+                                            variant="outline"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            Agregar Certificación
+                                        </Button>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+
+                            {/* Interests Section */}
+                            <AccordionItem value="interests" className="border-none">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
+                                            <Heart className="w-4 h-4" />
+                                        </div>
+                                        <div className="text-left flex items-center gap-2">
+                                            <p className="text-sm font-bold text-foreground/80">Intereses</p>
+                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-pink-50 text-pink-600 border-none font-medium">
+                                                {data.interests?.length || 0}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="px-5 pb-6 pt-2">
+                                    <div className="space-y-3">
+                                        <div className="flex flex-wrap gap-2">
+                                            {data.interests?.map((interest, index) => (
+                                                <Badge key={interest.id} variant="secondary" className="pl-2 pr-1 py-1 gap-1 hover:bg-pink-100 transition-colors">
+                                                    {interest.name}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-4 w-4 rounded-full hover:bg-pink-200/50 hover:text-pink-700"
+                                                        onClick={() => removeArrayItem('interests', index)}
+                                                    >
+                                                        <Trash2 className="w-2.5 h-2.5" />
+                                                    </Button>
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                id="new-interest-input"
+                                                placeholder="Nuevo interés (ej: Fotografía)..."
+                                                className="h-9 text-sm"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const val = (e.target as HTMLInputElement).value;
+                                                        if (val.trim()) {
+                                                            addArrayItem('interests', { name: val.trim() });
+                                                            (e.target as HTMLInputElement).value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    const input = document.getElementById('new-interest-input') as HTMLInputElement;
+                                                    if (input && input.value.trim()) {
+                                                        addArrayItem('interests', { name: input.value.trim() });
+                                                        input.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
                         </Accordion>
                     </ScrollArea>
                 </div>
@@ -632,6 +904,6 @@ export function Editor({
                     </div>
                 </div>
             </div>
-        </TooltipProvider>
+        </TooltipProvider >
     );
 }

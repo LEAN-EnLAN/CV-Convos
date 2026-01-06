@@ -1,0 +1,40 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python Quality Tools
+        run: pip install ruff
+
+      - name: Run Python Linting
+        run: ruff check backend/
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Node dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run TypeScript Linting
+        run: |
+          cd frontend
+          npm run lint

@@ -1,11 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from typing import List
 from app.services.parser_service import extract_text_from_file
-from app.services.ai_service import extract_cv_data
+from app.services.ai_service import extract_cv_data, optimize_cv_data, critique_cv_data
+from app.api.schemas import CVDataInput, CVData
 
 router = APIRouter()
 
-@router.post("/generate-cv")
+@router.post("/generate-cv", response_model=CVData)
 async def generate_cv(files: List[UploadFile] = File(...)):
     combined_text = ""
     
@@ -30,11 +31,9 @@ async def generate_cv(files: List[UploadFile] = File(...)):
 
     return cv_data
 
-@router.post("/optimize-cv")
-async def optimize_cv(cv_data: dict, target: str = "shrink"):
-    from app.services.ai_service import optimize_cv_data
-    
-    optimized_data = await optimize_cv_data(cv_data, target)
+@router.post("/optimize-cv", response_model=CVData)
+async def optimize_cv(cv_data: CVDataInput, target: str = "shrink"):
+    optimized_data = await optimize_cv_data(cv_data.model_dump(), target)
     
     if not optimized_data:
         raise HTTPException(status_code=500, detail="AI optimization failed")
@@ -42,10 +41,8 @@ async def optimize_cv(cv_data: dict, target: str = "shrink"):
     return optimized_data
 
 @router.post("/critique-cv")
-async def critique_cv(cv_data: dict):
-    from app.services.ai_service import critique_cv_data
-    
-    critique_results = await critique_cv_data(cv_data)
+async def critique_cv(cv_data: CVDataInput):
+    critique_results = await critique_cv_data(cv_data.model_dump())
     
     if not critique_results:
         raise HTTPException(status_code=500, detail="AI critique failed")

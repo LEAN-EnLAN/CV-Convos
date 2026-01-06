@@ -12,7 +12,8 @@ const emptyCV: CVData = {
   skills: [],
   projects: [],
   languages: [],
-  certifications: []
+  certifications: [],
+  interests: []
 };
 
 import { Builder } from '@/components/cv-builder/Builder';
@@ -30,7 +31,8 @@ export default function Home() {
       skills: (data.skills || []).map(e => ({ ...e, id: e.id || Math.random().toString(36).substr(2, 9) })),
       projects: (data.projects || []).map(e => ({ ...e, id: e.id || Math.random().toString(36).substr(2, 9) })),
       languages: (data.languages || []).map(e => ({ ...e, id: e.id || Math.random().toString(36).substr(2, 9) })),
-      certifications: (data.certifications || []).map(e => ({ ...e, id: e.id || Math.random().toString(36).substr(2, 9) }))
+      certifications: (data.certifications || []).map(e => ({ ...e, id: e.id || Math.random().toString(36).substr(2, 9) })),
+      interests: (data.interests || []).map(e => ({ ...e, id: e.id || Math.random().toString(36).substr(2, 9) }))
     };
     setCvData(sanitizedData);
   };

@@ -5,6 +5,9 @@ import { CVData, CVTemplate } from '@/types/cv';
 import { Editor } from './Editor';
 import { ProfessionalTemplate } from './templates/ProfessionalTemplate';
 import { ModernTemplate } from './templates/ModernTemplate';
+import { HarvardTemplate } from './templates/HarvardTemplate';
+import { SwissTemplate } from './templates/SwissTemplate';
+
 import { Button } from '@/components/ui/button';
 import { useReactToPrint } from 'react-to-print';
 import { useCVHistory } from '@/hooks/use-cv-history';
@@ -12,8 +15,11 @@ import {
     Layout, RotateCcw, RotateCw, Printer, ChevronDown,
     Palette, FileText, Sparkles, Eye, PenLine,
     Download, Share2, Settings2, Maximize2, Minimize2,
-    Undo2, Redo2
+    Undo2, Redo2, GraduationCap
 } from 'lucide-react';
+import { FinalizeExport } from './FinalizeExport';
+import { TemplateConfigurator } from './TemplateConfigurator';
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -57,20 +63,29 @@ const templateOptions = [
         description: 'Con sidebar lateral',
         icon: Layout
     },
+    {
+        id: 'harvard',
+        name: 'Harvard',
+        description: 'Estilo Ivy League, ATS-Optimized',
+        icon: GraduationCap
+    },
+    {
+        id: 'swiss',
+        name: 'Swiss',
+        description: 'Diseño minimalista y audaz',
+        icon: Layout
+    },
+
 ];
 
-const densityOptions = [
-    { id: 'compact', name: 'Compacto', icon: Minimize2 },
-    { id: 'standard', name: 'Estándar', icon: Layout },
-    { id: 'relaxed', name: 'Espacioso', icon: Maximize2 },
-] as const;
-
-type Density = typeof densityOptions[number]['id'];
+// Density is now handled entirely within TemplateConfigurator and globals.css classes
 
 export function Builder({ initialData, onReset }: BuilderProps) {
-    const { state: data, set: setData, undo, redo, canUndo, canRedo } = useCVHistory<CVData>(initialData);
+    const { state: data, set: setData, undo, redo, canUndo, canRedo } = useCVHistory<CVData>({
+        ...initialData,
+        config: initialData.config || DEFAULT_CONFIG
+    });
     const [template, setTemplate] = useState<CVTemplate>('modern');
-    const [density, setDensity] = useState<Density>('standard');
     const [activeView, setActiveView] = useState<'editor' | 'preview'>('editor');
     const [scale, setScale] = useState(1);
     const [pages, setPages] = useState(1);
@@ -111,7 +126,7 @@ export function Builder({ initialData, onReset }: BuilderProps) {
 
         const timer = setTimeout(updatePages, 500); // Debounce
         return () => clearTimeout(timer);
-    }, [data, density, template]);
+    }, [data, template]);
 
     const currentTemplate = templateOptions.find(t => t.id === template);
 
@@ -170,7 +185,7 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                                 {templateOptions.map((opt) => (
                                     <DropdownMenuItem
                                         key={opt.id}
-                                        onClick={() => setTemplate(opt.id)}
+                                        onClick={() => setTemplate(opt.id as CVTemplate)}
                                         className="flex items-center gap-3 py-3"
                                     >
                                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${template === opt.id
@@ -209,7 +224,7 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                                 {templateOptions.map((opt) => (
                                     <DropdownMenuItem
                                         key={opt.id}
-                                        onClick={() => setTemplate(opt.id)}
+                                        onClick={() => setTemplate(opt.id as CVTemplate)}
                                     >
                                         {opt.name}
                                         {template === opt.id && ' ✓'}
@@ -249,40 +264,29 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                             </DialogContent>
                         </Dialog>
 
-                        {/* Density Selector */}
-                        <div className="hidden lg:flex items-center bg-muted rounded-lg p-1 mr-2">
-                            {densityOptions.map((opt) => (
-                                <Tooltip key={opt.id}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant={density === opt.id ? 'secondary' : 'ghost'}
-                                            size="sm"
-                                            className={`h-7 px-2.5 gap-1.5 ${density === opt.id ? 'bg-background shadow-sm' : ''}`}
-                                            onClick={() => setDensity(opt.id)}
-                                        >
-                                            <opt.icon className="w-3.5 h-3.5" />
-                                            <span className="text-[10px] font-medium">{opt.name}</span>
+                        <DropdownMenu>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="gap-2">
+                                            <Settings2 className="w-4 h-4" />
+                                            <span className="hidden lg:inline">Ajustes</span>
                                         </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Margen {opt.name}</TooltipContent>
-                                </Tooltip>
-                            ))}
-                        </div>
+                                    </DropdownMenuTrigger>
+                                </TooltipTrigger>
+                                <TooltipContent>Configuración Visual</TooltipContent>
+                            </Tooltip>
+                            <DropdownMenuContent align="end" className="w-80 p-4 max-h-[80vh] overflow-y-auto">
+                                <DropdownMenuLabel>Control Total del Diseño</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <TemplateConfigurator
+                                    config={data.config!}
+                                    onChange={(config) => setData({ ...data, config })}
+                                />
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-                        {/* Download/Print Button */}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    size="sm"
-                                    className="gap-2 bg-gradient-to-r from-primary to-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
-                                    onClick={handlePrint}
-                                >
-                                    <Download className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Descargar PDF</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Descargar como PDF</TooltipContent>
-                        </Tooltip>
+                        <FinalizeExport data={data} onDownloadPDF={handlePrint} />
                     </div>
                 </header>
 
@@ -353,10 +357,15 @@ export function Builder({ initialData, onReset }: BuilderProps) {
 
                                 <div
                                     ref={contentRef}
-                                    className={`bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] print:shadow-none overflow-hidden cv-density-${density}`}
+                                    data-cv-preview
+                                    className={`bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] print:shadow-none overflow-hidden cv-density-${data.config?.layout.density || 'standard'}`}
                                 >
                                     {template === 'professional' ? (
                                         <ProfessionalTemplate data={data} />
+                                    ) : template === 'harvard' ? (
+                                        <HarvardTemplate data={data} />
+                                    ) : template === 'swiss' ? (
+                                        <SwissTemplate data={data} />
                                     ) : (
                                         <ModernTemplate data={data} />
                                     )}

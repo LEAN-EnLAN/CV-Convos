@@ -1,6 +1,9 @@
 import json
+import logging
 from groq import Groq
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 EXTRACT_CV_PROMPT = """
 You are an expert HR and ATS (Applicant Tracking System) optimizer. 
@@ -88,13 +91,13 @@ import traceback
 
 async def extract_cv_data(text: str):
     if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key" or settings.GROQ_API_KEY == "your_groq_api_key_here":
-        print(f"CRITICAL: GROQ_API_KEY is invalid: {settings.GROQ_API_KEY}")
+        logger.critical(f"GROQ_API_KEY is invalid: {settings.GROQ_API_KEY}")
         return None
         
     try:
         # Debugging bit: print masked key
         masked_key = f"{settings.GROQ_API_KEY[:6]}...{settings.GROQ_API_KEY[-4:]}"
-        print(f"DEBUG: Using Groq API Key: {masked_key}")
+        logger.debug(f"Using Groq API Key: {masked_key}")
 
         client = Groq(api_key=settings.GROQ_API_KEY)
         
@@ -112,10 +115,10 @@ async def extract_cv_data(text: str):
         )
         
         content = completion.choices[0].message.content
-        print(f"DEBUG: AI Raw Content: {content[:100]}...") # Logueamos el inicio para debug
+        logger.debug(f"AI Raw Content: {content[:100]}...") # Logueamos el inicio para debug
         
         if not content:
-            print("ERROR: AI returned empty content")
+            logger.error("AI returned empty content")
             return None
             
         # Limpieza por si el modelo devuelve markdown ```json ... ```
@@ -124,13 +127,11 @@ async def extract_cv_data(text: str):
         try:
             return json.loads(clean_content)
         except json.JSONDecodeError as jde:
-            print(f"JSON Parse Error: {jde}")
-            print(f"Content that failed: {clean_content}")
+            logger.error(f"JSON Parse Error: {jde}", extra={"content": clean_content})
             return None
         
     except Exception as e:
-        print(f"ERROR in Groq API Service: {str(e)}")
-        traceback.print_exc()
+        logger.error(f"ERROR in Groq API Service: {str(e)}", exc_info=True)
         return None
 
 OPTIMIZE_CV_PROMPT = """
@@ -169,7 +170,7 @@ async def optimize_cv_data(cv_data: dict, target: str = "shrink"):
         content = completion.choices[0].message.content
         return json.loads(content)
     except Exception as e:
-        print(f"ERROR in optimize_cv_data: {str(e)}")
+        logger.error(f"ERROR in optimize_cv_data: {str(e)}", exc_info=True)
         return None
 
 CRITIQUE_CV_PROMPT = """
@@ -226,5 +227,5 @@ async def critique_cv_data(cv_data: dict):
         content = completion.choices[0].message.content
         return json.loads(content)
     except Exception as e:
-        print(f"ERROR in critique_cv_data: {str(e)}")
+        logger.error(f"ERROR in critique_cv_data: {str(e)}", exc_info=True)
         return None

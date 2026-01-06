@@ -6,6 +6,8 @@ export interface PersonalInfo {
     website?: string;
     linkedin?: string;
     github?: string;
+    twitter?: string;
+    availability?: string;
     summary: string;
 }
 
@@ -35,6 +37,7 @@ export interface Skill {
     id: string;
     name: string;
     level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+    proficiency: number; // 0-100
     category?: string;
 }
 
@@ -57,6 +60,53 @@ export interface Certification {
     name: string;
     issuer: string;
     date: string;
+    url?: string;
+}
+
+export interface Interest {
+    id: string;
+    name: string;
+    keywords?: string[]; // Para palabras clave relacionadas
+}
+
+export type CVTemplate = 'professional' | 'modern' | 'harvard' | 'swiss';
+
+export interface SectionConfig {
+    visible: boolean;
+    title?: string;
+    layout?: 'standard' | 'compact' | 'grid';
+}
+
+export interface TemplateConfig {
+    colors: {
+        primary: string;
+        secondary: string;
+        accent: string;
+        background: string;
+        text: string;
+    };
+    fonts: {
+        heading: string;
+        body: string;
+    };
+    layout: {
+        sidebarWidth?: number;
+        contentGap: number;
+        sectionGap: number;
+        density: 'compact' | 'standard' | 'relaxed';
+        showExpertiseBar: boolean;
+        expertiseBarStyle: 'solid' | 'gradient' | 'dots';
+    };
+    sections: {
+        summary: SectionConfig;
+        experience: SectionConfig;
+        education: SectionConfig;
+        skills: SectionConfig;
+        projects: SectionConfig;
+        languages: SectionConfig;
+        certifications: SectionConfig;
+        interests: SectionConfig;
+    };
 }
 
 export interface CVData {
@@ -67,9 +117,9 @@ export interface CVData {
     projects: Project[];
     languages: Language[];
     certifications: Certification[];
+    interests: Interest[];
+    config?: TemplateConfig;
 }
-
-export type CVTemplate = 'professional' | 'modern' | 'minimalist' | 'creative';
 
 export interface ImprovementCard {
     id: string;

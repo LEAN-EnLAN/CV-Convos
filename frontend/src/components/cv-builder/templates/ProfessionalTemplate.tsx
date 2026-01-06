@@ -6,17 +6,29 @@ interface TemplateProps {
 }
 
 export function ProfessionalTemplate({ data }: TemplateProps) {
+    const config = data.config!;
+
     return (
-        <div className="bg-white text-slate-800 w-[794px] print:shadow-none" style={{ minHeight: '1122px', padding: 'var(--cv-gap)' }}>
+        <div
+            className="bg-white w-[794px] print:shadow-none flex flex-col"
+            style={{
+                minHeight: '1122px',
+                padding: 'var(--cv-gap) 40px',
+                backgroundColor: config.colors.background,
+                color: config.colors.text,
+                gap: 'var(--cv-section-gap)',
+                fontSize: 'var(--cv-font-size-base)'
+            }}
+        >
             {/* Header - Estilo clásico refinado */}
-            <header className="border-b-2 border-emerald-700 pb-6 mb-8 text-center">
-                <h1 className="font-bold uppercase tracking-[0.2em] mb-3 text-slate-900" style={{ fontSize: 'var(--cv-font-size-name)' }}>
+            <header className="border-b-2 pb-6 text-center" style={{ borderColor: config.colors.primary }}>
+                <h1 className="font-bold uppercase tracking-[0.2em] mb-3 text-3xl" style={{ color: config.colors.secondary }}>
                     {data.personalInfo.fullName || 'Tu Nombre'}
                 </h1>
-                <div className="flex justify-center items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+                <div className="flex justify-center items-center flex-wrap gap-x-4 gap-y-1 text-sm opacity-80">
                     {data.personalInfo.email && (
                         <span className="flex items-center gap-1.5">
-                            <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-3.5 h-3.5" style={{ color: config.colors.primary }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                             {data.personalInfo.email}
@@ -24,9 +36,9 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
                     )}
                     {data.personalInfo.phone && (
                         <>
-                            <span className="text-slate-300">•</span>
+                            <span className="opacity-40">•</span>
                             <span className="flex items-center gap-1.5">
-                                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-3.5 h-3.5" style={{ color: config.colors.primary }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                 </svg>
                                 {data.personalInfo.phone}
@@ -35,9 +47,9 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
                     )}
                     {data.personalInfo.location && (
                         <>
-                            <span className="text-slate-300">•</span>
+                            <span className="opacity-40">•</span>
                             <span className="flex items-center gap-1.5">
-                                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-3.5 h-3.5" style={{ color: config.colors.primary }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
@@ -47,47 +59,46 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
                     )}
                 </div>
                 {(data.personalInfo.linkedin || data.personalInfo.website || data.personalInfo.github) && (
-                    <div className="flex justify-center gap-4 text-xs mt-3 text-emerald-700 font-medium">
-                        {data.personalInfo.linkedin && <span>LinkedIn</span>}
-                        {data.personalInfo.website && <span>Portfolio</span>}
-                        {data.personalInfo.github && <span>GitHub</span>}
+                    <div className="flex justify-center gap-4 text-xs mt-3 font-medium uppercase tracking-widest" style={{ color: config.colors.primary }}>
+                        {data.personalInfo.linkedin && <span className="border-b border-transparent hover:border-current cursor-pointer">{data.personalInfo.linkedin.replace('https://', '')}</span>}
+                        {data.personalInfo.github && <span className="border-b border-transparent hover:border-current cursor-pointer">{data.personalInfo.github.replace('https://', '')}</span>}
                     </div>
                 )}
             </header>
 
             {/* Resumen Profesional */}
-            {data.personalInfo.summary && (
-                <section className="mb-8">
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-700 border-b border-slate-200 pb-2 mb-4">
-                        Perfil Profesional
+            {data.personalInfo.summary && config.sections.summary.visible && (
+                <section>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                        {config.sections.summary.title || 'Perfil Profesional'}
                     </h2>
-                    <p className="leading-relaxed text-slate-700 text-justify" style={{ fontSize: 'var(--cv-font-size-base)' }}>
+                    <p className="leading-relaxed text-justify opacity-90 text-sm">
                         {data.personalInfo.summary}
                     </p>
                 </section>
             )}
 
             {/* Experiencia */}
-            {data.experience.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-700 border-b border-slate-200 pb-2 mb-4">
-                        Experiencia Profesional
+            {data.experience.length > 0 && config.sections.experience.visible && (
+                <section>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                        {config.sections.experience.title || 'Experiencia Profesional'}
                     </h2>
-                    <div className="space-y-5">
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
                         {data.experience.map((exp) => (
                             <div key={exp.id} className="relative break-inside-avoid">
                                 <div className="flex justify-between items-baseline mb-1">
-                                    <h3 className="font-bold text-base text-slate-900">{exp.position}</h3>
-                                    <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded">
+                                    <h3 className="font-bold text-base" style={{ color: config.colors.secondary }}>{exp.position}</h3>
+                                    <span className="text-xs font-mono opacity-60">
                                         {exp.startDate} – {exp.current ? 'Actual' : exp.endDate}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-baseline mb-2">
-                                    <span className="text-sm font-semibold text-emerald-700">{exp.company}</span>
-                                    {exp.location && <span className="text-xs text-slate-400">{exp.location}</span>}
+                                    <span className="text-sm font-semibold uppercase tracking-tight" style={{ color: config.colors.primary }}>{exp.company}</span>
+                                    {exp.location && <span className="text-xs opacity-50 italic">{exp.location}</span>}
                                 </div>
                                 {exp.description && (
-                                    <p className="text-sm text-slate-600 leading-relaxed">{exp.description}</p>
+                                    <p className="text-sm opacity-80 leading-relaxed">{exp.description}</p>
                                 )}
                             </div>
                         ))}
@@ -96,29 +107,53 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
             )}
 
             {/* Educación */}
-            {data.education.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-700 border-b border-slate-200 pb-2 mb-4">
-                        Formación Académica
+            {data.education.length > 0 && config.sections.education.visible && (
+                <section>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                        {config.sections.education.title || 'Formación Académica'}
                     </h2>
-                    <div className="space-y-4">
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
                         {data.education.map((edu) => (
                             <div key={edu.id} className="break-inside-avoid">
                                 <div className="flex justify-between items-baseline">
-                                    <h3 className="font-bold text-sm text-slate-900">{edu.institution}</h3>
+                                    <h3 className="font-bold text-sm" style={{ color: config.colors.secondary }}>{edu.institution}</h3>
                                     {(edu.startDate || edu.endDate) && (
-                                        <span className="text-xs text-slate-500 font-medium">
+                                        <span className="text-xs font-medium opacity-60">
                                             {edu.startDate} – {edu.endDate}
                                         </span>
                                     )}
                                 </div>
                                 <div className="flex justify-between items-baseline">
-                                    <span className="text-sm text-slate-700">
+                                    <span className="text-sm opacity-90 italic">
                                         {edu.degree}
-                                        {edu.fieldOfStudy && <span className="text-emerald-600"> en {edu.fieldOfStudy}</span>}
+                                        {edu.fieldOfStudy && <span style={{ color: config.colors.primary }}> en {edu.fieldOfStudy}</span>}
                                     </span>
-                                    {edu.location && <span className="text-xs text-slate-400">{edu.location}</span>}
+                                    {edu.location && <span className="text-xs opacity-50">{edu.location}</span>}
                                 </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* Proyectos */}
+            {data.projects && data.projects.length > 0 && config.sections.projects.visible && (
+                <section>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                        {config.sections.projects.title || 'Proyectos Destacados'}
+                    </h2>
+                    <div className="grid grid-cols-1 gap-4">
+                        {data.projects.map((proj) => (
+                            <div key={proj.id} className="break-inside-avoid border-l-2 pl-4 py-1" style={{ borderColor: `${config.colors.primary}20` }}>
+                                <h3 className="font-bold text-sm" style={{ color: config.colors.secondary }}>{proj.name}</h3>
+                                <p className="text-sm opacity-80 mb-2">{proj.description}</p>
+                                {proj.technologies && (
+                                    <div className="flex gap-2">
+                                        {proj.technologies.slice(0, 5).map((t, idx) => (
+                                            <span key={idx} className="text-[10px] font-mono opacity-50">#{t}</span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -126,69 +161,99 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
             )}
 
             {/* Habilidades */}
-            {data.skills.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-700 border-b border-slate-200 pb-2 mb-4">
-                        Habilidades y Competencias
+            {data.skills.length > 0 && config.sections.skills.visible && (
+                <section>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                        {config.sections.skills.title || 'Habilidades y Competencias'}
                     </h2>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-x-6 gap-y-3">
                         {data.skills.map((skill) => (
-                            <span
-                                key={skill.id}
-                                className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg"
-                            >
-                                <span className="font-semibold text-slate-800">{skill.name}</span>
-                                <span className="text-xs text-slate-400">
-                                    {skill.level === 'Beginner' ? '•' :
-                                        skill.level === 'Intermediate' ? '••' :
-                                            skill.level === 'Advanced' ? '•••' : '••••'}
-                                </span>
-                            </span>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Proyectos */}
-            {data.projects && data.projects.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-700 border-b border-slate-200 pb-2 mb-4">
-                        Proyectos Destacados
-                    </h2>
-                    <div className="space-y-3">
-                        {data.projects.map((proj) => (
-                            <div key={proj.id} className="break-inside-avoid">
-                                <h3 className="font-bold text-sm text-slate-900">{proj.name}</h3>
-                                <p className="text-sm text-slate-600">{proj.description}</p>
+                            <div key={skill.id} className="flex flex-col gap-1 min-w-[120px]">
+                                <span className="text-sm font-semibold" style={{ color: config.colors.secondary }}>{skill.name}</span>
+                                {config.layout.showExpertiseBar && (
+                                    <div className="flex items-center gap-2">
+                                        {config.layout.expertiseBarStyle === 'dots' ? (
+                                            <span className="text-[10px] opacity-40 tracking-widest leading-none">
+                                                {skill.level === 'Beginner' ? '●' :
+                                                    skill.level === 'Intermediate' ? '●●' :
+                                                        skill.level === 'Advanced' ? '●●●' : '●●●●'}
+                                            </span>
+                                        ) : (
+                                            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full transition-all duration-1000"
+                                                    style={{
+                                                        width: `${skill.proficiency || 0}%`,
+                                                        backgroundColor: config.colors.primary,
+                                                        backgroundImage: config.layout.expertiseBarStyle === 'gradient'
+                                                            ? `linear-gradient(to right, ${config.colors.primary}, ${config.colors.secondary})`
+                                                            : 'none'
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
                 </section>
             )}
 
-            {/* Idiomas */}
-            {data.languages && data.languages.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-700 border-b border-slate-200 pb-2 mb-4">
-                        Idiomas
+            {/* Certificaciones */}
+            {data.certifications && data.certifications.length > 0 && config.sections.certifications.visible && (
+                <section>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                        {config.sections.certifications.title || 'Certificaciones'}
                     </h2>
-                    <div className="flex flex-wrap gap-4">
-                        {data.languages.map((lang) => (
-                            <div key={lang.id} className="flex items-center gap-2">
-                                <span className="font-semibold text-sm text-slate-800">{lang.language}</span>
-                                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                                    {lang.fluency}
-                                </span>
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                        {data.certifications.map((cert) => (
+                            <div key={cert.id} className="text-sm flex justify-between gap-2 border-b border-dashed border-slate-100 pb-1">
+                                <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{cert.name}</span>
+                                <span className="text-[10px] opacity-50 shrink-0 uppercase">{cert.date}</span>
                             </div>
                         ))}
                     </div>
                 </section>
             )}
+
+            {/* Idiomas & Intereses */}
+            <div className="grid grid-cols-2 gap-8">
+                {data.languages && data.languages.length > 0 && config.sections.languages.visible && (
+                    <section>
+                        <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                            {config.sections.languages.title || 'Idiomas'}
+                        </h2>
+                        <div className="flex flex-col gap-2">
+                            {data.languages.map((lang) => (
+                                <div key={lang.id} className="flex justify-between items-center text-sm">
+                                    <span className="font-semibold">{lang.language}</span>
+                                    <span className="text-[10px] opacity-60 uppercase">{lang.fluency}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+                {data.interests && data.interests.length > 0 && config.sections.interests.visible && (
+                    <section>
+                        <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                            {config.sections.interests.title || 'Intereses'}
+                        </h2>
+                        <div className="flex flex-wrap gap-2">
+                            {data.interests.map((interest) => (
+                                <span key={interest.id} className="text-xs opacity-70">
+                                    • {interest.name}
+                                </span>
+                            ))}
+                        </div>
+                    </section>
+                )}
+            </div>
 
             {/* Footer - Branding sutil */}
-            <footer className="mt-auto pt-8 text-center">
-                <p className="text-[9px] text-slate-300 tracking-wider">
-                    Creado con CV-ConVos • cvconvos.com
+            <footer className="mt-auto pt-8 text-center border-t border-slate-50">
+                <p className="text-[9px] opacity-30 tracking-[0.2em] font-medium uppercase">
+                    Documento Generado por CV-ConVos
                 </p>
             </footer>
         </div>

@@ -3,12 +3,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import router as api_router
 import uvicorn
 
-app = FastAPI(title="CV Builder IA API")
+from contextlib import asynccontextmanager
+from app.core.logging import setup_logging
+
+from app.core.config import settings
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    setup_logging()
+    yield
+
+app = FastAPI(title="CV Builder IA API", lifespan=lifespan)
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the frontend URL
+    allow_origins=settings.CORS_ORIGINS.split(","),  # In production, specify the frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

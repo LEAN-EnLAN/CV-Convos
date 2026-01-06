@@ -5,10 +5,20 @@ import os
 # Forzamos la carga del .env sobreescribiendo cualquier variable de entorno global
 load_dotenv(override=True)
 
+from pydantic import Field, model_validator
+
 class Settings(BaseSettings):
-    GROQ_API_KEY: str = "placeholder_key"
+    GROQ_API_KEY: str = Field("placeholder_key", description="Groq API Key")
     PROJECT_NAME: str = "CV Builder IA"
     DEBUG: bool = True
+    CORS_ORIGINS: str = "http://localhost:3000"
+
+    @model_validator(mode='after')
+    def validate_config(self):
+        if self.GROQ_API_KEY == "placeholder_key":
+            # Log warning? We can't easily log here before logging setup.
+            pass
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",
