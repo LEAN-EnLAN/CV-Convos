@@ -88,7 +88,7 @@ export function Editor({
         setIsOptimizing(true);
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const res = await fetch(`${apiUrl}/api/optimize-cv?target=${action}`, {
+            const res = await fetch(`${apiUrl}/api/optimize-cv?target=${action}&section=${type}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -100,7 +100,8 @@ export function Editor({
 
             const optimizedData = await res.json();
 
-            // If the AI returns the whole CV object optimized, we update it
+            // The backend now returns the COMPLETE and VALID CVData object
+            // with the surgical merge already performed.
             if (optimizedData) {
                 const sanitizedData = ensureIds(optimizedData);
                 onChange(sanitizedData);
@@ -119,9 +120,16 @@ export function Editor({
         const path = improvement.target_field.split('.');
 
         let current = newData;
+        // Validate path before traversing
         for (let i = 0; i < path.length - 1; i++) {
             const part = path[i];
-            // Handle array indices if any (e.g., experience.0)
+
+            if (current === undefined || current === null) {
+                console.error(`Invalid path: ${improvement.target_field} (broken at ${part})`);
+                toast.error("Error: No se puede aplicar la mejora en este campo (ruta inválida).");
+                return;
+            }
+
             if (!isNaN(Number(part))) {
                 current = current[Number(part)];
             } else {
@@ -130,13 +138,18 @@ export function Editor({
         }
 
         const lastPart = path[path.length - 1];
-        if (!isNaN(Number(lastPart))) {
-            current[Number(lastPart)] = improvement.suggested_text;
+        if (current && typeof current === 'object') {
+            if (!isNaN(Number(lastPart))) {
+                current[Number(lastPart)] = improvement.suggested_text;
+            } else {
+                current[lastPart] = improvement.suggested_text;
+            }
+            onChange(newData);
+            toast.success("Mejora aplicada correctamente.");
         } else {
-            current[lastPart] = improvement.suggested_text;
+            console.error(`Cannot apply improvement: target is invalid`);
+            toast.error("Error al aplicar mejora.");
         }
-
-        onChange(newData);
     };
 
     const updatePersonalInfo = (field: string, value: string) => {

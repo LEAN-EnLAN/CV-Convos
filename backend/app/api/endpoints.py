@@ -32,8 +32,8 @@ async def generate_cv(files: List[UploadFile] = File(...)):
     return cv_data
 
 @router.post("/optimize-cv", response_model=CVData)
-async def optimize_cv(cv_data: CVDataInput, target: str = "shrink"):
-    optimized_data = await optimize_cv_data(cv_data.model_dump(), target)
+async def optimize_cv(cv_data: CVDataInput, target: str = "shrink", section: str = "all"):
+    optimized_data = await optimize_cv_data(cv_data.model_dump(), target, section)
     
     if not optimized_data:
         raise HTTPException(status_code=500, detail="AI optimization failed")

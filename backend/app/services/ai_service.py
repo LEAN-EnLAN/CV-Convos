@@ -6,48 +6,62 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 EXTRACT_CV_PROMPT = """
-You are an expert HR and ATS (Applicant Tracking System) optimizer. 
-Your task is to extract structured information from the following text (which can be a single CV or a collection of documents like cover letters, certifications, and LinkedIn profiles).
+You are a precision-focused HR Data Extractor. 
+Your task is to convert unstructured text into a structured CV JSON.
 
-The output MUST be a valid JSON object following this schema:
+CRITICAL TRUTH RULES:
+1. NEVER invent facts, dates, or skills.
+2. If a value is missing, use an empty string or empty list.
+3. DO NOT generate fake proficiency percentages or ratings.
+4. MAINTAIN the ORIGINAL LANGUAGE of the source text.
+
+RECRUITER HIERARCHY (Follow this order in summaries):
+1. Who you are (Identity/Name)
+2. What you do (Core professional expertise)
+3. Where you are (Location & Availability)
+4. What you've done (Experience)
+5. Tools you master (Skills)
+
+JSON SCHEMA:
 {{
-  "_analysis": "A detailed reasoning step where you analyze the candidate's profile, tone, and deduce implicit soft skills and technical depth before populating the fields.",
+  "_analysis": "Think step-by-step: Identify the candidate's core role and current location first.",
   "personalInfo": {{
-    "fullName": "Full name",
-    "email": "Email address",
-    "phone": "Phone number",
+    "fullName": "Name",
+    "email": "Email",
+    "phone": "Phone",
     "location": "City, Country",
-    "website": "URL (optional)",
-    "linkedin": "LinkedIn URL (optional)",
-    "github": "GitHub URL (optional)",
-    "summary": "A professional summary (3-4 sentences)"
+    "website": "URL",
+    "linkedin": "URL",
+    "github": "URL",
+    "availability": "Remote/On-site/Hybrid",
+    "summary": "Professional overview: [Identity] + [Core Value] + [Current Status]"
   }},
   "experience": [
     {{
-      "company": "Company Name",
-      "position": "Job Title",
+      "company": "Company",
+      "position": "Title",
       "startDate": "MM/YYYY",
       "endDate": "MM/YYYY or 'Present'",
       "current": boolean,
       "location": "City, Country",
-      "description": "2-3 sentences summary",
-      "highlights": ["Key achievement 1", "Key achievement 2"]
+      "description": "Clear role description focused on REAL responsibilities.",
+      "highlights": ["Specific achievement from text"]
     }}
   ],
   "education": [
     {{
       "institution": "University/School",
-      "degree": "Degree name",
-      "fieldOfStudy": "Field of study",
+      "degree": "Degree",
+      "fieldOfStudy": "Field",
       "startDate": "YYYY",
-      "endDate": "YYYY or 'Present'",
+      "endDate": "YYYY",
       "location": "City, Country",
-      "description": "Optional details"
+      "description": "Details"
     }}
   ],
   "skills": [
     {{
-      "name": "Skill name",
+      "name": "Skill",
       "level": "Beginner|Intermediate|Advanced|Expert",
       "category": "Soft Skills|Hard Skills|Languages"
     }}
@@ -56,31 +70,28 @@ The output MUST be a valid JSON object following this schema:
     {{
       "name": "Project Name",
       "description": "Short description",
-      "highlights": ["Detail 1", "Detail 2"],
-      "url": "Link (optional)",
-      "technologies": ["Tech 1", "Tech 2"]
+      "highlights": ["Detail 1"],
+      "url": "Link",
+      "technologies": ["Tech 1"]
     }}
   ],
   "languages": [
     {{
-      "language": "Language name",
+      "language": "Language",
       "fluency": "Native|Fluent|Conversational|Basic"
     }}
   ],
   "certifications": [
     {{
-      "name": "Certification name",
-      "issuer": "Issuing institution",
+      "name": "Certification",
+      "issuer": "Issuer",
       "date": "MM/YYYY"
     }}
   ]
 }}
 
-- If multiple files are provided, consolidate the information.
-- Use the methodology STAR for achievements.
-- DEDUCE soft skills (like leadership, communication, problem-solving) based on the experience descriptions and highlights.
-- IMPORTANT: You MUST maintain the ORIGINAL LANGUAGE of the source text for all fields. If the CV is in Spanish, the output values must be in Spanish. DO NOT TRANSLATE.
-- If information is missing, leave it as an empty string or empty list, but DO NOT invent facts.
+- If multiple files are provided, consolidate.
+- IMPORTANT: You MUST maintain the ORIGINAL LANGUAGE.
 - Output ONLY the JSON object.
 
 TEXT TO PROCESS:
@@ -135,21 +146,35 @@ async def extract_cv_data(text: str):
         return None
 
 OPTIMIZE_CV_PROMPT = """
-You are an expert HR editor. Your goal is to optimize the following CV data for {target}.
-The output MUST be a valid JSON object matching the input schema exactly.
+You are a Senior Career Coach. Your goal is to refine CV data for maximum clarity and recruiter impact.
 
-Current CV Data:
-{cv_json}
+ANTI-HALLUCINATION & SCHEMA RULES:
+1. NEVER invent metrics, percentages, or numbers.
+2. DO NOT add skills that the candidate does not possess.
+3. Focus on "Destilling" truth rather than "Decorating" with lies.
+4. Maintain ORIGINAL LANGUAGE.
+5. STRICT KEY ADHERENCE: You must use the EXACT JSON keys provided in the input. 
+   - For 'experience': Use 'company', 'position', 'startDate', 'endDate', 'highlights', 'description', 'location'. DO NOT use 'role', 'achievements', 'workPreference'.
+   - For 'skills': Use 'name', 'level', 'category'.
 
-INSTRUCTIONS:
-- If target is 'shrink': Concise everything. Reduce word count by 30-40%. Use punchy action verbs. Keep only the most impressive highlights.
-- If target is 'improve': Better vocabulary, clearer impact, STAR method.
-- DO NOT change facts (dates, company names, titles).
-- CRITICAL: You MUST maintain the ORIGINAL LANGUAGE of the CV data. If the input is in Spanish, the output MUST be in Spanish. DO NOT translate to English or any other language.
-- Return ONLY the JSON object.
+TARGET ACTION: {target}
+TARGET SECTION: {section}
+
+RECRUITER-FIRST INSTRUCTIONS:
+- Identify & Role: Ensure the summary starts with who they are and their primary job title.
+- Location: Make sure the location and work preference (remote/onsite) are clear.
+- Action Verbs: Use strong, professional verbs instead of passive ones.
+- Brevity: Keep bullet points punchy and factual.
+
+OUTPUT REQUIREMENT:
+Return ONLY the JSON for the optimized section '{section}'. 
+- If '{section}' is 'summary', return: {{"personalInfo": {{"summary": "your optimized summary"}}}}
+- If '{section}' is an array (like 'experience' or 'skills'), return: {{"{section}": [{{...}}, {{...}}]}}
 """
 
-async def optimize_cv_data(cv_data: dict, target: str = "shrink"):
+import copy
+
+async def optimize_cv_data(cv_data: dict, target: str = "shrink", section: str = "all"):
     if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
         return None
         
@@ -160,15 +185,32 @@ async def optimize_cv_data(cv_data: dict, target: str = "shrink"):
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You are a professional HR assistant. You MUST maintain the ORIGINAL LANGUAGE of the input data. DO NOT TRANSLATE. Return ONLY JSON."},
-                {"role": "user", "content": OPTIMIZE_CV_PROMPT.format(cv_json=cv_json, target=target)}
+                {"role": "system", "content": "You are a professional HR assistant. You MUST maintain the ORIGINAL LANGUAGE of the input data. DO NOT TRANSLATE. Return ONLY JSON for the specific section requested."},
+                {"role": "user", "content": OPTIMIZE_CV_PROMPT.format(cv_json=cv_json, target=target, section=section)}
             ],
             temperature=0.1,
             response_format={"type": "json_object"}
         )
         
-        content = completion.choices[0].message.content
-        return json.loads(content)
+        ai_response = json.loads(completion.choices[0].message.content)
+        
+        # Surgical Merge in Python: Always return a FULL CVData object
+        result_cv = copy.deepcopy(cv_data)
+        
+        if section == "all":
+            # If everything was requested, try to merge what AI returned
+            for key in ai_response:
+                if key in result_cv:
+                    result_cv[key] = ai_response[key]
+        elif section == "summary":
+            if "personalInfo" in ai_response and "summary" in ai_response["personalInfo"]:
+                result_cv["personalInfo"]["summary"] = ai_response["personalInfo"]["summary"]
+        elif section in ai_response:
+            # For array sections like 'experience', 'skills', etc.
+            result_cv[section] = ai_response[section]
+            
+        return result_cv
+        
     except Exception as e:
         logger.error(f"ERROR in optimize_cv_data: {str(e)}", exc_info=True)
         return None
