@@ -69,7 +69,7 @@ export interface Interest {
     keywords?: string[]; // Para palabras clave relacionadas
 }
 
-export type CVTemplate = 'professional' | 'modern' | 'harvard' | 'swiss';
+export type CVTemplate = 'professional' | 'modern' | 'harvard' | 'swiss' | 'creative' | 'tech';
 
 export interface SectionConfig {
     visible: boolean;

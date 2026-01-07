@@ -7,6 +7,8 @@ import { ProfessionalTemplate } from './templates/ProfessionalTemplate';
 import { ModernTemplate } from './templates/ModernTemplate';
 import { HarvardTemplate } from './templates/HarvardTemplate';
 import { SwissTemplate } from './templates/SwissTemplate';
+import { CreativeTemplate } from './templates/CreativeTemplate';
+import { TechTemplate } from './templates/TechTemplate';
 
 import { Button } from '@/components/ui/button';
 import { useReactToPrint } from 'react-to-print';
@@ -15,7 +17,7 @@ import {
     Layout, RotateCcw, RotateCw, Printer, ChevronDown,
     Palette, FileText, Sparkles, Eye, PenLine,
     Download, Share2, Settings2, Maximize2, Minimize2,
-    Undo2, Redo2, GraduationCap
+    Undo2, Redo2, GraduationCap, Terminal
 } from 'lucide-react';
 import { FinalizeExport } from './FinalizeExport';
 import { TemplateConfigurator } from './TemplateConfigurator';
@@ -74,6 +76,18 @@ const templateOptions = [
         name: 'Swiss',
         description: 'Diseño minimalista y audaz',
         icon: Layout
+    },
+    {
+        id: 'creative',
+        name: 'Creative',
+        description: 'Estilo editorial y audaz',
+        icon: Sparkles
+    },
+    {
+        id: 'tech',
+        name: 'Tech',
+        description: 'Optimizado para desarrolladores',
+        icon: Terminal
     },
 
 ];
@@ -366,6 +380,10 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                                         <HarvardTemplate data={data} />
                                     ) : template === 'swiss' ? (
                                         <SwissTemplate data={data} />
+                                    ) : template === 'creative' ? (
+                                        <CreativeTemplate data={data} />
+                                    ) : template === 'tech' ? (
+                                        <TechTemplate data={data} />
                                     ) : (
                                         <ModernTemplate data={data} />
                                     )}

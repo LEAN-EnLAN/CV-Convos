@@ -68,6 +68,22 @@ export function Editor({
     const [isOptimizing, setIsOptimizing] = React.useState(false);
     const [isCritiqueOpen, setIsCritiqueOpen] = React.useState(false);
 
+    // Helper to ensure all array items have unique IDs
+    const ensureIds = (cvData: any): CVData => {
+        const newData = { ...cvData };
+        const arrayFields = ['experience', 'education', 'skills', 'projects', 'languages', 'certifications', 'interests'];
+
+        arrayFields.forEach(field => {
+            if (Array.isArray(newData[field])) {
+                newData[field] = newData[field].map((item: any) => ({
+                    ...item,
+                    id: item.id || Math.random().toString(36).substr(2, 9)
+                }));
+            }
+        });
+        return newData;
+    };
+
     const optimizeContent = async (type: string, action: string) => {
         setIsOptimizing(true);
         try {
@@ -86,7 +102,8 @@ export function Editor({
 
             // If the AI returns the whole CV object optimized, we update it
             if (optimizedData) {
-                onChange(optimizedData);
+                const sanitizedData = ensureIds(optimizedData);
+                onChange(sanitizedData);
                 toast.success(`Contenido optimizado: ${type} mejorado con éxito.`);
             }
         } catch (error) {
