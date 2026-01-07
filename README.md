@@ -1,172 +1,62 @@
-# CV-ConVos
+# CV-ConVos 🚀
+### El constructor de CVs inteligente con IA
 
-[![Version](https://img.shields.io/badge/version-1.0-blue.svg)](https://github.com/your-repo/cv-convos)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status](https://img.shields.io/badge/status-MVP%20Complete-green.svg)]()
+Este proyecto es una aplicación web full-stack que permite generar, optimizar y analizar currículums de forma inteligente mediante el uso de inteligencia artificial (Groq/Llama 3).
 
-## 🎯 ¿Qué es CV-ConVos?
+## 🛠️ Estructura del Proyecto
 
-Constructor de CVs potenciado por IA que transforma documentos existentes (PDF, DOCX, TXT) en currículums profesionales optimizados para ATS usando LLMs (Groq Llama 3.3-70b).
+El repositorio se divide en dos partes principales:
+- `/frontend`: Aplicación Next.js (React) con Convex para Auth y Base de Datos.
+- `/backend`: API de Python (FastAPI) para el procesamiento de documentos e IA.
 
-## ✨ Características Principales
+## 🚀 Inicio Rápido (Local)
 
-- **Extracción con IA**: Upload múltiple de archivos con extracción de texto y estructuración usando metodología STAR
-- **Editor en Tiempo Real**: Edición en vivo con preview instantáneo, CRUD completo para todas las secciones
-- **Sistema de Templates**: Dos templates base (Modern y Professional) con gestión de layout A4
-- **Optimización Avanzada con IA**: "Magic Shrink" (síntesis 30-40%) y "Mejorar Contenido"
-- **Exportación PDF Nativa**: Generación de alta fidelidad directamente en el navegador
-- **Privacy-First**: Uso anónimo sin almacenamiento de datos
-
-## 🚀 Quick Start
-
-### Prerrequisitos
-- Node.js 18+
-- Python 3.8+
-- API Key de Groq (registrate en [groq.com](https://groq.com))
-
-### Instalación Rápida
-
+### 1. Clonar el repositorio
 ```bash
-# Clonar el repo
-git clone https://github.com/tu-usuario/cv-convos.git
-cd cv-convos
+git clone <tu-url-de-github>
+cd shadcn-practica
+```
 
-# Setup Backend
+### 2. Configurar el Backend (Python)
+```bash
 cd backend
+python -m venv .venv
+source .venv/bin/activate  # En Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env  # Agregar tu GROQ_API_KEY
+```
+- Crea un archivo `.env` en `/backend` con:
+  ```env
+  GROQ_API_KEY=tu_api_key_de_groq
+  CORS_ORIGINS=http://localhost:3000
+  ```
+- Ejecuta: `make dev` o `uvicorn app.main:app --reload`
 
-# Setup Frontend (en nueva terminal)
-cd frontend
+### 3. Configurar el Frontend (Next.js)
+```bash
+cd ../frontend
 npm install
-
-# Iniciar servicios
-# Terminal 1 - Backend
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Terminal 2 - Frontend
-cd frontend
-npm run dev
 ```
+- Configura Convex:
+  ```bash
+  npx convex dev
+  ```
+- Ejecuta: `npm run dev`
 
-Abre `http://localhost:3000` en tu navegador.
+---
 
-## 🏗️ Arquitectura del Proyecto
+## ☁️ Guía de Despliegue (Production)
 
-```
-cv-convos/
-├── frontend/          # Next.js 15+ + React 19 + TypeScript
-│   ├── src/
-│   │   ├── app/                    # App Router
-│   │   ├── components/
-│   │   │   ├── cv-builder/         # Core del builder
-│   │   │   └── ui/                 # Shadcn UI components
-│   │   ├── hooks/                  # Custom hooks
-│   │   ├── lib/                    # Utilidades
-│   │   └── types/                  # TypeScript definitions
-│   └── package.json
-├── backend/           # FastAPI + Python
-│   ├── app/
-│   │   ├── api/                    # Endpoints
-│   │   ├── core/                   # Configuración
-│   │   └── services/               # Lógica de negocio
-│   └── requirements.txt
-└── docs/              # Documentación adicional
-```
+### Backend (Render / Railway)
+- **Root Directory:** `backend`
+- **Plan:** Docker (Dockerfile incluido)
+- **Variables:** `GROQ_API_KEY`, `CORS_ORIGINS` (URL de Vercel)
 
-## 📚 Documentación Detallada
+### Frontend (Vercel)
+- **Root Directory:** `frontend`
+- **Framework:** Next.js
+- **Integraciones:** Convex Integration (Recomendado)
+- **Variables:** `NEXT_PUBLIC_API_URL` (URL del Backend desplegado)
 
-- **[Frontend](./frontend/README.md)** - Setup, arquitectura, estilos, componentes
-- **[Backend](./backend/README.md)** - API docs, configuración Groq, servicios
-
-## 🔌 API Endpoints
-
-### POST `/api/generate-cv`
-Genera un CV estructurado desde documentos subidos.
-
-**Request:**
-```json
-{
-  "files": ["base64_encoded_file1", "base64_encoded_file2"],
-  "file_types": ["pdf", "docx"]
-}
-```
-
-**Response:**
-```json
-{
-  "cv_data": {
-    "personalInfo": {...},
-    "experience": [...],
-    "education": [...],
-    "skills": [...],
-    "projects": [...]
-  }
-}
-```
-
-### POST `/api/optimize-cv`
-Optimiza contenido existente del CV (Magic Shrink o Improve Content).
-
-### POST `/api/critique-cv`
-Genera feedback y sugerencias de mejora para el CV.
-
-## 🛠️ Tech Stack
-
-### Frontend
-- Next.js 15+ (App Router)
-- React 19
-- TypeScript 5.x
-- Tailwind CSS 4
-- Shadcn UI (Radix UI)
-- Lucide React
-- Sonner (Toasts)
-- React-Dropzone
-
-### Backend
-- FastAPI (Python)
-- Groq (Llama 3.3-70b-versatile)
-- PyPDF2, python-docx (Parsing)
-- Pydantic (Validación)
-
-## 🤝 Contribuir
-
-¡Las contribuciones son bienvenidas! Revisa la [guía de contribución](./CONTRIBUTING.md) para más detalles.
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 🙏 Agradecimientos
-
-- Groq por proveer la API de LLMs de alta velocidad
-- Shadcn UI por los componentes base
-- La comunidad open source
-
-## 📞 Contacto & Soporte
-
-- Issues: [GitHub Issues](https://github.com/tu-usuario/cv-convos/issues)
-- Discusiones: [GitHub Discussions](https://github.com/tu-usuario/cv-convos/discussions)
-
-## 🗺️ Roadmap / Próximos Pasos
-
-### v1.1 (Próximo Release)
-- Sistema de autenticación de usuarios
-- Guardar CVs en la nube
-- Historial de versiones
-- Templates adicionales (Creative, Minimalist)
-- Exportación a DOCX
-
-### v1.2
-- Integración con LinkedIn
-- ATS score checker
-- Keyword optimization
-- Cover letter generator
-
-### v2.0 (Largo Plazo)
-- Sistema de suscripción premium
-- Templates personalizados
-- Integración con más LLM providers
-- Colaboración en tiempo real
-- API pública para integraciones
+## 🧪 Tests y Calidad
+- **Backend:** `cd backend && make test`
+- **Frontend:** `cd frontend && npm run test`
