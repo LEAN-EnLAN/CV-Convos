@@ -30,11 +30,12 @@ interface CritiqueModalProps {
     onClose: () => void;
     cvData: CVData;
     onApplyImprovement: (improvement: ImprovementCard) => void;
+    onScanComplete?: (results: CritiqueResponse) => void;
 }
 
-export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement }: CritiqueModalProps) {
+export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onScanComplete }: CritiqueModalProps) {
     const [step, setStep] = useState<'scanning' | 'results' | 'empty'>('scanning');
-    const [improvements, setImprovements] = useState<ImprovementCard[]>([]);
+    const [results, setResults] = useState<CritiqueResponse | null>(null);
     const [scanProgress, setScanProgress] = useState(0);
 
     const runScan = useCallback(async () => {
@@ -66,8 +67,9 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement }: C
 
             // Esperar al menos 2.5 segundos para que la animación se luzca
             setTimeout(() => {
-                setImprovements(data.critique || []);
+                setResults(data);
                 setStep(data.critique?.length > 0 ? 'results' : 'empty');
+                if (onScanComplete) onScanComplete(data);
                 clearInterval(interval);
             }, 2500);
 
@@ -86,18 +88,23 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement }: C
 
     const handleApply = (improvement: ImprovementCard) => {
         onApplyImprovement(improvement);
-        setImprovements(prev => prev.filter(i => i.id !== improvement.id));
-        toast.success(`Mejora aplicada: ${improvement.title}`);
-
-        if (improvements.length === 1) {
-            setStep('empty');
+        if (results) {
+            setResults({
+                ...results,
+                critique: results.critique.filter(i => i.id !== improvement.id)
+            });
+            if (results.critique.length === 1) setStep('empty');
         }
+        toast.success(`Mejora aplicada: ${improvement.title}`);
     };
 
     const handleDismiss = (id: string) => {
-        setImprovements(prev => prev.filter(i => i.id !== id));
-        if (improvements.length === 1) {
-            setStep('empty');
+        if (results) {
+            setResults({
+                ...results,
+                critique: results.critique.filter(i => i.id !== id)
+            });
+            if (results.critique.length === 1) setStep('empty');
         }
     };
 
@@ -160,18 +167,23 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement }: C
                             className="flex-1 flex flex-col overflow-hidden"
                         >
                             <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-                                <div>
-                                    <h2 className="text-xl font-bold flex items-center gap-2">
-                                        <ShieldCheck className="w-5 h-5 text-primary" />
-                                        Resultados del Análisis
-                                    </h2>
-                                    <p className="text-sm text-slate-400">Encontramos {improvements.length} puntos clave para optimizar.</p>
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center font-black text-lg ${results?.score && results.score >= 80 ? 'border-emerald-500 text-emerald-500' : 'border-amber-500 text-amber-500'}`}>
+                                        {results?.score || 0}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold flex items-center gap-2">
+                                            <ShieldCheck className="w-5 h-5 text-primary" />
+                                            Análisis Sentinel
+                                        </h2>
+                                        <p className="text-sm text-slate-400">{results?.overall_verdict}</p>
+                                    </div>
                                 </div>
                                 <Badge variant="outline" className="text-primary border-primary/30">AI Premium</Badge>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-                                {improvements.map((item, idx) => (
+                                {results?.critique.map((item, idx) => (
                                     <motion.div
                                         key={item.id}
                                         initial={{ opacity: 0, x: -20 }}

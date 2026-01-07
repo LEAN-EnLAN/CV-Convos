@@ -45,7 +45,7 @@ class CVData(BaseModel):
     certifications: List[Dict[str, Any]] = []
     interests: List[Any] = []
     
-    model_config = ConfigDict(extra='ignore')
+    model_config = ConfigDict(extra='allow')
 
 class CVDataInput(CVData):
     pass

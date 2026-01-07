@@ -15,8 +15,10 @@ interface TemplateProps {
  * - Sin colores: Protocolo estricto Ivy League
  * - ATS-Optimized: Estructura lineal y jerárquica
  */
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+
 export function HarvardTemplate({ data }: TemplateProps) {
-    const config = data.config!;
+    const config = data.config || DEFAULT_CONFIG;
 
     return (
         <div
@@ -25,7 +27,7 @@ export function HarvardTemplate({ data }: TemplateProps) {
                 fontFamily: "'Times New Roman', Georgia, serif",
                 backgroundColor: '#ffffff',
                 color: '#000000',
-                padding: 'var(--cv-gap) 2.54cm', // 1 inch actual margins
+                padding: '2.54cm', // 1 inch actual margins
                 fontSize: '12px',
             }}
         >

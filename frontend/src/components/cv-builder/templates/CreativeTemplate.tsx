@@ -13,15 +13,17 @@ interface TemplateProps {
  * - Layout: Asimétrico con Sidebar de color
  * - Elementos: Bloques de color sólido, tipografía masiva, espaciado generoso
  */
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+
 export function CreativeTemplate({ data }: TemplateProps) {
-    const config = data.config!;
+    const config = data.config || DEFAULT_CONFIG;
     const primaryColor = config.colors.primary;
     const secondaryColor = config.colors.secondary;
 
     return (
         <div
             className="w-[794px] min-h-[1122px] flex print:shadow-none bg-white relative overflow-hidden"
-            style={{ fontFamily: "'Inter', sans-serif" }}
+            style={{ fontFamily: "'Raleway', sans-serif" }}
         >
             {/* Background Accent - Decorative circle or shape */}
             <div
@@ -31,6 +33,7 @@ export function CreativeTemplate({ data }: TemplateProps) {
 
             {/* LEFT SIDEBAR (Bold Color) - 35% */}
             <aside
+                aria-label="Contact and Skills"
                 className="w-[35%] flex flex-col shrink-0 p-10 text-white relative z-10"
                 style={{ backgroundColor: primaryColor }}
             >
@@ -108,7 +111,7 @@ export function CreativeTemplate({ data }: TemplateProps) {
                     </div>
                     <h1
                         className="text-6xl font-black leading-none uppercase tracking-tighter mb-6"
-                        style={{ color: '#1a1a1a' }}
+                        style={{ color: '#1a1a1a', fontFamily: "'Playfair Display', serif" }}
                     >
                         {data.personalInfo.fullName.split(' ').map((name, i) => (
                             <span key={i} className="block">
@@ -131,9 +134,9 @@ export function CreativeTemplate({ data }: TemplateProps) {
                         </div>
                         <div className="space-y-10">
                             {data.experience.map((exp) => (
-                                <div key={exp.id} className="relative pl-8 border-l-2 border-gray-100 italic">
+                                <div key={exp.id} className="relative pl-8 border-l-2 italic" style={{ borderColor: `${primaryColor}30` }}>
                                     <div
-                                        className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full"
+                                        className="absolute left-[-6px] top-1.5 w-3 h-3 rounded-full border-2 border-white"
                                         style={{ backgroundColor: primaryColor }}
                                     />
                                     <div className="flex justify-between items-baseline mb-2">

@@ -8,6 +8,7 @@ export interface PersonalInfo {
     github?: string;
     twitter?: string;
     availability?: string;
+    role?: string; // Titulo/Subtitulo (ej: Senior Frontend Developer)
     summary: string;
 }
 
@@ -69,7 +70,7 @@ export interface Interest {
     keywords?: string[]; // Para palabras clave relacionadas
 }
 
-export type CVTemplate = 'professional' | 'modern' | 'harvard' | 'swiss' | 'creative' | 'tech';
+export type CVTemplate = 'professional' | 'harvard' | 'minimal' | 'creative' | 'tech' | 'bian';
 
 export interface SectionConfig {
     visible: boolean;
@@ -118,6 +119,7 @@ export interface CVData {
     languages: Language[];
     certifications: Certification[];
     interests: Interest[];
+    tools?: string[]; // Herramientas y sistemas (ej: Git, Jira, AWS)
     config?: TemplateConfig;
 }
 
@@ -134,5 +136,9 @@ export interface ImprovementCard {
 }
 
 export interface CritiqueResponse {
+    score: number;
+    one_page_viable: boolean;
+    word_count_estimate: number;
+    overall_verdict: string;
     critique: ImprovementCard[];
 }

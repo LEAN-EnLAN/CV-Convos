@@ -5,8 +5,10 @@ interface TemplateProps {
     data: CVData;
 }
 
-export function SwissTemplate({ data }: TemplateProps) {
-    const config = data.config!;
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+
+export function MinimalTemplate({ data }: TemplateProps) {
+    const config = data.config || DEFAULT_CONFIG;
 
     return (
         <div

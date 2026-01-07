@@ -1,7 +1,7 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from typing import List
 from app.services.parser_service import extract_text_from_file
-from app.services.ai_service import extract_cv_data, optimize_cv_data, critique_cv_data
+from app.services.ai_service import extract_cv_data, optimize_cv_data, critique_cv_data, optimize_for_role
 from app.api.schemas import CVDataInput, CVData
 
 router = APIRouter()
@@ -48,3 +48,13 @@ async def critique_cv(cv_data: CVDataInput):
         raise HTTPException(status_code=500, detail="AI critique failed")
         
     return critique_results
+
+@router.post("/interview-cv", response_model=CVData)
+async def interview_cv(cv_data: CVDataInput, target_role: str = Query(..., description="Target job position")):
+    """Optimize CV for a specific target role."""
+    result = await optimize_for_role(cv_data.model_dump(), target_role)
+    
+    if not result:
+        raise HTTPException(status_code=500, detail="AI role optimization failed")
+        
+    return result

@@ -152,20 +152,10 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
                 <DialogTrigger asChild>
                     <Button
                         size="lg"
-                        className="
-                            relative group overflow-hidden
-                            bg-gradient-to-r from-primary via-[#2dd4bf] to-primary
-                            bg-[length:200%_auto] animate-gradient
-                            hover:shadow-[0_0_20px_rgba(45,212,191,0.5)]
-                            border-0 text-white font-bold rounded-full px-8
-                            transition-all duration-300 transform hover:-translate-y-1
-                        "
+                        className="bg-slate-900 hover:bg-black text-white font-bold rounded-xl px-6 gap-2 shadow-lg"
                     >
-                        <span className="relative z-10 flex items-center gap-2">
-                            Finalizar CV
-                            <Rocket className="w-4 h-4 group-hover:animate-bounce" />
-                        </span>
-                        <div className="absolute inset-0 bg-white/20 group-hover:bg-white/30 transition-colors" />
+                        Finalizar CV
+                        <Rocket className="w-4 h-4" />
                     </Button>
                 </DialogTrigger>
 

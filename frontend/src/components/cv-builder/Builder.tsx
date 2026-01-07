@@ -4,93 +4,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CVData, CVTemplate } from '@/types/cv';
 import { Editor } from './Editor';
 import { ProfessionalTemplate } from './templates/ProfessionalTemplate';
-import { ModernTemplate } from './templates/ModernTemplate';
 import { HarvardTemplate } from './templates/HarvardTemplate';
-import { SwissTemplate } from './templates/SwissTemplate';
+import { MinimalTemplate } from './templates/MinimalTemplate';
 import { CreativeTemplate } from './templates/CreativeTemplate';
 import { TechTemplate } from './templates/TechTemplate';
+import { BianTemplate } from './templates/BianTemplate';
 
-import { Button } from '@/components/ui/button';
 import { useReactToPrint } from 'react-to-print';
 import { useCVHistory } from '@/hooks/use-cv-history';
-import {
-    Layout, RotateCcw, RotateCw, Printer, ChevronDown,
-    Palette, FileText, Sparkles, Eye, PenLine,
-    Download, Share2, Settings2, Maximize2, Minimize2,
-    Undo2, Redo2, GraduationCap, Terminal
-} from 'lucide-react';
-import { FinalizeExport } from './FinalizeExport';
-import { TemplateConfigurator } from './TemplateConfigurator';
+import { Eye } from 'lucide-react';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { Header, templateOptions } from './header/Header';
 
 interface BuilderProps {
     initialData: CVData;
     onReset: () => void;
 }
 
-const templateOptions = [
-    {
-        id: 'professional' as CVTemplate,
-        name: 'Profesional',
-        description: 'Diseño clásico y elegante',
-        icon: FileText
-    },
-    {
-        id: 'modern' as CVTemplate,
-        name: 'Moderno',
-        description: 'Con sidebar lateral',
-        icon: Layout
-    },
-    {
-        id: 'harvard',
-        name: 'Harvard',
-        description: 'Estilo Ivy League, ATS-Optimized',
-        icon: GraduationCap
-    },
-    {
-        id: 'swiss',
-        name: 'Swiss',
-        description: 'Diseño minimalista y audaz',
-        icon: Layout
-    },
-    {
-        id: 'creative',
-        name: 'Creative',
-        description: 'Estilo editorial y audaz',
-        icon: Sparkles
-    },
-    {
-        id: 'tech',
-        name: 'Tech',
-        description: 'Optimizado para desarrolladores',
-        icon: Terminal
-    },
 
-];
 
 // Density is now handled entirely within TemplateConfigurator and globals.css classes
 
@@ -99,7 +32,7 @@ export function Builder({ initialData, onReset }: BuilderProps) {
         ...initialData,
         config: initialData.config || DEFAULT_CONFIG
     });
-    const [template, setTemplate] = useState<CVTemplate>('modern');
+    const [template, setTemplate] = useState<CVTemplate>('creative');
     const [activeView, setActiveView] = useState<'editor' | 'preview'>('editor');
     const [scale, setScale] = useState(1);
     const [pages, setPages] = useState(1);
@@ -148,161 +81,16 @@ export function Builder({ initialData, onReset }: BuilderProps) {
         <TooltipProvider>
             <div className="flex flex-col h-screen overflow-hidden bg-background">
                 {/* Topbar */}
-                <header className="h-16 border-b bg-card flex items-center justify-between px-4 sm:px-6 shrink-0 z-20 no-print">
-                    {/* Left: Logo & Brand */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20">
-                            <span className="text-sm font-bold text-primary-foreground">CV</span>
-                        </div>
-                        <div className="hidden sm:block">
-                            <h1 className="font-bold tracking-tight">CV-ConVos</h1>
-                            <p className="text-xs text-muted-foreground">Editor de CV</p>
-                        </div>
-                    </div>
-
-                    {/* Center: View Toggle (Mobile) */}
-                    <div className="sm:hidden">
-                        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'editor' | 'preview')}>
-                            <TabsList className="h-9">
-                                <TabsTrigger value="editor" className="gap-1.5 text-xs">
-                                    <PenLine className="w-3.5 h-3.5" />
-                                    Editar
-                                </TabsTrigger>
-                                <TabsTrigger value="preview" className="gap-1.5 text-xs">
-                                    <Eye className="w-3.5 h-3.5" />
-                                    Vista
-                                </TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                    </div>
-
-                    {/* Right: Actions */}
-                    <div className="flex items-center gap-2">
-                        {/* Template Selector */}
-                        <DropdownMenu>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-                                            <Palette className="w-4 h-4" />
-                                            <span className="hidden md:inline">Plantilla:</span>
-                                            <span className="font-semibold">{currentTemplate?.name}</span>
-                                            <ChevronDown className="w-3 h-3 opacity-50" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Cambiar plantilla</TooltipContent>
-                            </Tooltip>
-                            <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuLabel>Elegí una plantilla</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                {templateOptions.map((opt) => (
-                                    <DropdownMenuItem
-                                        key={opt.id}
-                                        onClick={() => setTemplate(opt.id as CVTemplate)}
-                                        className="flex items-center gap-3 py-3"
-                                    >
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${template === opt.id
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'bg-muted'
-                                            }`}>
-                                            <opt.icon className="w-5 h-5" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium">{opt.name}</span>
-                                                {template === opt.id && (
-                                                    <Badge variant="secondary" className="text-xs">Activa</Badge>
-                                                )}
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">{opt.description}</p>
-                                        </div>
-                                    </DropdownMenuItem>
-                                ))}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem disabled className="text-muted-foreground">
-                                    <Sparkles className="w-4 h-4 mr-2" />
-                                    Más plantillas próximamente
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        {/* Mobile Template Button */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild className="sm:hidden">
-                                <Button variant="outline" size="icon">
-                                    <Palette className="w-4 h-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {templateOptions.map((opt) => (
-                                    <DropdownMenuItem
-                                        key={opt.id}
-                                        onClick={() => setTemplate(opt.id as CVTemplate)}
-                                    >
-                                        {opt.name}
-                                        {template === opt.id && ' ✓'}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <div className="w-px h-6 bg-border hidden sm:block" />
-
-                        {/* Reset Button */}
-                        <Dialog>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                                            <RotateCcw className="w-4 h-4" />
-                                        </Button>
-                                    </DialogTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Empezar de nuevo</TooltipContent>
-                            </Tooltip>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>¿Empezar de nuevo?</DialogTitle>
-                                    <DialogDescription>
-                                        Se perderán todos los cambios que hayas hecho en tu CV.
-                                        Esta acción no se puede deshacer.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="flex gap-3 justify-end mt-4">
-                                    <Button variant="outline">Cancelar</Button>
-                                    <Button variant="destructive" onClick={onReset}>
-                                        Sí, empezar de nuevo
-                                    </Button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-
-                        <DropdownMenu>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="gap-2">
-                                            <Settings2 className="w-4 h-4" />
-                                            <span className="hidden lg:inline">Ajustes</span>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Configuración Visual</TooltipContent>
-                            </Tooltip>
-                            <DropdownMenuContent align="end" className="w-80 p-4 max-h-[80vh] overflow-y-auto">
-                                <DropdownMenuLabel>Control Total del Diseño</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <TemplateConfigurator
-                                    config={data.config!}
-                                    onChange={(config) => setData({ ...data, config })}
-                                />
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <FinalizeExport data={data} onDownloadPDF={handlePrint} />
-                    </div>
-                </header>
+                <Header
+                    data={data}
+                    setData={setData}
+                    template={template}
+                    setTemplate={setTemplate}
+                    onReset={onReset}
+                    activeView={activeView}
+                    setActiveView={setActiveView}
+                    onDownloadPDF={handlePrint}
+                />
 
                 {/* Main Workspace */}
                 <div className="flex flex-1 overflow-hidden">
@@ -310,6 +98,7 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                     <div className={`
                         w-full sm:w-[420px] lg:w-[480px] border-r bg-card shrink-0 
                         ${activeView === 'preview' ? 'hidden sm:block' : 'block'}
+                        print:hidden
                     `}>
                         <Editor
                             data={data}
@@ -318,6 +107,7 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                             redo={redo}
                             canUndo={canUndo}
                             canRedo={canRedo}
+                            onFinalize={handlePrint}
                         />
                     </div>
 
@@ -327,6 +117,7 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                         className={`
                             flex-1 bg-muted/30 overflow-auto p-4 sm:p-8 lg:p-12 scrollbar-thin
                             ${activeView === 'editor' ? 'hidden sm:block' : 'block'}
+                            print:block print:w-full print:h-auto print:overflow-visible print:p-0 print:m-0
                         `}
                     >
                         <div className="max-w-fit mx-auto">
@@ -378,14 +169,14 @@ export function Builder({ initialData, onReset }: BuilderProps) {
                                         <ProfessionalTemplate data={data} />
                                     ) : template === 'harvard' ? (
                                         <HarvardTemplate data={data} />
-                                    ) : template === 'swiss' ? (
-                                        <SwissTemplate data={data} />
-                                    ) : template === 'creative' ? (
-                                        <CreativeTemplate data={data} />
+                                    ) : template === 'minimal' ? (
+                                        <MinimalTemplate data={data} />
                                     ) : template === 'tech' ? (
                                         <TechTemplate data={data} />
+                                    ) : template === 'bian' ? (
+                                        <BianTemplate data={data} />
                                     ) : (
-                                        <ModernTemplate data={data} />
+                                        <CreativeTemplate data={data} />
                                     )}
                                 </div>
                             </div>

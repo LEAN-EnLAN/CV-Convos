@@ -33,8 +33,17 @@ import {
     User, Briefcase, GraduationCap, Code, Plus, Trash2,
     Mail, Phone, MapPin, FileText, Sparkles, Wand2,
     Loader2, Scissors, Zap, Undo2, Redo2,
-    Linkedin, Github, Globe, Twitter, Clock, Languages, Award, Heart
+    Linkedin, Github, Globe, Twitter, Clock, Languages, Award, Heart,
+    Target, FileDown, Rocket, ShieldCheck, CheckCircle2, Wrench
 } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -55,6 +64,7 @@ interface EditorProps {
     redo: () => void;
     canUndo: boolean;
     canRedo: boolean;
+    onFinalize?: () => void;
 }
 
 export function Editor({
@@ -63,15 +73,20 @@ export function Editor({
     undo,
     redo,
     canUndo,
-    canRedo
+    canRedo,
+    onFinalize
 }: EditorProps) {
     const [isOptimizing, setIsOptimizing] = React.useState(false);
     const [isCritiqueOpen, setIsCritiqueOpen] = React.useState(false);
+    const [showInterviewModal, setShowInterviewModal] = React.useState(false);
+    const [targetRole, setTargetRole] = React.useState('');
+    const [cvScore, setCvScore] = React.useState<number | null>(null);
+    const [cvVerdict, setCvVerdict] = React.useState<string>('Escaneá tu CV para ver tu puntaje');
 
     // Helper to ensure all array items have unique IDs
     const ensureIds = (cvData: any): CVData => {
         const newData = { ...cvData };
-        const arrayFields = ['experience', 'education', 'skills', 'projects', 'languages', 'certifications', 'interests'];
+        const arrayFields = ['experience', 'education', 'skills', 'projects', 'languages', 'certifications', 'interests', 'tools'];
 
         arrayFields.forEach(field => {
             if (Array.isArray(newData[field])) {
@@ -110,6 +125,52 @@ export function Editor({
         } catch (error) {
             console.error('AI Optimization Error:', error);
             toast.error("Error al optimizar con AI. Verificá que el servidor esté corriendo.");
+        } finally {
+            setIsOptimizing(false);
+        }
+    };
+
+    // Optimize CV for a specific target role
+    const optimizeForRole = async () => {
+        if (!targetRole.trim()) {
+            toast.error("Por favor ingresá el puesto objetivo.");
+            return;
+        }
+        setIsOptimizing(true);
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const res = await fetch(
+                `${apiUrl}/api/interview-cv?target_role=${encodeURIComponent(targetRole)}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                }
+            );
+            if (!res.ok) throw new Error('Failed');
+            const optimizedData = await res.json();
+            onChange(ensureIds(optimizedData));
+            toast.success(`CV optimizado para: ${targetRole}`);
+            setShowInterviewModal(false);
+            setTargetRole('');
+        } catch (error) {
+            console.error('Role optimization error:', error);
+            toast.error("Error al optimizar para el puesto.");
+        } finally {
+            setIsOptimizing(false);
+        }
+    };
+
+    // Try to compress CV to one page
+    const tryOnePage = async () => {
+        setIsOptimizing(true);
+        toast.info("Comprimiendo CV a una página...");
+        try {
+            await optimizeContent('summary', 'shrink');
+            await optimizeContent('experience', 'shrink');
+            toast.success("CV comprimido. Revisá el preview.");
+        } catch (error) {
+            toast.error("Error al comprimir.");
         } finally {
             setIsOptimizing(false);
         }
@@ -187,7 +248,51 @@ export function Editor({
                     onClose={() => setIsCritiqueOpen(false)}
                     cvData={data}
                     onApplyImprovement={applyImprovement}
+                    onScanComplete={(res) => {
+                        setCvScore(res.score);
+                        setCvVerdict(res.overall_verdict);
+                    }}
                 />
+
+                {/* Interview Modal - Optimize for Role */}
+                <Dialog open={showInterviewModal} onOpenChange={setShowInterviewModal}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Target className="w-5 h-5 text-primary" />
+                                Optimizar para Puesto
+                            </DialogTitle>
+                            <DialogDescription>
+                                Ingresá el puesto que buscás y optimizaremos tu CV para destacar en esa posición.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <Label htmlFor="targetRole" className="text-sm font-medium">
+                                Puesto Objetivo
+                            </Label>
+                            <Input
+                                id="targetRole"
+                                placeholder="Ej: Desarrollador Frontend, Data Analyst, Diseñador UX..."
+                                value={targetRole}
+                                onChange={(e) => setTargetRole(e.target.value)}
+                                className="mt-2"
+                                onKeyDown={(e) => e.key === 'Enter' && optimizeForRole()}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowInterviewModal(false)}>
+                                Cancelar
+                            </Button>
+                            <Button onClick={optimizeForRole} disabled={isOptimizing}>
+                                {isOptimizing ? (
+                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Optimizando...</>
+                                ) : (
+                                    <><Wand2 className="w-4 h-4 mr-2" /> Optimizar CV</>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Editor Toolbar: Compact & Functional */}
                 <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/20 shrink-0 h-12">
@@ -264,6 +369,15 @@ export function Editor({
                                     <Sparkles className="w-4 h-4 mr-2" />
                                     <span>Sugerir Skills</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setShowInterviewModal(true)}>
+                                    <Target className="w-4 h-4 mr-2" />
+                                    <span>Optimizar para Puesto</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={tryOnePage}>
+                                    <FileDown className="w-4 h-4 mr-2" />
+                                    <span>Intentar One-Page</span>
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -272,10 +386,10 @@ export function Editor({
                 {/* Scrollable Form Area */}
                 <div className="flex-1 overflow-hidden relative">
                     <ScrollArea className="h-full w-full">
-                        <Accordion type="single" collapsible defaultValue="personal" className="w-full pb-4">
+                        <Accordion type="single" collapsible defaultValue="personal" className="w-full pb-32">
                             {/* Personal Info Section */}
-                            <AccordionItem value="personal" className="border-b">
-                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                            <AccordionItem value="personal" className="border-b group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                                             <User className="w-4 h-4" />
@@ -302,11 +416,12 @@ export function Editor({
                                             />
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label htmlFor="email" className="text-xs font-semibold uppercase text-muted-foreground">
                                                     Email
                                                 </Label>
+                                                {/* Force Rebuild */}
                                                 <Input
                                                     id="email"
                                                     name="email"
@@ -317,6 +432,21 @@ export function Editor({
                                                     className="h-10 bg-background/50"
                                                 />
                                             </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="role" className="text-xs font-semibold uppercase text-muted-foreground">
+                                                    Título / Rol
+                                                </Label>
+                                                <Input
+                                                    id="role"
+                                                    placeholder="Ej: Senior Frontend Developer"
+                                                    value={data.personalInfo.role || ''}
+                                                    onChange={(e) => updatePersonalInfo('role', e.target.value)}
+                                                    className="h-10 bg-background/50"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label htmlFor="phone" className="text-xs font-semibold uppercase text-muted-foreground">
                                                     Teléfono
@@ -331,20 +461,20 @@ export function Editor({
                                                     className="h-10 bg-background/50"
                                                 />
                                             </div>
-                                        </div>
 
-                                        <div className="space-y-2">
-                                            <Label htmlFor="location" className="text-xs font-semibold uppercase text-muted-foreground">
-                                                Ubicación
-                                            </Label>
-                                            <Input
-                                                id="location"
-                                                name="address"
-                                                placeholder="Buenos Aires, Argentina"
-                                                value={data.personalInfo.location}
-                                                onChange={(e) => updatePersonalInfo('location', e.target.value)}
-                                                className="h-10 bg-background/50"
-                                            />
+                                            <div className="space-y-2">
+                                                <Label htmlFor="location" className="text-xs font-semibold uppercase text-muted-foreground">
+                                                    Ubicación
+                                                </Label>
+                                                <Input
+                                                    id="location"
+                                                    name="address"
+                                                    placeholder="Buenos Aires, Argentina"
+                                                    value={data.personalInfo.location}
+                                                    onChange={(e) => updatePersonalInfo('location', e.target.value)}
+                                                    className="h-10 bg-background/50"
+                                                />
+                                            </div>
                                         </div>
 
                                         <Separator className="my-2" />
@@ -353,7 +483,7 @@ export function Editor({
                                             <Label className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
                                                 <Globe className="w-3 h-3" /> Redes & Enlaces
                                             </Label>
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div className="relative">
                                                     <Linkedin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                                     <Input
@@ -427,11 +557,11 @@ export function Editor({
                                             </div>
                                             <Textarea
                                                 id="summary"
-                                                rows={5}
-                                                maxLength={500}
-                                                placeholder="Describí tus objetivos..."
+                                                placeholder="Breve descripción profesional..."
                                                 value={data.personalInfo.summary}
                                                 onChange={(e) => updatePersonalInfo('summary', e.target.value)}
+                                                maxLength={500}
+                                                rows={4}
                                                 className="resize-none bg-background/50 leading-relaxed"
                                             />
                                         </div>
@@ -440,8 +570,8 @@ export function Editor({
                             </AccordionItem>
 
                             {/* Experience Section */}
-                            <AccordionItem value="experience" className="border-b">
-                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                            <AccordionItem value="experience" className="border-b group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
                                             <Briefcase className="w-4 h-4" />
@@ -468,7 +598,7 @@ export function Editor({
                                                 </Button>
 
                                                 <div className="space-y-3 pr-6">
-                                                    <div className="grid grid-cols-2 gap-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                         <Input
                                                             placeholder="Empresa"
                                                             value={exp.company}
@@ -482,7 +612,7 @@ export function Editor({
                                                             className="h-9 text-sm"
                                                         />
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                         <Input
                                                             placeholder="Inicio"
                                                             value={exp.startDate}
@@ -523,8 +653,8 @@ export function Editor({
                             </AccordionItem>
 
                             {/* Education Section */}
-                            <AccordionItem value="education" className="border-b">
-                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                            <AccordionItem value="education" className="border-b group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                                             <GraduationCap className="w-4 h-4" />
@@ -559,7 +689,7 @@ export function Editor({
                                                             className="h-9 text-sm font-semibold"
                                                         />
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                         <Input
                                                             placeholder="Título"
                                                             value={edu.degree}
@@ -593,8 +723,8 @@ export function Editor({
                             </AccordionItem>
 
                             {/* Skills Section */}
-                            <AccordionItem value="skills" className="border-b">
-                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                            <AccordionItem value="skills" className="border-b group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
                                             <Code className="w-4 h-4" />
@@ -660,8 +790,8 @@ export function Editor({
                             </AccordionItem>
 
                             {/* Projects Section */}
-                            <AccordionItem value="projects" className="border-none">
-                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                            <AccordionItem value="projects" className="border-b group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
                                             <Sparkles className="w-4 h-4" />
@@ -717,8 +847,8 @@ export function Editor({
                             </AccordionItem>
 
                             {/* Languages Section */}
-                            <AccordionItem value="languages" className="border-b">
-                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                            <AccordionItem value="languages" className="border-b group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
                                             <Languages className="w-4 h-4" />
@@ -778,8 +908,8 @@ export function Editor({
                             </AccordionItem>
 
                             {/* Certifications Section */}
-                            <AccordionItem value="certifications" className="border-b">
-                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                            <AccordionItem value="certifications" className="border-b group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
                                             <Award className="w-4 h-4" />
@@ -841,17 +971,17 @@ export function Editor({
                                 </AccordionContent>
                             </AccordionItem>
 
-                            {/* Interests Section */}
-                            <AccordionItem value="interests" className="border-none">
-                                <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 hover:no-underline [&[data-state=open]]:bg-muted/20">
+                            {/* Tools & Systems Step */}
+                            <AccordionItem value="tools" className="border-b group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
-                                            <Heart className="w-4 h-4" />
+                                        <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                            <Wrench className="w-4 h-4" />
                                         </div>
                                         <div className="text-left flex items-center gap-2">
-                                            <p className="text-sm font-bold text-foreground/80">Intereses</p>
-                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-pink-50 text-pink-600 border-none font-medium">
-                                                {data.interests?.length || 0}
+                                            <p className="text-sm font-bold text-foreground/80">Herramientas</p>
+                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-orange-50 text-orange-600 border-none font-medium">
+                                                {data.tools?.length || 0}
                                             </Badge>
                                         </div>
                                     </div>
@@ -859,7 +989,77 @@ export function Editor({
                                 <AccordionContent className="px-5 pb-6 pt-2">
                                     <div className="space-y-3">
                                         <div className="flex flex-wrap gap-2">
-                                            {data.interests?.map((interest, index) => (
+                                            {data.tools?.map((tool, index) => (
+                                                <Badge key={index} variant="secondary" className="pl-2 pr-1 py-1 gap-1 hover:bg-orange-100 transition-colors">
+                                                    {tool}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-4 w-4 rounded-full hover:bg-orange-200/50 hover:text-orange-700"
+                                                        onClick={() => {
+                                                            const newTools = [...(data.tools || [])];
+                                                            newTools.splice(index, 1);
+                                                            onChange({ ...data, tools: newTools });
+                                                        }}
+                                                    >
+                                                        <Trash2 className="w-2.5 h-2.5" />
+                                                    </Button>
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                id="new-tool-input"
+                                                placeholder="Nueva herramienta (ej: Jira, AWS)..."
+                                                className="h-9 text-sm"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const val = (e.currentTarget as HTMLInputElement).value;
+                                                        if (val.trim()) {
+                                                            const newTools = [...(data.tools || [])];
+                                                            newTools.push(val.trim());
+                                                            onChange({ ...data, tools: newTools });
+                                                            (e.currentTarget as HTMLInputElement).value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    const input = document.getElementById('new-tool-input') as HTMLInputElement;
+                                                    if (input && input.value.trim()) {
+                                                        const newTools = [...(data.tools || [])];
+                                                        newTools.push(input.value.trim());
+                                                        onChange({ ...data, tools: newTools });
+                                                        input.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+
+                            {/* Interests Section */}
+                            <AccordionItem value="interests" className="border-none group">
+                                <AccordionTrigger className="px-5 py-4 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:no-underline [&[data-state=open]]:bg-muted/20 transition-all data-[state=open]:border-l-4 data-[state=open]:border-primary">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
+                                            <Heart className="w-4 h-4" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-sm font-bold text-foreground/80">Intereses</p>
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="px-5 pb-6 pt-2">
+                                    <div className="space-y-3">
+                                        <div className="flex flex-wrap gap-2">
+                                            {data.interests.map((interest, index) => (
                                                 <Badge key={interest.id} variant="secondary" className="pl-2 pr-1 py-1 gap-1 hover:bg-pink-100 transition-colors">
                                                     {interest.name}
                                                     <Button
@@ -880,10 +1080,10 @@ export function Editor({
                                                 className="h-9 text-sm"
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
-                                                        const val = (e.target as HTMLInputElement).value;
+                                                        const val = (e.currentTarget as HTMLInputElement).value;
                                                         if (val.trim()) {
                                                             addArrayItem('interests', { name: val.trim() });
-                                                            (e.target as HTMLInputElement).value = '';
+                                                            (e.currentTarget as HTMLInputElement).value = '';
                                                         }
                                                     }
                                                 }}
@@ -909,28 +1109,47 @@ export function Editor({
                     </ScrollArea>
                 </div>
 
-                {/* Footer Toolbar */}
-                <div className="border-t bg-card p-3 flex items-center justify-between gap-2 shrink-0 z-10">
-                    <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest pl-1">
-                            Acciones
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 text-[11px] font-bold uppercase tracking-tight"
+                {/* Floating Sentinel Hub: Creative Replacement for Footer */}
+                <div className="absolute bottom-6 left-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                    <div className="bg-slate-950/90 backdrop-blur-xl rounded-2xl p-4 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between group">
+                        <div
+                            className="flex items-center gap-3 cursor-pointer"
                             onClick={() => setIsCritiqueOpen(true)}
                         >
-                            <FileText className="w-3 h-3 mr-1" />
-                            Validar
-                        </Button>
-                        <Button size="sm" className="h-8 text-[11px] font-bold uppercase tracking-tight shadow-sm bg-gray-900 text-white hover:bg-black">
-                            <Zap className="w-3 h-3 mr-1" />
-                            Finalizar
-                        </Button>
+                            <div className="relative">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${cvScore ? (cvScore >= 80 ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]') : 'border-white/20'}`}>
+                                    {cvScore ? (
+                                        <span className={`text-sm font-black ${cvScore >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>{cvScore}</span>
+                                    ) : (
+                                        <ShieldCheck className="w-5 h-5 text-white/50" />
+                                    )}
+                                </div>
+                                {!cvScore && (
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-ping" />
+                                )}
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-0.5">Sentinel AI</p>
+                                <p className="text-xs font-bold text-white truncate max-w-[180px] group-hover:text-primary transition-colors">
+                                    {cvVerdict}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        size="icon"
+                                        className="h-10 w-10 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                                        onClick={onFinalize}
+                                    >
+                                        <Rocket className="w-5 h-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Finalizar y Exportar</TooltipContent>
+                            </Tooltip>
+                        </div>
                     </div>
                 </div>
             </div>
