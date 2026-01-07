@@ -93,7 +93,8 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
         files.forEach((file) => formData.append('files', file));
 
         try {
-            const response = await fetch('http://localhost:8000/api/generate-cv', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/api/generate-cv`, {
                 method: 'POST',
                 body: formData,
             });
