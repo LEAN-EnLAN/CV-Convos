@@ -13,8 +13,8 @@ El repositorio se divide en dos partes principales:
 
 ### 1. Clonar el repositorio
 ```bash
-git clone <tu-url-de-github>
-cd shadcn-practica
+git clone https://github.com/LEAN-EnLAN/CV-Convos.git
+cd cv-convos
 ```
 
 ### 2. Configurar el Backend (Python)
