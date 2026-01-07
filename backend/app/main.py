@@ -16,10 +16,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="CV Builder IA API", lifespan=lifespan)
 
 # Configure CORS
+origins = settings.CORS_ORIGINS.split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS.split(","),  # In production, specify the frontend URL
-    allow_credentials=True,
+    allow_origins=origins,
+    allow_credentials=False, # Must be False if using "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
