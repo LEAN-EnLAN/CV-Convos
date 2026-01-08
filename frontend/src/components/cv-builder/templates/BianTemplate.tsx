@@ -173,13 +173,13 @@ export const BianTemplate: React.FC<TemplateProps> = ({ data }) => {
                     </section>
                 )}
 
-                {/* Idiomas / Languages - Styled similarly to Skills header if exists */}
+                {/* Idiomas / Languages */}
                 {languages.length > 0 && (
                     <section className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8 pt-4">
                         <div>
                             <div className="bg-slate-200 py-2 px-4 inline-block w-full text-center sm:text-left">
                                 <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
-                                    Idiomas
+                                    {config?.sections.languages.title || 'Idiomas'}
                                 </h2>
                             </div>
                         </div>
@@ -187,6 +187,46 @@ export const BianTemplate: React.FC<TemplateProps> = ({ data }) => {
                             {languages.map((lang) => (
                                 <p key={lang.id} className="text-sm font-bold text-slate-700">
                                     {lang.language} <span className="text-slate-400 font-normal">- {lang.fluency}</span>
+                                </p>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Herramientas / Tools */}
+                {data.tools && data.tools.length > 0 && config?.sections?.tools?.visible && (
+                    <section className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8 pt-4">
+                        <div>
+                            <div className="bg-slate-200 py-2 px-4 inline-block w-full text-center sm:text-left">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                                    {config?.sections?.tools?.title || 'Herramientas'}
+                                </h2>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                            {data.tools.map((tool, i) => (
+                                <p key={i} className="text-sm font-bold text-slate-700 italic">
+                                    {tool}
+                                </p>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Intereses / Interests */}
+                {data.interests && data.interests.length > 0 && config?.sections?.interests?.visible && (
+                    <section className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8 pt-4">
+                        <div>
+                            <div className="bg-slate-200 py-2 px-4 inline-block w-full text-center sm:text-left">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                                    {config?.sections?.interests?.title || 'Intereses'}
+                                </h2>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                            {data.interests.map((interest) => (
+                                <p key={interest.id} className="text-sm font-medium text-slate-600">
+                                    • {interest.name}
                                 </p>
                             ))}
                         </div>

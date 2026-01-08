@@ -27,6 +27,7 @@ export const DEFAULT_CONFIG: TemplateConfig = {
         languages: { visible: true, title: 'Idiomas' },
         certifications: { visible: true, title: 'Certificaciones' },
         interests: { visible: true, title: 'Intereses' },
+        tools: { visible: true, title: 'Herramientas' },
     },
 };
 
@@ -57,5 +58,6 @@ export const BRUTALIST_CONFIG: TemplateConfig = {
         languages: { visible: true, title: 'LANGUAGES' },
         certifications: { visible: true, title: 'CERTIFICATIONS' },
         interests: { visible: true, title: 'INTERESTS' },
+        tools: { visible: true, title: 'TOOLS' },
     },
 };

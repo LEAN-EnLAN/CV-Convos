@@ -198,3 +198,26 @@ async def optimize_for_role(cv_data: dict, target_role: str):
         ai_response["config"] = original_copy["config"]
     
     return ai_response
+
+LINKEDIN_PROMPT = """
+Actúa como un experto en Personal Branding de élite. 
+Escribe un post de LinkedIn VIRAL y PROFESIONAL para este CV: {cv_json}
+
+ESTRUCTURA OBLIGATORIA:
+1. HOOK: Una frase provocadora o un logro masivo (ej. "Pasé de X a Y..." o "Después de 5 años en...").
+2. CUERPO: 3 puntos de valor "punchy" usando emojis minimalistas.
+3. PERSONALIDAD: Menciona una pasión o skill blanda que los haga humanos.
+4. CTA: "Si buscas a alguien que [PROBLEMA QUE RESUELVEN], hablemos."
+5. HASHTAGS: 3 relevantes (ej. #TechTrends #OpenToWork).
+
+REGLAS:
+- Máximo 150 palabras.
+- Tono: Seguro, no desesperado.
+- Idioma: El mismo del CV.
+
+Return JSON: {{ "post_content": "texto aquí" }}
+"""
+
+async def generate_linkedin_post(cv_data: dict):
+    cv_json = json.dumps(cv_data, indent=2)
+    return await get_ai_completion(LINKEDIN_PROMPT.format(cv_json=cv_json))

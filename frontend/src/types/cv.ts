@@ -105,6 +105,7 @@ export interface TemplateConfig {
         languages: SectionConfig;
         certifications: SectionConfig;
         interests: SectionConfig;
+        tools: SectionConfig;
     };
 }
 

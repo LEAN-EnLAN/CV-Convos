@@ -132,7 +132,9 @@ export function HarvardTemplate({ data }: TemplateProps) {
             {/* ADDITIONAL INFORMATION */}
             {((data.skills.length > 0 && config.sections.skills.visible) ||
                 (data.languages && data.languages.length > 0 && config.sections.languages.visible) ||
-                (data.certifications && data.certifications.length > 0 && config.sections.certifications.visible)) && (
+                (data.certifications && data.certifications.length > 0 && config.sections.certifications.visible) ||
+                (data.tools && data.tools.length > 0 && config.sections.tools.visible) ||
+                (data.interests && data.interests.length > 0 && config.sections.interests.visible)) && (
                     <section className="mb-6">
                         <h2 className="text-[14px] font-bold uppercase border-b border-black mb-2 pb-0.5 tracking-wider">
                             {config.sections.skills.title || 'ADDITIONAL INFORMATION'}
@@ -151,6 +153,14 @@ export function HarvardTemplate({ data }: TemplateProps) {
                                     </span>
                                 </div>
                             )}
+                            {data.tools && data.tools.length > 0 && config.sections.tools?.visible && (
+                                <div className="flex">
+                                    <span className="font-bold w-32 shrink-0">Tools:</span>
+                                    <span className="flex-1">
+                                        {data.tools.join('; ')}
+                                    </span>
+                                </div>
+                            )}
                             {data.languages && data.languages.length > 0 && config.sections.languages.visible && (
                                 <div className="flex">
                                     <span className="font-bold w-32 shrink-0">Languages:</span>
@@ -164,6 +174,14 @@ export function HarvardTemplate({ data }: TemplateProps) {
                                     <span className="font-bold w-32 shrink-0">Certifications:</span>
                                     <span className="flex-1">
                                         {data.certifications.map(c => `${c.name} (${c.issuer})`).join('; ')}
+                                    </span>
+                                </div>
+                            )}
+                            {data.interests && data.interests.length > 0 && config.sections.interests?.visible && (
+                                <div className="flex italic opacity-80">
+                                    <span className="font-bold w-32 shrink-0 not-italic">Interests:</span>
+                                    <span className="flex-1">
+                                        {data.interests.map(i => i.name).join(', ')}
                                     </span>
                                 </div>
                             )}

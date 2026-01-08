@@ -76,7 +76,7 @@ export function CreativeTemplate({ data }: TemplateProps) {
                 )}
 
                 {/* Languages */}
-                {data.languages && data.languages.length > 0 && (
+                {data.languages && data.languages.length > 0 && config.sections.languages.visible && (
                     <div className="mb-12">
                         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 opacity-60">
                             {config.sections.languages.title || 'Languages'}
@@ -87,6 +87,34 @@ export function CreativeTemplate({ data }: TemplateProps) {
                                     <span>{lang.language}</span>
                                     <span className="opacity-60">{lang.fluency}</span>
                                 </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Tools - Systems */}
+                {data.tools && data.tools.length > 0 && config.sections.tools?.visible && (
+                    <div className="mb-12">
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 opacity-60">
+                            {config.sections.tools?.title || 'Tools'}
+                        </h2>
+                        <div className="flex flex-wrap gap-2 text-[10px] font-medium opacity-80 leading-relaxed italic">
+                            {data.tools.join(' • ')}
+                        </div>
+                    </div>
+                )}
+
+                {/* Interests */}
+                {data.interests && data.interests.length > 0 && config.sections.interests?.visible && (
+                    <div className="mb-12">
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 opacity-60">
+                            {config.sections.interests?.title || 'Interests'}
+                        </h2>
+                        <div className="flex flex-wrap gap-2">
+                            {data.interests.map((interest) => (
+                                <span key={interest.id} className="text-[10px] opacity-70">
+                                    #{interest.name.toLowerCase().replace(/\s+/g, '')}
+                                </span>
                             ))}
                         </div>
                     </div>

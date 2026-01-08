@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { CVData } from '@/types/cv';
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+import { LinkedinModal } from './LinkedinModal';
 
 
 interface FinalizeExportProps {
@@ -38,6 +39,7 @@ interface FinalizeExportProps {
 
 export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
     const [isStoryOpen, setIsStoryOpen] = useState(false);
+    const [isLinkedinOpen, setIsLinkedinOpen] = useState(false);
     const [downloading, setDownloading] = useState<string | null>(null);
     const storyRef = useRef<HTMLDivElement>(null);
 
@@ -138,8 +140,9 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
     };
 
     const handleLinkedInShare = () => {
-        const url = encodeURIComponent(window.location.href);
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+        // En lugar de compartir URL, descargamos el PDF preventivamente y abrimos modal IA
+        onDownloadPDF();
+        setIsLinkedinOpen(true);
     };
 
     // Obtener el título profesional del usuario
@@ -298,6 +301,12 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <LinkedinModal
+                isOpen={isLinkedinOpen}
+                onClose={() => setIsLinkedinOpen(false)}
+                data={data}
+            />
 
             {/* Instagram Story Dialog */}
             <Dialog open={isStoryOpen} onOpenChange={setIsStoryOpen}>

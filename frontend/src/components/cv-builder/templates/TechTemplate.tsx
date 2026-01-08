@@ -191,7 +191,7 @@ export function TechTemplate({ data }: TemplateProps) {
                     )}
 
                     {/* Certifications */}
-                    {data.certifications && data.certifications.length > 0 && (
+                    {data.certifications && data.certifications.length > 0 && config.sections.certifications.visible && (
                         <section className="break-inside-avoid">
                             <h3 className="text-[9px] font-black uppercase mb-2.5 tracking-widest text-gray-900">Certifications</h3>
                             <div className="space-y-2">
@@ -200,6 +200,36 @@ export function TechTemplate({ data }: TemplateProps) {
                                         <div className="text-[10px] font-bold leading-tight">{cert.name}</div>
                                         <div className="text-[8px] text-gray-400">{cert.issuer} • {cert.date}</div>
                                     </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Tools & Systems */}
+                    {data.tools && data.tools.length > 0 && config.sections.tools?.visible && (
+                        <section className="break-inside-avoid">
+                            <h3 className="text-[9px] font-black uppercase mb-2.5 tracking-widest text-gray-900">
+                                {config.sections.tools?.title || 'Tools & Systems'}
+                            </h3>
+                            <div className="flex flex-wrap gap-1.5 font-mono text-[9px] opacity-70">
+                                {data.tools.map((tool, i) => (
+                                    <span key={i} className="bg-gray-100 px-1 py-0.5 rounded tracking-tighter">
+                                        {tool}
+                                    </span>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Interests */}
+                    {data.interests && data.interests.length > 0 && config.sections.interests?.visible && (
+                        <section className="break-inside-avoid">
+                            <h3 className="text-[9px] font-black uppercase mb-2.5 tracking-widest text-gray-900">
+                                {config.sections.interests?.title || 'Interests'}
+                            </h3>
+                            <div className="flex flex-wrap gap-2 text-[10px] opacity-60 italic">
+                                {data.interests.map(interest => (
+                                    <span key={interest.id}>{interest.name}</span>
                                 ))}
                             </div>
                         </section>

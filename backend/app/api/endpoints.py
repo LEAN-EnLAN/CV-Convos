@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from typing import List
 from app.services.parser_service import extract_text_from_file
-from app.services.ai_service import extract_cv_data, optimize_cv_data, critique_cv_data, optimize_for_role
+from app.services.ai_service import extract_cv_data, optimize_cv_data, critique_cv_data, optimize_for_role, generate_linkedin_post
 from app.api.schemas import CVDataInput, CVData
 
 router = APIRouter()
@@ -57,4 +57,14 @@ async def interview_cv(cv_data: CVDataInput, target_role: str = Query(..., descr
     if not result:
         raise HTTPException(status_code=500, detail="AI role optimization failed")
         
+    return result
+
+@router.post("/generate-linkedin-post")
+async def generate_linkedin_post_endpoint(cv_data: CVDataInput):
+    """Generate a LinkedIn post content based on CV data."""
+    result = await generate_linkedin_post(cv_data.model_dump())
+    
+    if not result:
+        raise HTTPException(status_code=500, detail="AI post generation failed")
+    
     return result

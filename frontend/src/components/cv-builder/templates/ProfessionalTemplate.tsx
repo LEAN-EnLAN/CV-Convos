@@ -202,27 +202,39 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
                 </section>
             )}
 
-            {/* Idiomas & Intereses */}
+            {/* Idiomas, Herramientas & Intereses */}
             <div className="grid grid-cols-2 gap-8">
-                {data.languages && data.languages.length > 0 && config.sections.languages.visible && (
+                <div className="space-y-6">
+                    {data.languages && data.languages.length > 0 && config.sections.languages.visible && (
+                        <section>
+                            <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                                {config.sections.languages.title || 'Idiomas'}
+                            </h2>
+                            <div className="flex flex-col gap-2">
+                                {data.languages.map((lang) => (
+                                    <div key={lang.id} className="flex justify-between items-center text-sm">
+                                        <span className="font-semibold">{lang.language}</span>
+                                        <span className="text-[10px] opacity-60 uppercase">{lang.fluency}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+                    {data.tools && data.tools.length > 0 && config.sections.tools?.visible && (
+                        <section>
+                            <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                                {config.sections.tools?.title || 'Herramientas'}
+                            </h2>
+                            <div className="flex flex-wrap gap-2 text-xs opacity-80 leading-relaxed italic">
+                                {data.tools.join(' • ')}
+                            </div>
+                        </section>
+                    )}
+                </div>
+                {data.interests && data.interests.length > 0 && config.sections.interests?.visible && (
                     <section>
                         <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
-                            {config.sections.languages.title || 'Idiomas'}
-                        </h2>
-                        <div className="flex flex-col gap-2">
-                            {data.languages.map((lang) => (
-                                <div key={lang.id} className="flex justify-between items-center text-sm">
-                                    <span className="font-semibold">{lang.language}</span>
-                                    <span className="text-[10px] opacity-60 uppercase">{lang.fluency}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
-                {data.interests && data.interests.length > 0 && config.sections.interests.visible && (
-                    <section>
-                        <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
-                            {config.sections.interests.title || 'Intereses'}
+                            {config.sections.interests?.title || 'Intereses'}
                         </h2>
                         <div className="flex flex-wrap gap-2">
                             {data.interests.map((interest) => (

@@ -118,6 +118,22 @@ export function MinimalTemplate({ data }: TemplateProps) {
                     </div>
                 )}
 
+                {/* Tools */}
+                {data.tools && data.tools.length > 0 && config.sections.tools?.visible && (
+                    <div className="space-y-3">
+                        <h3 className="font-bold uppercase tracking-widest text-[10px] mb-2" style={{ color: config.colors.primary }}>
+                            {config.sections.tools?.title || 'Tools'}
+                        </h3>
+                        <div className="flex flex-wrap gap-1">
+                            {data.tools.map((tool, i) => (
+                                <span key={i} className="text-[10px] font-medium px-2 py-0.5 rounded italic opacity-70 border" style={{ borderColor: `${config.colors.primary}20` }}>
+                                    {tool}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Interests */}
                 {data.interests && data.interests.length > 0 && config.sections.interests.visible && (
                     <div className="space-y-3">
