@@ -22,7 +22,7 @@ export function CreativeTemplate({ data }: TemplateProps) {
 
     return (
         <div
-            className="w-[794px] min-h-[1122px] flex print:shadow-none bg-white relative overflow-hidden"
+            className="w-[794px] min-h-[1122px] flex print:shadow-none bg-background relative overflow-hidden"
             style={{ fontFamily: "'Raleway', sans-serif" }}
         >
             {/* Background Accent - Decorative circle or shape */}
@@ -34,7 +34,7 @@ export function CreativeTemplate({ data }: TemplateProps) {
             {/* LEFT SIDEBAR (Bold Color) - 35% */}
             <aside
                 aria-label="Contact and Skills"
-                className="w-[35%] flex flex-col shrink-0 p-10 text-white relative z-10"
+                className="w-[35%] flex flex-col shrink-0 p-10 text-primary-foreground relative z-10"
                 style={{ backgroundColor: primaryColor }}
             >
                 {/* Contact Block */}

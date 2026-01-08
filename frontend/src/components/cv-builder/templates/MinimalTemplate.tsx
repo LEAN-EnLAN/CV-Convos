@@ -71,15 +71,18 @@ export function MinimalTemplate({ data }: TemplateProps) {
                                         color: config.colors.text
                                     }}
                                 >
-                                    <div className="relative z-10 flex justify-between items-center w-full gap-2">
+<div className="relative z-10 flex justify-between items-center w-full gap-2">
                                         <span>{skill.name}</span>
-                                        {config.layout.showExpertiseBar && config.layout.expertiseBarStyle === 'dots' && (
-                                            <span className="text-[8px] opacity-60 tracking-widest">
-                                                {skill.level === 'Beginner' ? '•' :
-                                                    skill.level === 'Intermediate' ? '••' :
-                                                        skill.level === 'Advanced' ? '•••' : '••••'}
-                                            </span>
-                                        )}
+                                    </div>
+
+                                    <div
+                                        className="absolute bottom-0 left-0 h-0.5"
+                                        style={{
+                                            width: `${skill.proficiency || 0}%`,
+                                            backgroundColor: config.colors.primary,
+                                            transition: 'width 1s ease-out'
+                                        }}
+                                    />
                                     </div>
 
                                     {config.layout.showExpertiseBar && config.layout.expertiseBarStyle !== 'dots' && (

@@ -170,30 +170,15 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
                         {data.skills.map((skill) => (
                             <div key={skill.id} className="flex flex-col gap-1 min-w-[120px]">
                                 <span className="text-sm font-semibold" style={{ color: config.colors.secondary }}>{skill.name}</span>
-                                {config.layout.showExpertiseBar && (
-                                    <div className="flex items-center gap-2">
-                                        {config.layout.expertiseBarStyle === 'dots' ? (
-                                            <span className="text-[10px] opacity-40 tracking-widest leading-none">
-                                                {skill.level === 'Beginner' ? '●' :
-                                                    skill.level === 'Intermediate' ? '●●' :
-                                                        skill.level === 'Advanced' ? '●●●' : '●●●●'}
-                                            </span>
-                                        ) : (
-                                            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full transition-all duration-1000"
-                                                    style={{
-                                                        width: `${skill.proficiency || 0}%`,
-                                                        backgroundColor: config.colors.primary,
-                                                        backgroundImage: config.layout.expertiseBarStyle === 'gradient'
-                                                            ? `linear-gradient(to right, ${config.colors.primary}, ${config.colors.secondary})`
-                                                            : 'none'
-                                                    }}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                <div className="w-full h-1 bg-border rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full transition-all duration-200"
+                                        style={{
+                                            width: `${skill.proficiency || 0}%`,
+                                            backgroundColor: config.colors.primary,
+                                        }}
+                                    />
+                                </div>
                             </div>
                         ))}
                     </div>

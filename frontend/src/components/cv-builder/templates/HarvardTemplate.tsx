@@ -25,14 +25,14 @@ export function HarvardTemplate({ data }: TemplateProps) {
             className="w-[794px] min-h-[1122px] text-[12px] leading-[1.4] print:shadow-none mx-auto"
             style={{
                 fontFamily: "'Times New Roman', Georgia, serif",
-                backgroundColor: '#ffffff',
-                color: '#000000',
+                backgroundColor: 'oklch(1 0 0)',
+                color: 'oklch(0.15 0.02 280)',
                 padding: '2.54cm', // 1 inch actual margins
                 fontSize: '12px',
             }}
         >
             {/* Header - Nombre masivo y centrado */}
-            <header className="text-center mb-8 border-b-2 border-black pb-4">
+            <header className="text-center mb-8 border-b-2 border-foreground pb-4">
                 <h1 className="text-3xl font-bold uppercase tracking-tight mb-2">
                     {data.personalInfo.fullName}
                 </h1>
@@ -145,7 +145,7 @@ export function HarvardTemplate({ data }: TemplateProps) {
                                         {data.skills.map((s, i) => (
                                             <React.Fragment key={s.id}>
                                                 {i > 0 && '; '}
-                                                {s.name}{config.layout.showExpertiseBar && ` (${s.level})`}
+                                                {s.name}
                                             </React.Fragment>
                                         ))}
                                     </span>
