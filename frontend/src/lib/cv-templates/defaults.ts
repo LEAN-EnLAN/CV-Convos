@@ -2,11 +2,11 @@ import { TemplateConfig } from '@/types/cv';
 
 export const DEFAULT_CONFIG: TemplateConfig = {
     colors: {
-        primary: '#059669', // Emerald 600
-        secondary: '#0f172a', // Slate 900
-        accent: '#10b981', // Emerald 500
-        background: '#ffffff',
-        text: '#1e293b', // Slate 800
+        primary: 'oklch(0.55 0.18 155)', // Sentinel Emerald
+        secondary: 'oklch(0.15 0.02 280)', // Sentinel Slate
+        accent: 'oklch(0.70 0.12 175)', // Sentinel Teal
+        background: 'oklch(1 0 0)', // White
+        text: 'oklch(0.15 0.02 280)', // Sentinel Slate
     },
     fonts: {
         heading: 'Inter',
@@ -17,8 +17,6 @@ export const DEFAULT_CONFIG: TemplateConfig = {
         contentGap: 24,
         sectionGap: 32,
         density: 'standard',
-        showExpertiseBar: true,
-        expertiseBarStyle: 'gradient',
     },
     sections: {
         summary: { visible: true, title: 'Sobre Mí' },
@@ -34,11 +32,11 @@ export const DEFAULT_CONFIG: TemplateConfig = {
 
 export const BRUTALIST_CONFIG: TemplateConfig = {
     colors: {
-        primary: '#000000',
-        secondary: '#000000',
-        accent: '#ffffff',
-        background: '#ffffff',
-        text: '#000000',
+        primary: 'oklch(0.55 0.18 155)', // Sentinel Emerald
+        secondary: 'oklch(0.15 0.02 280)', // Sentinel Slate
+        accent: 'oklch(0.70 0.12 175)', // Sentinel Teal
+        background: 'oklch(1 0 0)', // White
+        text: 'oklch(0.15 0.02 280)', // Sentinel Slate
     },
     fonts: {
         heading: 'Space Mono',
@@ -49,8 +47,6 @@ export const BRUTALIST_CONFIG: TemplateConfig = {
         contentGap: 0,
         sectionGap: 0,
         density: 'compact',
-        showExpertiseBar: false,
-        expertiseBarStyle: 'solid',
     },
     sections: {
         summary: { visible: true, title: 'SUMMARY' },

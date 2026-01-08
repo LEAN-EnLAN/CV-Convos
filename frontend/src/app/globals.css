@@ -56,96 +56,96 @@
 :root {
   --radius: 0.75rem;
 
-  /* CV-ConVos Light Theme - Tonos cálidos y verdes vibrantes */
+  /* Sentinel Design System - Unified Light Theme */
   --background: oklch(0.98 0.005 90);
-  --foreground: oklch(0.22 0.02 50);
+  --foreground: oklch(0.15 0.02 280);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.02 50);
+  --card-foreground: oklch(0.15 0.02 280);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.02 50);
+  --popover-foreground: oklch(0.15 0.02 280);
 
-  /* Primary: Verde esmeralda vibrante */
+  /* Primary: Sentinel Emerald - Consistent across all components */
   --primary: oklch(0.55 0.18 155);
   --primary-foreground: oklch(0.99 0 0);
 
-  /* Secondary: Arena/Beige suave */
-  --secondary: oklch(0.94 0.02 85);
-  --secondary-foreground: oklch(0.35 0.03 50);
+  /* Secondary: Slate - Clean contrast */
+  --secondary: oklch(0.96 0.01 280);
+  --secondary-foreground: oklch(0.15 0.02 280);
 
-  --muted: oklch(0.96 0.01 90);
-  --muted-foreground: oklch(0.50 0.02 50);
+  --muted: oklch(0.94 0.01 280);
+  --muted-foreground: oklch(0.45 0.02 280);
 
-  /* Accent: Turquesa/Teal */
-  --accent: oklch(0.85 0.08 175);
-  --accent-foreground: oklch(0.25 0.05 175);
+  /* Accent: Sentinel Teal */
+  --accent: oklch(0.70 0.12 175);
+  --accent-foreground: oklch(0.15 0.02 280);
 
   --destructive: oklch(0.60 0.22 25);
-  --border: oklch(0.90 0.01 85);
-  --input: oklch(0.92 0.01 85);
+  --border: oklch(0.88 0.01 280);
+  --input: oklch(0.92 0.01 280);
   --ring: oklch(0.55 0.18 155);
 
   --chart-1: oklch(0.55 0.18 155);
-  --chart-2: oklch(0.65 0.15 175);
-  --chart-3: oklch(0.72 0.12 85);
+  --chart-2: oklch(0.70 0.12 175);
+  --chart-3: oklch(0.94 0.01 280);
   --chart-4: oklch(0.60 0.16 45);
-  --chart-5: oklch(0.55 0.14 280);
+  --chart-5: oklch(0.45 0.14 280);
 
   --sidebar: oklch(0.98 0.005 90);
-  --sidebar-foreground: oklch(0.22 0.02 50);
+  --sidebar-foreground: oklch(0.15 0.02 280);
   --sidebar-primary: oklch(0.55 0.18 155);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.02 85);
-  --sidebar-accent-foreground: oklch(0.35 0.03 50);
-  --sidebar-border: oklch(0.90 0.01 85);
+  --sidebar-accent: oklch(0.96 0.01 280);
+  --sidebar-accent-foreground: oklch(0.15 0.02 280);
+  --sidebar-border: oklch(0.88 0.01 280);
   --sidebar-ring: oklch(0.55 0.18 155);
 }
 
 .dark {
-  /* CV-ConVos Dark Theme - Elegante y profesional */
-  --background: oklch(0.14 0.01 280);
-  --foreground: oklch(0.95 0.005 90);
+  /* Sentinel Design System - Unified Dark Theme */
+  --background: oklch(0.11 0.01 280);
+  --foreground: oklch(0.92 0.01 90);
 
-  --card: oklch(0.18 0.01 280);
-  --card-foreground: oklch(0.95 0.005 90);
+  --card: oklch(0.15 0.01 280);
+  --card-foreground: oklch(0.92 0.01 90);
 
-  --popover: oklch(0.18 0.01 280);
-  --popover-foreground: oklch(0.95 0.005 90);
+  --popover: oklch(0.15 0.01 280);
+  --popover-foreground: oklch(0.92 0.01 90);
 
-  /* Primary: Verde esmeralda brillante en oscuro */
+  /* Primary: Sentinel Emerald - Bright in dark context */
   --primary: oklch(0.70 0.18 155);
-  --primary-foreground: oklch(0.15 0.02 155);
+  --primary-foreground: oklch(0.11 0.01 280);
 
-  /* Secondary: Gris cálido */
-  --secondary: oklch(0.25 0.01 280);
-  --secondary-foreground: oklch(0.90 0.005 90);
+  /* Secondary: Dark Slate */
+  --secondary: oklch(0.20 0.01 280);
+  --secondary-foreground: oklch(0.92 0.01 90);
 
-  --muted: oklch(0.22 0.01 280);
-  --muted-foreground: oklch(0.65 0.005 90);
+  --muted: oklch(0.18 0.01 280);
+  --muted-foreground: oklch(0.55 0.01 90);
 
-  /* Accent: Turquesa brillante */
-  --accent: oklch(0.30 0.05 175);
-  --accent-foreground: oklch(0.85 0.08 175);
+  /* Accent: Sentinel Teal - Vibrant in dark */
+  --accent: oklch(0.75 0.12 175);
+  --accent-foreground: oklch(0.11 0.01 280);
 
   --destructive: oklch(0.65 0.22 25);
-  --border: oklch(0.28 0.01 280);
-  --input: oklch(0.25 0.01 280);
+  --border: oklch(0.25 0.01 280);
+  --input: oklch(0.22 0.01 280);
   --ring: oklch(0.70 0.18 155);
 
   --chart-1: oklch(0.70 0.18 155);
-  --chart-2: oklch(0.75 0.15 175);
-  --chart-3: oklch(0.78 0.10 85);
+  --chart-2: oklch(0.75 0.12 175);
+  --chart-3: oklch(0.94 0.01 280);
   --chart-4: oklch(0.72 0.16 45);
-  --chart-5: oklch(0.68 0.14 280);
+  --chart-5: oklch(0.55 0.14 280);
 
-  --sidebar: oklch(0.16 0.01 280);
-  --sidebar-foreground: oklch(0.95 0.005 90);
+  --sidebar: oklch(0.13 0.01 280);
+  --sidebar-foreground: oklch(0.92 0.01 90);
   --sidebar-primary: oklch(0.70 0.18 155);
-  --sidebar-primary-foreground: oklch(0.15 0.02 155);
-  --sidebar-accent: oklch(0.25 0.01 280);
-  --sidebar-accent-foreground: oklch(0.90 0.005 90);
-  --sidebar-border: oklch(0.28 0.01 280);
+  --sidebar-primary-foreground: oklch(0.11 0.01 280);
+  --sidebar-accent: oklch(0.20 0.01 280);
+  --sidebar-accent-foreground: oklch(0.92 0.01 90);
+  --sidebar-border: oklch(0.25 0.01 280);
   --sidebar-ring: oklch(0.70 0.18 155);
 }
 
@@ -160,70 +160,58 @@
 }
 
 /* =============================================
- * CV-ConVos Custom Animations
+ * Sentinel Design System - Unified Animations
  * ============================================= */
 
-@keyframes float {
-
-  0%,
-  100% {
+@keyframes sentinel-float {
+  0%, 100% {
     transform: translateY(0px);
   }
-
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
 }
 
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 20px oklch(0.55 0.18 155 / 0.3);
+@keyframes sentinel-pulse {
+  0%, 100% {
+    opacity: 1;
   }
-
   50% {
-    box-shadow: 0 0 40px oklch(0.55 0.18 155 / 0.5);
+    opacity: 0.7;
   }
 }
 
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
+@keyframes sentinel-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px oklch(0.55 0.18 155 / 0.2);
   }
-
   50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
+    box-shadow: 0 0 30px oklch(0.55 0.18 155 / 0.4);
   }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+.animate-sentinel-float {
+  animation: sentinel-float 4s ease-in-out infinite;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
+.animate-sentinel-pulse {
+  animation: sentinel-pulse 2s ease-in-out infinite;
 }
 
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 4s ease infinite;
+.animate-sentinel-glow {
+  animation: sentinel-glow 3s ease-in-out infinite;
 }
 
-/* Glassmorphism utility */
+/* Sentinel Glassmorphism */
 .glass {
-  background: oklch(1 0 0 / 0.7);
+  background: oklch(1 0 0 / 0.8);
   backdrop-filter: blur(20px);
-  border: 1px solid oklch(1 0 0 / 0.2);
+  border: 1px solid oklch(0.88 0.01 280 / 0.3);
 }
 
 .dark .glass {
-  background: oklch(0.18 0.01 280 / 0.7);
-  border: 1px solid oklch(1 0 0 / 0.1);
+  background: oklch(0.15 0.01 280 / 0.8);
+  border: 1px solid oklch(0.25 0.01 280 / 0.4);
 }
 
 /* Hide scrollbar but keep functionality */

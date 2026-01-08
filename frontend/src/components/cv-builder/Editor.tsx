@@ -1109,28 +1109,28 @@ export function Editor({
                     </ScrollArea>
                 </div>
 
-                {/* Floating Sentinel Hub: Creative Replacement for Footer */}
-                <div className="absolute bottom-6 left-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                    <div className="bg-slate-950/90 backdrop-blur-xl rounded-2xl p-4 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between group">
+                {/* Sentinel Hub */}
+                <div className="absolute bottom-6 left-6 right-6 z-50 glass">
+                    <div className="flex items-center justify-between p-4">
                         <div
                             className="flex items-center gap-3 cursor-pointer"
                             onClick={() => setIsCritiqueOpen(true)}
                         >
                             <div className="relative">
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${cvScore ? (cvScore >= 80 ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]') : 'border-white/20'}`}>
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${cvScore ? (cvScore >= 80 ? 'border-primary shadow-[0_0_15px_rgba(85,255,155,0.3)]' : 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]') : 'border-border'}`}>
                                     {cvScore ? (
-                                        <span className={`text-sm font-black ${cvScore >= 80 ? 'text-emerald-500' : 'text-amber-500'}`}>{cvScore}</span>
+                                        <span className={`text-sm font-black ${cvScore >= 80 ? 'text-primary' : 'text-amber-500'}`}>{cvScore}</span>
                                     ) : (
-                                        <ShieldCheck className="w-5 h-5 text-white/50" />
+                                        <ShieldCheck className="w-5 h-5 text-muted-foreground" />
                                     )}
                                 </div>
                                 {!cvScore && (
-                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-ping" />
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-sentinel-pulse" />
                                 )}
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-0.5">Sentinel AI</p>
-                                <p className="text-xs font-bold text-white truncate max-w-[180px] group-hover:text-primary transition-colors">
+                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Sentinel AI</p>
+                                <p className="text-xs font-bold text-foreground truncate max-w-[180px] group-hover:text-primary transition-colors">
                                     {cvVerdict}
                                 </p>
                             </div>
@@ -1141,7 +1141,7 @@ export function Editor({
                                 <TooltipTrigger asChild>
                                     <Button
                                         size="icon"
-                                        className="h-10 w-10 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                                        className="h-10 w-10 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 transition-all"
                                         onClick={onFinalize}
                                     >
                                         <Rocket className="w-5 h-5" />

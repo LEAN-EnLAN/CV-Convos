@@ -139,25 +139,14 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                 </div>
 
                 <div className="max-w-6xl mx-auto px-6 py-12">
-                    {/* Header with Logo Placeholder */}
-                    <header className="flex items-center justify-between mb-16">
-                        <div className="flex items-center gap-3">
-                            {/* PLACEHOLDER: Logo de la empresa */}
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
-                                <span className="text-xl font-bold text-primary-foreground">CV</span>
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold tracking-tight">CV-ConVos</h1>
-                                <p className="text-xs text-muted-foreground">Tu CV, tu historia</p>
-                            </div>
+                    {/* Header */}
+                    <header className="flex items-center gap-3 mb-16">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
+                            <span className="text-xl font-bold text-primary-foreground">CV</span>
                         </div>
-
-                        {/* PLACEHOLDER: Logo cliente/partner */}
-                        <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-border">
-                            <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center">
-                                <span className="text-xs font-medium text-muted-foreground">LOGO</span>
-                            </div>
-                            <span className="text-sm text-muted-foreground">Tu Empresa</span>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight">CV-ConVos</h1>
+                            <p className="text-xs text-muted-foreground">Tu CV, tu historia</p>
                         </div>
                     </header>
 
@@ -187,7 +176,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                                 {features.map((feature) => (
                                     <div
                                         key={feature.title}
-                                        className="flex flex-col gap-2 p-4 rounded-xl bg-card border border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                                        className="flex flex-col gap-2 p-4 rounded-xl bg-card border border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200"
                                     >
                                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                                             <feature.icon className="w-5 h-5 text-primary" />
@@ -206,7 +195,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                             <Card className="relative overflow-hidden border-2 border-dashed hover:border-primary/50 transition-colors duration-300 bg-card/80 backdrop-blur-sm">
                                 <div
                                     {...getRootProps()}
-                                    className={`p-8 sm:p-12 text-center cursor-pointer transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl ${isDragActive ? 'bg-primary/5 scale-[0.99]' : ''
+                                    className={`p-8 sm:p-12 text-center cursor-pointer transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl ${isDragActive ? 'bg-primary/5 scale-[0.99]' : ''
                                         }`}
                                     tabIndex={0}
                                     role="button"
@@ -217,13 +206,13 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                                     <div className="space-y-6">
                                         <div className={`
                                             w-20 h-20 mx-auto rounded-2xl flex items-center justify-center
-                                            transition-all duration-500
+transition-all duration-200
                                             ${isDragActive
-                                                ? 'bg-primary text-primary-foreground scale-110 rotate-3'
-                                                : 'bg-gradient-to-br from-primary/10 to-accent/10'
+                                                ? 'bg-primary text-primary-foreground scale-105'
+                                                : 'bg-primary/10'
                                             }
                                         `}>
-                                            <Upload className={`w-10 h-10 ${isDragActive ? 'text-primary-foreground' : 'text-primary'}`} />
+                                            <Upload className={`w-10 h-10 text-primary`} />
                                         </div>
 
                                         <div className="space-y-2">
@@ -290,7 +279,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                                             onClick={(e) => { e.stopPropagation(); handleUpload(); }}
                                             disabled={isUploading}
                                             size="lg"
-                                            className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                            className="w-full h-14 text-lg font-semibold rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                         >
                                             {isUploading ? (
                                                 <>
@@ -316,21 +305,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                 </div>
             </div>
 
-            {/* Footer */}
-            <footer className="mt-auto py-6 px-6 border-t border-border/50 bg-muted/30">
-                <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-                            <span className="text-xs font-bold text-primary-foreground">CV</span>
-                        </div>
-                        <span className="text-sm font-medium">CV-ConVos</span>
-                        <span className="text-xs text-muted-foreground">© 2026</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center sm:text-right">
-                        100% gratuito • Sin registro • Tus datos son privados
-                    </p>
-                </div>
-            </footer>
+            
         </div>
     );
 }

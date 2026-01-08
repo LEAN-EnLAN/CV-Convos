@@ -21,15 +21,15 @@ export function TechTemplate({ data }: TemplateProps) {
 
     return (
         <div
-            className="w-[794px] min-h-[1122px] bg-white flex flex-col print:shadow-none"
+            className="w-[794px] min-h-[1122px] bg-background flex flex-col print:shadow-none"
             style={{
                 fontFamily: "'Fira Code', monospace",
-                color: '#111827',
+                color: 'oklch(0.15 0.02 280)',
                 padding: '2.54cm' // 1 inch margins
             }}
         >
             {/* COMPACT HEADER */}
-            <header className="flex justify-between items-start mb-6 pb-3 border-b border-gray-200">
+            <header className="flex justify-between items-start mb-6 pb-3 border-b border-border">
                 <div className="flex-1">
                     <h1 className="text-2xl font-extrabold tracking-tight mb-1">
                         {data.personalInfo.fullName}

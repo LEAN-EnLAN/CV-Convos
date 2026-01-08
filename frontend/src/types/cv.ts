@@ -95,8 +95,6 @@ export interface TemplateConfig {
         contentGap: number;
         sectionGap: number;
         density: 'compact' | 'standard' | 'relaxed';
-        showExpertiseBar: boolean;
-        expertiseBarStyle: 'solid' | 'gradient' | 'dots';
     };
     sections: {
         summary: SectionConfig;
