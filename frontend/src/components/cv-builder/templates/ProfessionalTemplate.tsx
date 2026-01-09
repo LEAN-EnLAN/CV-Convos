@@ -1,28 +1,42 @@
 import React from 'react';
 import { CVData } from '@/types/cv';
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+
+/**
+ * @component ProfessionalTemplate
+ * @description Classic refined CV template with elegant typography and subtle icons.
+ */
 
 interface TemplateProps {
     data: CVData;
 }
 
 export function ProfessionalTemplate({ data }: TemplateProps) {
-    const config = data.config!;
+    const config = data.config || DEFAULT_CONFIG;
+
+    // Mapping density to padding
+    const paddingMap = {
+        compact: '1.5rem 40px',
+        standard: '2.5rem 40px',
+        relaxed: '3.5rem 40px'
+    };
 
     return (
         <div
-            className="bg-white w-[794px] print:shadow-none flex flex-col"
+            className="bg-white w-[794px] h-[1122px] max-h-[1122px] overflow-hidden print:shadow-none flex flex-col mx-auto"
             style={{
+                fontFamily: config.fonts.body,
                 minHeight: '1122px',
-                padding: 'var(--cv-gap) 40px',
+                padding: paddingMap[config.layout.density] || '2.5rem 40px',
                 backgroundColor: config.colors.background,
                 color: config.colors.text,
-                gap: 'var(--cv-section-gap)',
-                fontSize: 'var(--cv-font-size-base)'
+                gap: `${config.layout.sectionGap}px`,
+                fontSize: '12px'
             }}
         >
             {/* Header - Estilo clásico refinado */}
-            <header className="border-b-2 pb-6 text-center" style={{ borderColor: config.colors.primary }}>
-                <h1 className="font-bold uppercase tracking-[0.2em] mb-3 text-3xl" style={{ color: config.colors.secondary }}>
+            <header className="border-b-2 pb-6 text-center" style={{ borderColor: config.colors.primary, marginBottom: `${config.layout.sectionGap / 2}px` }}>
+                <h1 className="font-bold uppercase tracking-[0.2em] mb-3 text-3xl" style={{ color: config.colors.secondary, fontFamily: config.fonts.heading }}>
                     {data.personalInfo.fullName || 'Tu Nombre'}
                 </h1>
                 <div className="flex justify-center items-center flex-wrap gap-x-4 gap-y-1 text-sm opacity-80">
@@ -68,8 +82,8 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
 
             {/* Resumen Profesional */}
             {data.personalInfo.summary && config.sections.summary.visible && (
-                <section>
-                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                         {config.sections.summary.title || 'Perfil Profesional'}
                     </h2>
                     <p className="leading-relaxed text-justify opacity-90 text-sm">
@@ -80,8 +94,8 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
 
             {/* Experiencia */}
             {data.experience.length > 0 && config.sections.experience.visible && (
-                <section>
-                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                         {config.sections.experience.title || 'Experiencia Profesional'}
                     </h2>
                     <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
@@ -108,8 +122,8 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
 
             {/* Educación */}
             {data.education.length > 0 && config.sections.education.visible && (
-                <section>
-                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                         {config.sections.education.title || 'Formación Académica'}
                     </h2>
                     <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
@@ -138,11 +152,11 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
 
             {/* Proyectos */}
             {data.projects && data.projects.length > 0 && config.sections.projects.visible && (
-                <section>
-                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                         {config.sections.projects.title || 'Proyectos Destacados'}
                     </h2>
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
                         {data.projects.map((proj) => (
                             <div key={proj.id} className="break-inside-avoid border-l-2 pl-4 py-1" style={{ borderColor: `${config.colors.primary}20` }}>
                                 <h3 className="font-bold text-sm" style={{ color: config.colors.secondary }}>{proj.name}</h3>
@@ -162,8 +176,8 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
 
             {/* Habilidades */}
             {data.skills.length > 0 && config.sections.skills.visible && (
-                <section>
-                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                         {config.sections.skills.title || 'Habilidades y Competencias'}
                     </h2>
                     <div className="flex flex-wrap gap-x-6 gap-y-3">
@@ -187,8 +201,8 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
 
             {/* Certificaciones */}
             {data.certifications && data.certifications.length > 0 && config.sections.certifications.visible && (
-                <section>
-                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                         {config.sections.certifications.title || 'Certificaciones'}
                     </h2>
                     <div className="grid grid-cols-2 gap-x-8 gap-y-2">
@@ -203,14 +217,14 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
             )}
 
             {/* Idiomas, Herramientas & Intereses */}
-            <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-8" style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
                     {data.languages && data.languages.length > 0 && config.sections.languages.visible && (
                         <section>
-                            <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                            <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                                 {config.sections.languages.title || 'Idiomas'}
                             </h2>
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-2 font-medium px-1">
                                 {data.languages.map((lang) => (
                                     <div key={lang.id} className="flex justify-between items-center text-sm">
                                         <span className="font-semibold">{lang.language}</span>
@@ -222,10 +236,10 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
                     )}
                     {data.tools && data.tools.length > 0 && config.sections.tools?.visible && (
                         <section>
-                            <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                            <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                                 {config.sections.tools?.title || 'Herramientas'}
                             </h2>
-                            <div className="flex flex-wrap gap-2 text-xs opacity-80 leading-relaxed italic">
+                            <div className="flex flex-wrap gap-2 text-xs opacity-80 leading-relaxed italic px-1">
                                 {data.tools.join(' • ')}
                             </div>
                         </section>
@@ -233,10 +247,10 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
                 </div>
                 {data.interests && data.interests.length > 0 && config.sections.interests?.visible && (
                     <section>
-                        <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30` }}>
+                        <h2 className="text-sm font-bold uppercase tracking-widest border-b pb-2 mb-4" style={{ color: config.colors.primary, borderColor: `${config.colors.primary}30`, fontFamily: config.fonts.heading }}>
                             {config.sections.interests?.title || 'Intereses'}
                         </h2>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 px-1">
                             {data.interests.map((interest) => (
                                 <span key={interest.id} className="text-xs opacity-70">
                                     • {interest.name}
@@ -248,8 +262,8 @@ export function ProfessionalTemplate({ data }: TemplateProps) {
             </div>
 
             {/* Footer - Branding sutil */}
-            <footer className="mt-auto pt-8 text-center border-t border-slate-50">
-                <p className="text-[9px] opacity-30 tracking-[0.2em] font-medium uppercase">
+            <footer className="mt-auto pt-8 text-center border-t border-slate-50 opacity-40">
+                <p className="text-[9px] tracking-[0.2em] font-medium uppercase">
                     Documento Generado por CV-ConVos
                 </p>
             </footer>

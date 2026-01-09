@@ -2,58 +2,36 @@
 
 API REST construida con FastAPI para procesamiento de CVs con IA.
 
-## 📋 Contenido
+> **📚 Documentación completa**: Ver `docs/` para documentación detallada sobre arquitectura, API reference y más.
 
-- [Arquitectura](#arquitectura)
-- [Setup de Desarrollo](#setup-de-desarrollo)
-- [Configuración](#configuración)
-- [API Endpoints](#api-endpoints)
-- [Servicios](#servicios)
-- [Integración con Groq](#integración-con-groq)
-- [Testing](#testing)
-- [Deploy](#deploy)
-- [Troubleshooting](#troubleshooting)
-- [Recursos Adicionales](#recursos-adicionales)
-- [Contribuir al Backend](#contribuir-al-backend)
+## 📋 Documentación
 
-## 🏗️ Arquitectura
+- **[Documentación completa](./docs/README.md)** - Índice de toda la documentación
+- **[Guía de Desarrollador](./docs/DEVELOPER_GUIDE.md)** - Guía completa para nuevos desarrolladores
+- **[Arquitectura](./docs/ARCHITECTURE.md)** - Patrones de arquitectura y estructura
+- **[Stack Tecnológico](./docs/TECH_STACK.md)** - Tecnologías y dependencias
+- **[API Reference](./docs/API_REFERENCE.md)** - Documentación completa de la API
 
-### Stack Tecnológico
-- **Framework**: FastAPI
-- **Python**: 3.8+
-- **LLM Provider**: Groq (Llama 3.3-70b-versatile)
-- **Document Parsing**: PyPDF2, python-docx
-- **Validation**: Pydantic
-- **ASGI Server**: Uvicorn
+## 🚀 Contenido Rápido
 
-### Patrones de Diseño
-- **Layered Architecture**: API → Services → Core
-- **Dependency Injection**: FastAPI's built-in DI
-- **Async/Await**: Para I/O operations
-- **Type Hints**: Python type hints throughout
-
-## 🚀 Setup de Desarrollo
+Para instrucciones detalladas, ver [Guía de Desarrollador](./docs/DEVELOPER_GUIDE.md).
 
 ### Requisitos Previos
 ```bash
-python --version  # >= 3.8
+python --version  # >= 3.11
 pip --version     # >= 20.0
 ```
 
 ### Instalación
 
 ```bash
-# Clonar el repo (si no lo has hecho)
-git clone https://github.com/tu-usuario/cv-convos.git
-cd cv-convos/backend
-
 # Crear virtual environment
 python -m venv .venv
 
-# Activar virtual environment
-# Linux/Mac:
+# Activar (Linux/Mac)
 source .venv/bin/activate
-# Windows:
+
+# Activar (Windows)
 .venv\Scripts\activate
 
 # Instalar dependencias
@@ -61,22 +39,22 @@ pip install -r requirements.txt
 
 # Configurar variables de entorno
 cp .env.example .env
-# Editar .env y agregar tu GROQ_API_KEY
+# Editar .env con tu GROQ_API_KEY
 ```
 
 ### Scripts Disponibles
 
 ```bash
-# Iniciar servidor de desarrollo
+# Servidor de desarrollo
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Iniciar servidor de producción
+# Servidor de producción
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 
-# Ejecutar tests
+# Tests
 pytest
 
-# Ejecutar tests con coverage
+# Tests con coverage
 pytest --cov=app --cov-report=html
 ```
 
@@ -84,57 +62,41 @@ pytest --cov=app --cov-report=html
 
 ### Variables de Entorno
 
-Crear archivo `.env` en la raíz del backend:
+Crear archivo `.env`:
 
 ```env
-# Groq API
-GROQ_API_KEY=tu_api_key_aqui
-
-# Server Configuration
-HOST=0.0.0.0
-PORT=8000
-DEBUG=True
-
-# CORS (en producción, especificar el frontend URL)
-ALLOWED_ORIGINS=http://localhost:3000,https://tu-dominio.com
+GROQ_API_KEY=your_groq_api_key_here
+CORS_ORIGINS=http://localhost:3000
 ```
 
-### Configuración de Pydantic
-
-`app/core/config.py` maneja la configuración:
-
-```python
-from pydantic_settings import BaseSettings
-
-class Settings(BaseSettings):
-    groq_api_key: str
-    host: str = "0.0.0.0"
-    port: int = 8000
-    debug: bool = True
-    
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
-```
+Para más detalles, ver [TECH_STACK.md](./docs/TECH_STACK.md).
 
 ## 📁 Estructura del Proyecto
+
+Para detalles completos, ver [Arquitectura](./docs/ARCHITECTURE.md).
 
 ```
 backend/
 ├── app/
-│   ├── main.py                      # Entry point de FastAPI
+│   ├── main.py                      # FastAPI entry point
 │   ├── api/
-│   │   └── endpoints.py             # API routes
+│   │   ├── endpoints.py             # API routes
+│   │   └── schemas.py             # Pydantic models
 │   ├── core/
-│   │   └── config.py                # Configuración
+│   │   ├── config.py                # Configuration
+│   │   └── logging.py              # Logging setup
 │   └── services/
-│       ├── parser_service.py        # Document parsing
-│       └── ai_service.py            # LLM integration
-├── .env                             # Variables de entorno (no commitear)
-├── .env.example                     # Template de variables de entorno
-├── requirements.txt                 # Dependencias Python
-└── test_groq.py                     # Tests de Groq API
+│       ├── ai_service.py            # LLM integration
+│       └── parser_service.py        # File parsing
+├── tests/
+│   ├── conftest.py                 # Pytest fixtures
+│   ├── integration/                # Integration tests
+│   └── unit/                      # Unit tests
+├── docs/                          # Complete documentation
+├── .env                           # Environment variables
+├── .env.example                   # Environment template
+├── requirements.txt                # Dependencies
+└── Dockerfile                     # Docker config
 ```
 
 ## 🔌 API Endpoints
@@ -145,113 +107,39 @@ http://localhost:8000/api
 ```
 
 ### Documentation Interactiva
-FastAPI genera automáticamente docs Swagger UI en:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+FastAPI genera automáticamente docs en:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
 
-### Endpoints
+### Endpoints Principales
 
-#### POST `/api/generate-cv`
-Genera un CV estructurado desde documentos subidos.
+Para documentación completa, ver [API Reference](./docs/API_REFERENCE.md).
 
-**Request:**
-```http
-POST /api/generate-cv
-Content-Type: multipart/form-data
+| Endpoint | Método | Descripción |
+|----------|---------|-------------|
+| `/api/generate-cv` | POST | Generar CV desde archivos |
+| `/api/optimize-cv` | POST | Optimizar CV existente |
+| `/api/critique-cv` | POST | Obtener feedback de CV |
+| `/api/interview-cv` | POST | Optimizar CV para rol específico |
+| `/api/generate-linkedin-post` | POST | Generar post de LinkedIn |
+| `/api/generate-cover-letter` | POST | Generar carta de presentación |
+| `/api/ats-check` | POST | Analizar compatibilidad ATS |
+| `/health` | GET | Health check |
 
-files: [File, File, ...]
+## 🧪 Testing
+
+```bash
+# Ejecutar todos los tests
+pytest
+
+# Ejecutar con coverage
+pytest --cov=app --cov-report=html
+
+# Tests específicos
+pytest tests/unit/test_ai_service.py
 ```
 
-**Response (200 OK):**
-```json
-{
-  "personalInfo": {
-    "fullName": "Juan Pérez",
-    "email": "juan@example.com",
-    "phone": "+54 11 1234-5678",
-    "location": "Buenos Aires, Argentina",
-    "summary": "Desarrollador Full Stack con 5 años de experiencia..."
-  },
-  "experience": [
-    {
-      "id": "1",
-      "company": "Tech Company",
-      "position": "Senior Developer",
-      "startDate": "2020-01",
-      "endDate": "2023-12",
-      "description": "• Lideré equipo de 5 desarrolladores\n• Implementé CI/CD pipeline..."
-    }
-  ],
-  "education": [...],
-  "skills": [...],
-  "projects": [...],
-  "languages": [...],
-  "certifications": [...]
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: No files uploaded or text extraction failed
-- `500 Internal Server Error`: AI processing failed
-
-#### POST `/api/optimize-cv`
-Optimiza contenido existente del CV.
-
-**Request:**
-```http
-POST /api/optimize-cv
-Content-Type: application/json
-
-{
-  "cv_data": { ... },
-  "target": "shrink" | "improve",
-  "section": "experience"  // opcional
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "optimized_cv": { ... }
-}
-```
-
-**Targets disponibles:**
-- `shrink`: Reduce el contenido en 30-40% manteniendo la información clave
-- `improve`: Mejora la redacción y estructura del contenido
-
-#### POST `/api/critique-cv`
-Genera feedback y sugerencias de mejora.
-
-**Request:**
-```http
-POST /api/critique-cv
-Content-Type: application/json
-
-{
-  "cv_data": { ... }
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "overall_score": 8.5,
-  "strengths": ["Experiencia sólida", "Skills bien definidos"],
-  "improvements": ["Agregar métricas cuantificables", "Mejorar summary"],
-  "suggestions": ["Considerar agregar proyectos open source"]
-}
-```
-
-#### GET `/health`
-Health check endpoint.
-
-**Response (200 OK):**
-```json
-{
-  "status": "ok"
-}
-```
+Para más información, ver [DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md).
 
 ## 🔧 Servicios
 
@@ -388,92 +276,34 @@ TEXTO DEL CV:
 """
 ```
 
-## 🧪 Testing
-
-### Unit Tests
-
-```bash
-# Ejecutar todos los tests
-pytest
-
-# Ejecutar tests con coverage
-pytest --cov=app --cov-report=html
-
-# Ejecutar tests específicos
-pytest tests/test_parser_service.py
-```
-
-### Test de Groq API
-
-```bash
-python test_groq.py
-```
-
-### Ejemplo de Test
-
-```python
-# tests/test_parser_service.py
-import pytest
-from app.services.parser_service import extract_text_from_file
-
-@pytest.mark.asyncio
-async def test_extract_from_pdf():
-    with open("test_cv.pdf", "rb") as f:
-        content = f.read()
-    
-    text = await extract_text_from_file(content, "test_cv.pdf")
-    assert len(text) > 0
-    assert "experiencia" in text.lower()
-```
-
 ## 🚀 Deploy
 
-### Opciones de Deploy
-
-#### Docker (Recomendado para producción)
-
-```dockerfile
-# Dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
+### Docker
 
 ```bash
-# Build y run
+# Build
 docker build -t cv-convos-backend .
+
+# Run
 docker run -p 8000:8000 --env-file .env cv-convos-backend
 ```
 
-#### Railway
+### Railway
 
 ```bash
-# Instalar Railway CLI
 npm install -g @railway/cli
-
-# Login y deploy
 railway login
-railway init
 railway up
 ```
-
-#### Render
-
-Subir a GitHub y conectar con Render para deploy automático.
 
 ### Variables de Entorno en Producción
 
 Asegúrate de configurar:
 - `GROQ_API_KEY` (obligatorio)
-- `ALLOWED_ORIGINS` (CORS - especificar dominio del frontend)
+- `CORS_ORIGINS` (CORS - especificar dominio del frontend)
 - `DEBUG=False` (en producción)
+
+Para más detalles, ver [DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md).
 
 ## 🔧 Troubleshooting
 
@@ -481,37 +311,35 @@ Asegúrate de configurar:
 
 **"GROQ_API_KEY not found"**
 ```bash
-# Verificar que .env existe y tiene la API key
+# Verificar .env
 cat .env
 ```
 
 **"Module not found"**
 ```bash
-# Reinstalar dependencias
 pip install -r requirements.txt
 ```
 
 **"CORS error"**
-Verifica `ALLOWED_ORIGINS` en `.env` y middleware CORS en `main.py`.
+Verifica `CORS_ORIGINS` en `.env` y middleware CORS en `main.py`.
 
-**"Groq API rate limit"**
-Implementa retry logic con exponential backoff.
+Para más detalles, ver [DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md).
 
 ## 📚 Recursos Adicionales
 
-- [FastAPI Documentation](https://fastapi.tiangolo.com)
-- [Groq API Documentation](https://console.groq.com/docs)
-- [Pydantic Documentation](https://docs.pydantic.dev)
-- [Uvicorn Documentation](https://www.uvicorn.org)
+- [FastAPI Docs](https://fastapi.tiangolo.com)
+- [Groq API Docs](https://console.groq.com/docs)
+- [Pydantic Docs](https://docs.pydantic.dev)
+- [Uvicorn Docs](https://www.uvicorn.org)
+- [Pytest Docs](https://docs.pytest.org)
 
-## 🤝 Contribuir al Backend
+## 🤝 Contribuir
 
 Ver [CONTRIBUTING.md](../CONTRIBUTING.md) para guidelines generales.
 
-### Guidelines Específicas del Backend
+### Guidelines del Backend
 1. **Type Hints**: Usar type hints en todas las funciones
 2. **Async**: Usar async/await para I/O operations
-3. **Error Handling**: Implementa proper exception handling
-4. **Validation**: Usa Pydantic para validación de datos
+3. **Error Handling**: Implementar proper exception handling
+4. **Validation**: Usar Pydantic para validación
 5. **Testing**: Escribir tests para nuevas features
-6. **Documentation**: Actualizar docstrings y API docs

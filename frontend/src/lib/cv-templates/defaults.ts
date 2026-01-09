@@ -17,6 +17,8 @@ export const DEFAULT_CONFIG: TemplateConfig = {
         contentGap: 24,
         sectionGap: 32,
         density: 'standard',
+        showExpertiseBar: true,
+        expertiseBarStyle: 'bars',
     },
     sections: {
         summary: { visible: true, title: 'Sobre Mí' },
@@ -48,6 +50,8 @@ export const BRUTALIST_CONFIG: TemplateConfig = {
         contentGap: 0,
         sectionGap: 0,
         density: 'compact',
+        showExpertiseBar: false,
+        expertiseBarStyle: 'bars',
     },
     sections: {
         summary: { visible: true, title: 'SUMMARY' },

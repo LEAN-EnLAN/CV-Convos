@@ -1,30 +1,52 @@
 import React from 'react';
 import { CVData } from '@/types/cv';
 import { Phone, Mail, MapPin, Linkedin, Github, Globe } from 'lucide-react';
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+
+/**
+ * @component BianTemplate
+ * @description Corporate-style CV template with grid-based sidebar layout.
+ */
 
 interface TemplateProps {
     data: CVData;
 }
 
 export const BianTemplate: React.FC<TemplateProps> = ({ data }) => {
-    const { personalInfo, experience, education, skills, languages, certifications, projects, config } = data;
+    const { personalInfo, experience, education, skills, languages, certifications, projects } = data;
+    const config = data.config || DEFAULT_CONFIG;
 
     // Helper to format dates
     const formatDate = (dateString?: string) => {
         if (!dateString) return '';
-        // If it's just a year "2024", return it. If it's "2024-01", return "2024".
         return dateString.replace(/(\d{4})-\d{2}.*/, '$1');
+    };
+
+    // Mapping density to padding
+    const paddingMap = {
+        compact: '1.5rem',
+        standard: '2.5rem',
+        relaxed: '3.5rem'
     };
 
     return (
         <div
-            className="w-full h-full bg-white text-slate-800 p-8 sm:p-12 font-sans"
-            style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+            className="w-[794px] h-[1122px] max-h-[1122px] overflow-hidden bg-white text-slate-800 mx-auto"
+            style={{
+                fontFamily: config?.fonts?.body || 'Inter, sans-serif',
+                padding: paddingMap[config.layout.density] || '2.5rem'
+            }}
         >
             {/* Header Section */}
-            <header className="flex flex-col sm:flex-row justify-between items-start mb-12 gap-6">
+            <header
+                className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-8"
+                style={{ marginBottom: `${config.layout.sectionGap}px` }}
+            >
                 <div className="flex-1 space-y-1">
-                    <h1 className="text-4xl sm:text-5xl font-black uppercase text-slate-900 tracking-tight">
+                    <h1
+                        className="text-4xl sm:text-5xl font-black uppercase text-slate-900 tracking-tight"
+                        style={{ fontFamily: config?.fonts?.heading }}
+                    >
                         {personalInfo.fullName}
                     </h1>
                     <p className="text-xl text-slate-500 font-medium">
@@ -60,22 +82,36 @@ export const BianTemplate: React.FC<TemplateProps> = ({ data }) => {
                 </div>
             </header>
 
-            <div className="space-y-10">
+            <div className="flex flex-col">
+
+                {/* PROFESSIONAL SUMMARY */}
+                {personalInfo.summary && config.sections.summary.visible && (
+                    <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                        <div className="bg-slate-100 py-1.5 px-4" style={{ marginBottom: `${config.layout.contentGap}px` }}>
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-slate-800" style={{ fontFamily: config?.fonts?.heading }}>
+                                {config.sections.summary.title || 'Resumen Profesional'}
+                            </h2>
+                        </div>
+                        <p className="text-sm text-slate-600 leading-relaxed px-4">
+                            {personalInfo.summary}
+                        </p>
+                    </section>
+                )}
 
                 {/* Experiencia Laboral */}
                 {experience.length > 0 && (
-                    <section>
+                    <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
                         <div className="bg-slate-100 py-2 px-4 mb-6">
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800" style={{ fontFamily: config?.fonts?.heading }}>
                                 Experiencia Laboral
                             </h2>
                         </div>
-                        <div className="space-y-8">
+                        <div className="flex flex-col px-4" style={{ gap: `${config.layout.contentGap}px` }}>
                             {experience.map((exp) => (
-                                <div key={exp.id} className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8">
+                                <div key={exp.id} className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4 sm:gap-8">
                                     <div className="text-sm text-slate-500 font-medium leading-relaxed">
-                                        <p className="mb-0.5">"{exp.company}"</p>
-                                        <p>{exp.startDate} - {exp.current ? 'Presente' : exp.endDate}</p>
+                                        <p className="mb-0.5">{exp.company}</p>
+                                        <p className="text-xs opacity-70">{exp.startDate} - {exp.current ? 'Presente' : exp.endDate}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <h3 className="font-bold text-slate-900 text-base">
@@ -95,21 +131,20 @@ export const BianTemplate: React.FC<TemplateProps> = ({ data }) => {
 
                 {/* Estudios */}
                 {education.length > 0 && (
-                    <section>
+                    <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
                         <div className="bg-slate-100 py-2 px-4 mb-6">
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800" style={{ fontFamily: config?.fonts?.heading }}>
                                 Estudio
                             </h2>
                         </div>
-                        <div className="space-y-6">
+                        <div className="flex flex-col px-4" style={{ gap: `${config.layout.contentGap}px` }}>
                             {education.map((edu) => (
-                                <div key={edu.id} className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8 items-start">
+                                <div key={edu.id} className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4 sm:gap-8 items-start">
                                     <div className="text-sm text-slate-500 font-medium pt-1">
                                         <p>{edu.degree}</p>
-                                        <p>Año {edu.endDate || edu.startDate}</p>
+                                        <p className="text-xs opacity-70">Año {edu.endDate || edu.startDate}</p>
                                     </div>
                                     <div className="flex items-start gap-4">
-                                        {/* Simple Circle placeholder for logo interaction if visualized */}
                                         <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-white font-bold text-xs shrink-0 mt-1">
                                             {edu.institution.slice(0, 2).toUpperCase()}
                                         </div>
@@ -128,57 +163,60 @@ export const BianTemplate: React.FC<TemplateProps> = ({ data }) => {
                     </section>
                 )}
 
-                {/* Skills / Sistemas (Special Layout) */}
-                {(skills.length > 0 || projects.length > 0) && (
-                    <section className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8 pt-4">
-                        {/* Left Title Box Style */}
+                {/* Skills / Sistemas */}
+                {skills.length > 0 && config.sections.skills.visible && (
+                    <section className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4 sm:gap-8 px-4" style={{ marginBottom: `${config.layout.sectionGap}px` }}>
                         <div>
                             <div className="bg-slate-200 py-2 px-4 inline-block w-full text-center sm:text-left">
-                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
-                                    Sistemas
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800" style={{ fontFamily: config?.fonts?.heading }}>
+                                    {config.sections.skills.title || 'Skills'}
                                 </h2>
                             </div>
                         </div>
 
-                        {/* Right Content */}
-                        <div className="space-y-6">
-                            {/* Skills List */}
-                            {skills.length > 0 && (
-                                <div className="space-y-1">
-                                    {skills.map((skill) => (
-                                        <div key={skill.id} className="flex items-center gap-2">
-                                            <p className="text-sm font-bold text-slate-700">{skill.name}</p>
-                                            {skill.proficiency && (
-                                                <span className="text-xs text-slate-400 font-medium">
-                                                    — {skill.level || `${skill.proficiency}%`}
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
+                        <div className="flex flex-wrap gap-x-6 gap-y-2">
+                            {skills.map((skill) => (
+                                <div key={skill.id} className="flex items-center gap-2">
+                                    <p className="text-sm font-bold text-slate-700">{skill.name}</p>
+                                    {skill.level && (
+                                        <span className="text-xs text-slate-400 font-medium">
+                                            — {skill.level}
+                                        </span>
+                                    )}
                                 </div>
-                            )}
-
-                            {/* Projects treated as 'Systems' or Portfolio items if skills are empty or mixed */}
-                            {projects.length > 0 && (
-                                <div className="space-y-4 mt-4">
-                                    {projects.map((proj) => (
-                                        <div key={proj.id}>
-                                            <p className="text-sm font-bold text-slate-900">{proj.name}</p>
-                                            <p className="text-xs text-slate-500">{proj.description}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            ))}
                         </div>
                     </section>
                 )}
 
-                {/* Idiomas / Languages */}
-                {languages.length > 0 && (
-                    <section className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8 pt-4">
+                {/* Projects */}
+                {projects.length > 0 && config.sections.projects.visible && (
+                    <section className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4 sm:gap-8 px-4" style={{ marginBottom: `${config.layout.sectionGap}px` }}>
                         <div>
                             <div className="bg-slate-200 py-2 px-4 inline-block w-full text-center sm:text-left">
-                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800" style={{ fontFamily: config?.fonts?.heading }}>
+                                    {config.sections.projects.title || 'Proyectos'}
+                                </h2>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
+                            {projects.map((proj) => (
+                                <div key={proj.id}>
+                                    <p className="text-sm font-bold text-slate-900">{proj.name}</p>
+                                    <p className="text-xs text-slate-500 leading-relaxed">{proj.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Idiomas */}
+                {languages.length > 0 && config.sections.languages.visible && (
+                    <section className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4 sm:gap-8 px-4" style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                        <div>
+                            <div className="bg-slate-200 py-2 px-4 inline-block w-full text-center sm:text-left">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800" style={{ fontFamily: config?.fonts?.heading }}>
                                     {config?.sections.languages.title || 'Idiomas'}
                                 </h2>
                             </div>
@@ -193,12 +231,12 @@ export const BianTemplate: React.FC<TemplateProps> = ({ data }) => {
                     </section>
                 )}
 
-                {/* Herramientas / Tools */}
-                {data.tools && data.tools.length > 0 && config?.sections?.tools?.visible && (
-                    <section className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8 pt-4">
+                {/* Herramientas */}
+                {data.tools && data.tools.length > 0 && config.sections.tools?.visible && (
+                    <section className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4 sm:gap-8 px-4" style={{ marginBottom: `${config.layout.sectionGap}px` }}>
                         <div>
                             <div className="bg-slate-200 py-2 px-4 inline-block w-full text-center sm:text-left">
-                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800" style={{ fontFamily: config?.fonts?.heading }}>
                                     {config?.sections?.tools?.title || 'Herramientas'}
                                 </h2>
                             </div>
@@ -213,12 +251,12 @@ export const BianTemplate: React.FC<TemplateProps> = ({ data }) => {
                     </section>
                 )}
 
-                {/* Intereses / Interests */}
-                {data.interests && data.interests.length > 0 && config?.sections?.interests?.visible && (
-                    <section className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-8 pt-4">
+                {/* Intereses */}
+                {data.interests && data.interests.length > 0 && config.sections.interests?.visible && (
+                    <section className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4 sm:gap-8 px-4" style={{ marginBottom: `${config.layout.sectionGap}px` }}>
                         <div>
                             <div className="bg-slate-200 py-2 px-4 inline-block w-full text-center sm:text-left">
-                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800" style={{ fontFamily: config?.fonts?.heading }}>
                                     {config?.sections?.interests?.title || 'Intereses'}
                                 </h2>
                             </div>

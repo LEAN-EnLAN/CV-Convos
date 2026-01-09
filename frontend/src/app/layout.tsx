@@ -3,7 +3,6 @@ import { Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -39,10 +38,8 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        <ConvexClientProvider>
-          {children}
-          <Toaster />
-        </ConvexClientProvider>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

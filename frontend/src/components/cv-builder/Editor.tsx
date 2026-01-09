@@ -34,7 +34,7 @@ import {
     Mail, Phone, MapPin, FileText, Sparkles, Wand2,
     Loader2, Scissors, Zap, Undo2, Redo2,
     Linkedin, Github, Globe, Twitter, Clock, Languages, Award, Heart,
-    Target, FileDown, Rocket, ShieldCheck, CheckCircle2, Wrench
+    Target, FileDown, Rocket, ShieldCheck, CheckCircle2, Wrench, Search
 } from 'lucide-react';
 import {
     Dialog,
@@ -118,6 +118,8 @@ export function Editor({
             // The backend now returns the COMPLETE and VALID CVData object
             // with the surgical merge already performed.
             if (optimizedData) {
+                // Ensure we preserve the ID of the current arrays to avoid React key issues
+                // We trust the backend returned the correct structure, but we re-apply local IDs if missing to be safe
                 const sanitizedData = ensureIds(optimizedData);
                 onChange(sanitizedData);
                 toast.success(`Contenido optimizado: ${type} mejorado con éxito.`);
@@ -299,7 +301,7 @@ export function Editor({
                     <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            <span className="text-[10px] text-emerald-600 font-medium uppercase tracking-wider">Autosave on</span>
+                            <span className="text-[10px] text-emerald-600 font-medium uppercase tracking-wider">Autoguardado activo</span>
                         </div>
                     </div>
 
@@ -348,7 +350,7 @@ export function Editor({
                                     ) : (
                                         <Wand2 className="w-3.5 h-3.5" />
                                     )}
-                                    <span className="text-xs font-semibold">AI Tools</span>
+                                    <span className="text-xs font-semibold">Herramientas IA</span>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
@@ -528,7 +530,7 @@ export function Editor({
                                                 </Label>
                                                 <Select
                                                     value={data.personalInfo.availability || ''}
-                                                    onValueChange={(val) => updatePersonalInfo('availability', val)}
+                                                    onValueChange={(val: string) => updatePersonalInfo('availability', val)}
                                                 >
                                                     <SelectTrigger className="h-9 text-xs bg-background/50">
                                                         <SelectValue placeholder="Seleccionar disponibilidad" />
@@ -1109,46 +1111,108 @@ export function Editor({
                     </ScrollArea>
                 </div>
 
-                {/* Sentinel Hub */}
-                <div className="absolute bottom-6 left-6 right-6 z-50 glass">
-                    <div className="flex items-center justify-between p-4">
-                        <div
-                            className="flex items-center gap-3 cursor-pointer"
-                            onClick={() => setIsCritiqueOpen(true)}
-                        >
-                            <div className="relative">
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${cvScore ? (cvScore >= 80 ? 'border-primary shadow-[0_0_15px_rgba(85,255,155,0.3)]' : 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]') : 'border-border'}`}>
-                                    {cvScore ? (
-                                        <span className={`text-sm font-black ${cvScore >= 80 ? 'text-primary' : 'text-amber-500'}`}>{cvScore}</span>
-                                    ) : (
-                                        <ShieldCheck className="w-5 h-5 text-muted-foreground" />
-                                    )}
-                                </div>
-                                {!cvScore && (
-                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-sentinel-pulse" />
-                                )}
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Sentinel AI</p>
-                                <p className="text-xs font-bold text-foreground truncate max-w-[180px] group-hover:text-primary transition-colors">
-                                    {cvVerdict}
-                                </p>
-                            </div>
-                        </div>
+                {/* Sentinel Hub - Reworked Design */}
+                <div className="absolute bottom-6 left-6 right-6 z-50">
+                    <div className="relative group">
+                        {/* Glow effect on hover */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                        <div className="flex items-center gap-2">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        size="icon"
-                                        className="h-10 w-10 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 transition-all"
-                                        onClick={onFinalize}
-                                    >
-                                        <Rocket className="w-5 h-5" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Finalizar y Exportar</TooltipContent>
-                            </Tooltip>
+                        {/* Main container */}
+                        <div className="relative bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
+                            {/* Top accent line */}
+                            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+                            <div className="flex items-center justify-between p-4 gap-4">
+                                {/* Score & Info Section */}
+                                <div
+                                    className="flex items-center gap-4 cursor-pointer flex-1 min-w-0"
+                                    onClick={() => setIsCritiqueOpen(true)}
+                                >
+                                    {/* Score Circle */}
+                                    <div className="relative shrink-0">
+                                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center border-2 transition-all duration-300 ${cvScore
+                                            ? cvScore >= 80
+                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/20'
+                                                : cvScore >= 60
+                                                    ? 'border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/20'
+                                                    : 'border-red-500 bg-red-500/10 shadow-lg shadow-red-500/20'
+                                            : 'border-border bg-muted/50'
+                                            }`}>
+                                            {cvScore ? (
+                                                <span className={`text-lg font-black ${cvScore >= 80 ? 'text-emerald-500' :
+                                                    cvScore >= 60 ? 'text-amber-500' : 'text-red-500'
+                                                    }`}>
+                                                    {cvScore}
+                                                </span>
+                                            ) : (
+                                                <ShieldCheck className="w-6 h-6 text-muted-foreground" />
+                                            )}
+                                        </div>
+                                        {/* Pulse indicator when not scanned */}
+                                        {!cvScore && (
+                                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50" />
+                                        )}
+                                        {/* Score label */}
+                                        {cvScore && (
+                                            <div className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded text-[7px] font-black uppercase ${cvScore >= 80 ? 'bg-emerald-500 text-white' :
+                                                cvScore >= 60 ? 'bg-amber-500 text-white' : 'bg-red-500 text-white'
+                                                }`}>
+                                                /100
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Sentinel AI</p>
+                                            {cvScore && (
+                                                <Badge variant="outline" className={`h-4 px-1.5 text-[8px] font-bold ${cvScore >= 80 ? 'text-emerald-500 border-emerald-500/30' :
+                                                    cvScore >= 60 ? 'text-amber-500 border-amber-500/30' : 'text-red-500 border-red-500/30'
+                                                    }`}>
+                                                    {cvScore >= 80 ? 'Excelente' : cvScore >= 60 ? 'Bueno' : 'Mejorable'}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                            {cvVerdict}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {/* Scan/Rescan Button */}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-10 px-3 gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 font-bold text-xs"
+                                                onClick={() => setIsCritiqueOpen(true)}
+                                            >
+                                                <Search className="w-4 h-4" />
+                                                <span className="hidden sm:inline">{cvScore ? 'Reanalizar' : 'Analizar'}</span>
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Analizar CV con IA</TooltipContent>
+                                    </Tooltip>
+
+                                    {/* Finalize Button */}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                size="icon"
+                                                className="h-10 w-10 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all hover:scale-105"
+                                                onClick={onFinalize}
+                                            >
+                                                <Rocket className="w-5 h-5" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Finalizar y Exportar</TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
