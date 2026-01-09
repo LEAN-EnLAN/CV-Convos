@@ -6,10 +6,12 @@ import { cn } from '@/lib/utils';
 import {
     CheckCircle2,
     X,
-    Zap,
     AlertCircle,
     Maximize2,
-    Minimize2
+    Minimize2,
+    Save,
+    Download,
+    FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,9 +24,12 @@ interface FloatingProgressProps {
     percentage: number;
     isSaving: boolean;
     lastSaved: Date | null;
+    onSave?: () => void;
+    onDownload?: () => void;
+    onPreview?: () => void;
 }
 
-export function FloatingProgress({ percentage, isSaving, lastSaved }: FloatingProgressProps) {
+export function FloatingProgress({ percentage, isSaving, lastSaved, onSave, onDownload, onPreview }: FloatingProgressProps) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [showWarning, setShowWarning] = useState(false);
@@ -150,7 +155,7 @@ export function FloatingProgress({ percentage, isSaving, lastSaved }: FloatingPr
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                {/* Header with percentage */}
+                                {/* Header with percentage and action buttons */}
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="flex items-baseline gap-2 mb-1">
@@ -167,17 +172,76 @@ export function FloatingProgress({ percentage, isSaving, lastSaved }: FloatingPr
                                             {isComplete ? "Completado" : "En progreso"}
                                         </p>
                                     </div>
-                                    <div className={cn(
-                                        "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500",
-                                        "ring-1 ring-white/10",
-                                        isComplete
-                                            ? "bg-emerald-500/20 text-emerald-400 scale-110"
-                                            : "bg-white/5 text-primary"
-                                    )}>
-                                        {isComplete ? (
-                                            <CheckCircle2 className="w-7 h-7" />
-                                        ) : (
-                                            <Zap className="w-7 h-7" />
+                                    <div className="flex items-center gap-1.5">
+                                        {onSave && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className={cn(
+                                                            "w-10 h-10 rounded-xl",
+                                                            "hover:bg-white/10",
+                                                            "text-white/70 hover:text-white",
+                                                            "transition-all duration-200"
+                                                        )}
+                                                        onClick={onSave}
+                                                        disabled={isSaving}
+                                                    >
+                                                        <Save className={cn(
+                                                            "w-4.5 h-4.5",
+                                                            isSaving && "animate-spin"
+                                                        )} />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" className="bg-slate-900 border-white/10 text-white font-semibold text-xs">
+                                                    Guardar
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+                                        {onDownload && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className={cn(
+                                                            "w-10 h-10 rounded-xl",
+                                                            "hover:bg-white/10",
+                                                            "text-white/70 hover:text-white",
+                                                            "transition-all duration-200"
+                                                        )}
+                                                        onClick={onDownload}
+                                                    >
+                                                        <Download className="w-4.5 h-4.5" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" className="bg-slate-900 border-white/10 text-white font-semibold text-xs">
+                                                    Descargar
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+                                        {onPreview && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className={cn(
+                                                            "w-10 h-10 rounded-xl",
+                                                            "hover:bg-white/10",
+                                                            "text-white/70 hover:text-white",
+                                                            "transition-all duration-200"
+                                                        )}
+                                                        onClick={onPreview}
+                                                    >
+                                                        <FileText className="w-4.5 h-4.5" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" className="bg-slate-900 border-white/10 text-white font-semibold text-xs">
+                                                    Previsualizar
+                                                </TooltipContent>
+                                            </Tooltip>
                                         )}
                                     </div>
                                 </div>
