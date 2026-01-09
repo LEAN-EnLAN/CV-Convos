@@ -70,7 +70,7 @@ export interface Interest {
     keywords?: string[]; // Para palabras clave relacionadas
 }
 
-export type CVTemplate = 'professional' | 'harvard' | 'minimal' | 'creative' | 'tech' | 'bian';
+export type CVTemplate = 'professional' | 'harvard' | 'minimal' | 'creative' | 'tech' | 'bian' | 'finance' | 'health' | 'education';
 
 export interface SectionConfig {
     visible: boolean;
@@ -95,6 +95,8 @@ export interface TemplateConfig {
         contentGap: number;
         sectionGap: number;
         density: 'compact' | 'standard' | 'relaxed';
+        showExpertiseBar?: boolean;
+        expertiseBarStyle?: 'dots' | 'bars' | 'gradient';
     };
     sections: {
         summary: SectionConfig;
@@ -141,3 +143,4 @@ export interface CritiqueResponse {
     overall_verdict: string;
     critique: ImprovementCard[];
 }
+

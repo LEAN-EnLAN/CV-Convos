@@ -1,39 +1,68 @@
 import React from 'react';
 import { CVData } from '@/types/cv';
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+
+/**
+ * @component HarvardTemplate
+ * @description Official Harvard Business School CV format - ATS-optimized, no colors.
+ * 
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ 🤖 AI AGENT GUARDRAILS - READ BEFORE EDITING                             ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║ 1. STRUCTURE: Single-column, strictly linear layout                      ║
+ * ║    - Header: Centered name + contact (no sidebar)                        ║
+ * ║    - Sections: EDUCATION first, then EXPERIENCE (Ivy League priority)    ║
+ * ║                                                                          ║
+ * ║ 2. FONTS: Times New Roman / Georgia (serif) - DO NOT CHANGE              ║
+ * ║    - This is a formal academic format, serif fonts are required          ║
+ * ║                                                                          ║
+ * ║ 3. SECTION PATTERN:                                                      ║
+ * ║    {data.arrayName.length > 0 && config.sections.name.visible && (       ║
+ * ║      <section className="mb-6">                                          ║
+ * ║        <h2 className="text-[14px] font-bold uppercase border-b">TITLE</h2>║
+ * ║        <div>{data.arrayName.map(...)}</div>                              ║
+ * ║      </section>                                                          ║
+ * ║    )}                                                                    ║
+ * ║                                                                          ║
+ * ║ 4. CRITICAL RULES:                                                       ║
+ * ║    - NO COLORS - This template uses only black/white for ATS compliance  ║
+ * ║    - Margins: 2.54cm (1 inch) - do not change                            ║
+ * ║    - Font size: 12px base - matches real 11-12pt for printing            ║
+ * ║                                                                          ║
+ * ║ 5. TESTING: Run `npx tsc --noEmit` after edits                           ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ */
 
 interface TemplateProps {
     data: CVData;
 }
 
-/**
- * HarvardTemplate - Formato oficial de CV estilo Harvard Business School (Corregido)
- * 
- * Características:
- * - Tipografía: Times New Roman / Georgia (Serif)
- * - Tamaño base: 12px (aprox 11-12pt real)
- * - Márgenes: Estandarizados para impresión A4
- * - Sin colores: Protocolo estricto Ivy League
- * - ATS-Optimized: Estructura lineal y jerárquica
- */
-import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
-
 export function HarvardTemplate({ data }: TemplateProps) {
     const config = data.config || DEFAULT_CONFIG;
 
+    // Dynamic padding based on density
+    const paddingMap = {
+        compact: '1.5cm',
+        standard: '2.54cm',
+        relaxed: '3cm'
+    };
+
     return (
         <div
-            className="w-[794px] min-h-[1122px] text-[12px] leading-[1.4] print:shadow-none mx-auto"
+            className="w-[794px] h-[1122px] max-h-[1122px] overflow-hidden text-[12px] leading-[1.4] print:shadow-none mx-auto"
             style={{
-                fontFamily: "'Times New Roman', Georgia, serif",
+                fontFamily: config.fonts.body,
                 backgroundColor: 'oklch(1 0 0)',
                 color: 'oklch(0.15 0.02 280)',
-                padding: '2.54cm', // 1 inch actual margins
+                padding: paddingMap[config.layout.density] || '2.54cm',
                 fontSize: '12px',
-            }}
+                '--section-gap': `${config.layout.sectionGap}px`,
+                '--content-gap': `${config.layout.contentGap}px`
+            } as React.CSSProperties}
         >
             {/* Header - Nombre masivo y centrado */}
-            <header className="text-center mb-8 border-b-2 border-foreground pb-4">
-                <h1 className="text-3xl font-bold uppercase tracking-tight mb-2">
+            <header className="text-center border-b-2 border-foreground pb-4" style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                <h1 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ fontFamily: config.fonts.heading }}>
                     {data.personalInfo.fullName}
                 </h1>
                 <div className="text-[12px] flex flex-wrap justify-center gap-x-3 gap-y-1">
@@ -66,13 +95,25 @@ export function HarvardTemplate({ data }: TemplateProps) {
                 )}
             </header>
 
+            {/* PROFESSIONAL SUMMARY - "Sobre mí" */}
+            {data.personalInfo.summary && config.sections.summary.visible && (
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-[14px] font-bold uppercase border-b border-black pb-0.5 tracking-wider" style={{ marginBottom: `${config.layout.contentGap}px`, fontFamily: config.fonts.heading }}>
+                        {config.sections.summary.title || 'PROFESSIONAL SUMMARY'}
+                    </h2>
+                    <p className="text-justify leading-relaxed">
+                        {data.personalInfo.summary}
+                    </p>
+                </section>
+            )}
+
             {/* EDUCATION - Jerarquía Ivy League */}
             {data.education.length > 0 && config.sections.education.visible && (
-                <section className="mb-6">
-                    <h2 className="text-[14px] font-bold uppercase border-b border-black mb-3 pb-0.5 tracking-wider">
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-[14px] font-bold uppercase border-b border-black pb-0.5 tracking-wider" style={{ marginBottom: `${config.layout.contentGap}px`, fontFamily: config.fonts.heading }}>
                         {config.sections.education.title || 'EDUCATION'}
                     </h2>
-                    <div className="space-y-4">
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
                         {data.education.map((edu) => (
                             <div key={edu.id} className="break-inside-avoid">
                                 <div className="flex justify-between items-baseline">
@@ -96,11 +137,11 @@ export function HarvardTemplate({ data }: TemplateProps) {
 
             {/* EXPERIENCE - STAR Method formatting */}
             {data.experience.length > 0 && config.sections.experience.visible && (
-                <section className="mb-6">
-                    <h2 className="text-[14px] font-bold uppercase border-b border-black mb-3 pb-0.5 tracking-wider">
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-[14px] font-bold uppercase border-b border-black pb-0.5 tracking-wider" style={{ marginBottom: `${config.layout.contentGap}px`, fontFamily: config.fonts.heading }}>
                         {config.sections.experience.title || 'PROFESSIONAL EXPERIENCE'}
                     </h2>
-                    <div className="space-y-5">
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
                         {data.experience.map((exp) => (
                             <div key={exp.id} className="break-inside-avoid">
                                 <div className="flex justify-between items-baseline">
@@ -135,11 +176,11 @@ export function HarvardTemplate({ data }: TemplateProps) {
                 (data.certifications && data.certifications.length > 0 && config.sections.certifications.visible) ||
                 (data.tools && data.tools.length > 0 && config.sections.tools.visible) ||
                 (data.interests && data.interests.length > 0 && config.sections.interests.visible)) && (
-                    <section className="mb-6">
-                        <h2 className="text-[14px] font-bold uppercase border-b border-black mb-2 pb-0.5 tracking-wider">
+                    <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                        <h2 className="text-[14px] font-bold uppercase border-b border-black pb-0.5 tracking-wider" style={{ marginBottom: `${config.layout.contentGap / 2}px`, fontFamily: config.fonts.heading }}>
                             {config.sections.skills.title || 'ADDITIONAL INFORMATION'}
                         </h2>
-                        <div className="space-y-2">
+                        <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
                             {data.skills.length > 0 && config.sections.skills.visible && (
                                 <div className="flex tabular-nums">
                                     <span className="font-bold w-32 shrink-0">Technical Skills:</span>
@@ -191,11 +232,11 @@ export function HarvardTemplate({ data }: TemplateProps) {
 
             {/* PROJECTS */}
             {data.projects && data.projects.length > 0 && config.sections.projects.visible && (
-                <section className="mb-6">
-                    <h2 className="text-[14px] font-bold uppercase border-b border-black mb-3 pb-0.5 tracking-wider">
+                <section style={{ marginBottom: `${config.layout.sectionGap}px` }}>
+                    <h2 className="text-[14px] font-bold uppercase border-b border-black pb-0.5 tracking-wider" style={{ marginBottom: `${config.layout.contentGap}px`, fontFamily: config.fonts.heading }}>
                         {config.sections.projects.title || 'SELECTED PROJECTS'}
                     </h2>
-                    <div className="space-y-3">
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap}px` }}>
                         {data.projects.map((proj) => (
                             <div key={proj.id} className="break-inside-avoid">
                                 <div className="flex justify-between items-baseline mb-1">

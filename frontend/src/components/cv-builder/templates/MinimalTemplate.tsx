@@ -1,63 +1,78 @@
 import React from 'react';
 import { CVData } from '@/types/cv';
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+
+/**
+ * @component MinimalTemplate
+ * @description Swiss-inspired minimal CV template with sidebar layout.
+ */
 
 interface TemplateProps {
     data: CVData;
 }
 
-import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
-
 export function MinimalTemplate({ data }: TemplateProps) {
     const config = data.config || DEFAULT_CONFIG;
 
+    // Mapping density to padding
+    const paddingMap = {
+        compact: '1.5rem',
+        standard: '2.5rem',
+        relaxed: '3.5rem'
+    };
+
+    const sidePadding = paddingMap[config.layout.density] || '2rem';
+
     return (
         <div
-            className="w-[794px] min-h-[1122px] font-sans flex print:shadow-none"
+            className="w-[794px] h-[1122px] max-h-[1122px] overflow-hidden flex print:shadow-none mx-auto"
             style={{
+                fontFamily: config.fonts.body,
                 backgroundColor: config.colors.background,
                 color: config.colors.text
             }}
         >
             {/* Sidebar (Left Column) - 30% */}
             <aside
-                className="w-[30%] p-6 flex flex-col shrink-0"
+                className="w-[30%] flex flex-col shrink-0"
                 style={{
                     backgroundColor: `${config.colors.primary}10`, // 10% opacity of primary for sidebar
                     borderRight: `1px solid ${config.colors.primary}20`,
-                    gap: `${config.layout.sectionGap}px`
+                    gap: `${config.layout.sectionGap}px`,
+                    padding: sidePadding
                 }}
             >
                 {/* Contact */}
-                <div className="space-y-3 text-xs">
-                    <h3 className="font-bold uppercase tracking-widest text-[10px] mb-2" style={{ color: config.colors.primary }}>Contact</h3>
+                <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
+                    <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>Contact</h3>
                     {data.personalInfo.email && (
-                        <div className="break-all font-medium opacity-80">{data.personalInfo.email}</div>
+                        <div className="break-all font-medium opacity-80 text-xs">{data.personalInfo.email}</div>
                     )}
                     {data.personalInfo.phone && (
-                        <div className="font-medium opacity-80">{data.personalInfo.phone}</div>
+                        <div className="font-medium opacity-80 text-xs">{data.personalInfo.phone}</div>
                     )}
                     {data.personalInfo.location && (
-                        <div className="font-medium opacity-80">{data.personalInfo.location}</div>
+                        <div className="font-medium opacity-80 text-xs">{data.personalInfo.location}</div>
                     )}
                 </div>
 
                 {/* Socials */}
                 {(data.personalInfo.linkedin || data.personalInfo.github || data.personalInfo.website) && (
-                    <div className="space-y-3 text-xs">
-                        <h3 className="font-bold uppercase tracking-widest text-[10px] mb-2" style={{ color: config.colors.primary }}>Social</h3>
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
+                        <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>Social</h3>
                         {data.personalInfo.linkedin && (
-                            <div className="break-all opacity-70 hover:opacity-100 transition-opacity">{data.personalInfo.linkedin.replace('https://', '')}</div>
+                            <div className="break-all opacity-70 hover:opacity-100 transition-opacity text-xs">{data.personalInfo.linkedin.replace('https://', '')}</div>
                         )}
                         {data.personalInfo.github && (
-                            <div className="break-all opacity-70 hover:opacity-100 transition-opacity">{data.personalInfo.github.replace('https://', '')}</div>
+                            <div className="break-all opacity-70 hover:opacity-100 transition-opacity text-xs">{data.personalInfo.github.replace('https://', '')}</div>
                         )}
                     </div>
                 )}
 
                 {/* Skills */}
                 {data.skills.length > 0 && config.sections.skills.visible && (
-                    <div className="space-y-3">
-                        <h3 className="font-bold uppercase tracking-widest text-[10px] mb-2" style={{ color: config.colors.primary }}>
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
+                        <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>
                             {config.sections.skills.title || 'Skills'}
                         </h3>
                         <div className="flex flex-wrap gap-2">
@@ -71,21 +86,11 @@ export function MinimalTemplate({ data }: TemplateProps) {
                                         color: config.colors.text
                                     }}
                                 >
-<div className="relative z-10 flex justify-between items-center w-full gap-2">
+                                    <div className="relative z-10 flex justify-between items-center w-full gap-2">
                                         <span>{skill.name}</span>
                                     </div>
 
-                                    <div
-                                        className="absolute bottom-0 left-0 h-0.5"
-                                        style={{
-                                            width: `${skill.proficiency || 0}%`,
-                                            backgroundColor: config.colors.primary,
-                                            transition: 'width 1s ease-out'
-                                        }}
-                                    />
-                                    </div>
-
-                                    {config.layout.showExpertiseBar && config.layout.expertiseBarStyle !== 'dots' && (
+                                    {config.layout.showExpertiseBar && (
                                         <div
                                             className="absolute bottom-0 left-0 h-0.5"
                                             style={{
@@ -103,11 +108,11 @@ export function MinimalTemplate({ data }: TemplateProps) {
 
                 {/* Languages */}
                 {data.languages && data.languages.length > 0 && config.sections.languages.visible && (
-                    <div className="space-y-3">
-                        <h3 className="font-bold uppercase tracking-widest text-[10px] mb-2" style={{ color: config.colors.primary }}>
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
+                        <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>
                             {config.sections.languages.title || 'Languages'}
                         </h3>
-                        <div className="space-y-1.5">
+                        <div className="flex flex-col" style={{ gap: '4px' }}>
                             {data.languages.map((lang) => (
                                 <div key={lang.id} className="flex justify-between items-center text-[11px]">
                                     <span className="font-medium">{lang.language}</span>
@@ -120,8 +125,8 @@ export function MinimalTemplate({ data }: TemplateProps) {
 
                 {/* Tools */}
                 {data.tools && data.tools.length > 0 && config.sections.tools?.visible && (
-                    <div className="space-y-3">
-                        <h3 className="font-bold uppercase tracking-widest text-[10px] mb-2" style={{ color: config.colors.primary }}>
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
+                        <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>
                             {config.sections.tools?.title || 'Tools'}
                         </h3>
                         <div className="flex flex-wrap gap-1">
@@ -136,8 +141,8 @@ export function MinimalTemplate({ data }: TemplateProps) {
 
                 {/* Interests */}
                 {data.interests && data.interests.length > 0 && config.sections.interests.visible && (
-                    <div className="space-y-3">
-                        <h3 className="font-bold uppercase tracking-widest text-[10px] mb-2" style={{ color: config.colors.primary }}>
+                    <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
+                        <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>
                             {config.sections.interests.title || 'Interests'}
                         </h3>
                         <div className="flex flex-wrap gap-1">
@@ -153,22 +158,22 @@ export function MinimalTemplate({ data }: TemplateProps) {
 
             {/* Main Content (Right Column) - 70% */}
             <main
-                className="flex-1 p-8 flex flex-col"
+                className="flex-1 flex flex-col overflow-hidden"
                 style={{
-                    gap: 'var(--cv-section-gap)',
-                    fontSize: 'var(--cv-font-size-base)'
+                    gap: `${config.layout.sectionGap}px`,
+                    padding: paddingMap[config.layout.density] || '2.5rem'
                 }}
             >
                 {/* Header */}
-                <header className="mb-4">
+                <header>
                     <h1
                         className="text-4xl font-black tracking-tighter mb-2"
-                        style={{ fontFamily: 'Inter, sans-serif', color: config.colors.primary }}
+                        style={{ fontFamily: config.fonts.heading, color: config.colors.primary }}
                     >
                         {data.personalInfo.fullName.toUpperCase()}
                     </h1>
                     {data.personalInfo.summary && config.sections.summary.visible && (
-                        <p className="text-sm leading-relaxed font-medium max-w-[500px] opacity-80">
+                        <p className="text-sm leading-relaxed font-medium max-w-[500px] opacity-80" style={{ lineHeight: 1.6 }}>
                             {data.personalInfo.summary}
                         </p>
                     )}
@@ -177,7 +182,7 @@ export function MinimalTemplate({ data }: TemplateProps) {
                 {/* Experience */}
                 {data.experience.length > 0 && config.sections.experience.visible && (
                     <section>
-                        <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: config.colors.secondary }}>
+                        <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: config.colors.secondary, fontFamily: config.fonts.heading }}>
                             <span className="w-1 h-3 block" style={{ backgroundColor: config.colors.primary }}></span>
                             {config.sections.experience.title || 'Experience'}
                         </h2>
@@ -205,7 +210,7 @@ export function MinimalTemplate({ data }: TemplateProps) {
                 {/* Projects */}
                 {data.projects && data.projects.length > 0 && config.sections.projects.visible && (
                     <section>
-                        <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: config.colors.secondary }}>
+                        <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: config.colors.secondary, fontFamily: config.fonts.heading }}>
                             <span className="w-1 h-3 block" style={{ backgroundColor: config.colors.primary }}></span>
                             {config.sections.projects.title || 'Projects'}
                         </h2>
@@ -232,7 +237,7 @@ export function MinimalTemplate({ data }: TemplateProps) {
                 {/* Education */}
                 {data.education.length > 0 && config.sections.education.visible && (
                     <section>
-                        <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: config.colors.secondary }}>
+                        <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: config.colors.secondary, fontFamily: config.fonts.heading }}>
                             <span className="w-1 h-3 block" style={{ backgroundColor: config.colors.primary }}></span>
                             {config.sections.education.title || 'Education'}
                         </h2>
@@ -257,7 +262,7 @@ export function MinimalTemplate({ data }: TemplateProps) {
                 {/* Certifications (Main content if many) */}
                 {data.certifications && data.certifications.length > 0 && config.sections.certifications.visible && (
                     <section>
-                        <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: config.colors.secondary }}>
+                        <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: config.colors.secondary, fontFamily: config.fonts.heading }}>
                             <span className="w-1 h-3 block" style={{ backgroundColor: config.colors.primary }}></span>
                             {config.sections.certifications.title || 'Certifications'}
                         </h2>

@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional, Any, Dict
 
 class PersonalInfo(BaseModel):
-    fullName: str = Field(..., min_length=1, max_length=100)
+    fullName: str = Field(..., max_length=100)
     email: Optional[str] = None
     phone: Optional[str] = None
     location: Optional[str] = None

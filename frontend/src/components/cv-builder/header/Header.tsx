@@ -3,15 +3,16 @@ import { CVData, CVTemplate } from '@/types/cv';
 import { Button } from '@/components/ui/button';
 import {
     Layout, RotateCcw,
-    Palette, FileText, Sparkles, Eye, PenLine,
-    Settings2, GraduationCap, Terminal, Menu, ChevronDown, Check
+    Palette, Settings2, GraduationCap, Terminal, Menu, ChevronDown,
+    MapPin, Mail, Phone, Globe, Linkedin, Github, Twitter,
+    Briefcase, Building2, Calendar, Award, Languages, List, Heart, TrendingUp, Sparkles, FileText
 } from 'lucide-react';
 import { FinalizeExport } from '../FinalizeExport';
 import { TemplateConfigurator } from '../TemplateConfigurator';
+import { TemplateSelector } from '../TemplateSelector';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger
@@ -19,7 +20,6 @@ import {
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {
@@ -31,46 +31,64 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PenLine, Eye } from 'lucide-react';
 
 export const templateOptions = [
     {
         id: 'professional',
-        name: 'Professional',
-        description: 'Diseño clásico y elegante',
+        name: 'Executive',
+        description: 'Diseño clásico y elegante para corporativos',
         icon: FileText
     },
     {
         id: 'creative',
-        name: 'Creative',
-        description: 'Estilo editorial y audaz',
+        name: 'Studio',
+        description: 'Estilo editorial y audaz para creativos',
         icon: Sparkles
     },
     {
         id: 'harvard',
-        name: 'Harvard',
+        name: 'Ivy',
         description: 'Estilo Ivy League, ATS-Optimized',
         icon: GraduationCap
     },
     {
         id: 'minimal',
-        name: 'Minimal',
+        name: 'Pure',
         description: 'Diseño limpio y estructurado',
         icon: Layout
     },
     {
         id: 'tech',
-        name: 'Tech',
+        name: 'Terminal',
         description: 'Optimizado para desarrolladores',
         icon: Terminal
     },
     {
         id: 'bian',
-        name: 'Bian',
+        name: 'Direct',
         description: 'Factual, académico y directo',
         icon: FileText
+    },
+    {
+        id: 'finance',
+        name: 'Capital',
+        description: 'Perfiles financieros y corporativos',
+        icon: TrendingUp
+    },
+    {
+        id: 'health',
+        name: 'Care',
+        description: 'Sector salud y bienestar',
+        icon: Heart
+    },
+    {
+        id: 'education',
+        name: 'Scholar',
+        description: 'Ámbito académico y educativo',
+        icon: GraduationCap
     }
 ];
 
@@ -93,33 +111,33 @@ export function Header({
     onReset,
     activeView,
     setActiveView,
-    onDownloadPDF
+    onDownloadPDF,
 }: HeaderProps) {
     const currentTemplate = templateOptions.find(t => t.id === template);
 
     return (
-        <header className="h-16 border-b bg-card flex items-center justify-between px-4 sm:px-6 shrink-0 z-20 no-print">
+        <header className="sticky top-0 z-50 h-16 border-b bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 flex items-center justify-between px-4 sm:px-6 shrink-0 no-print transition-all duration-300">
             {/* Left: Logo & Brand */}
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20">
-                    <span className="text-sm font-bold text-primary-foreground">CV</span>
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-900/20 ring-1 ring-slate-950/5">
+                    <span className="text-sm font-black text-white tracking-tighter">CV</span>
                 </div>
-                <div className="hidden sm:block">
-                    <h1 className="font-bold tracking-tight">CV-ConVos</h1>
-                    <p className="text-xs text-muted-foreground">Editor de CV</p>
+                <div className="hidden sm:block leading-none">
+                    <h1 className="font-extrabold tracking-tight text-slate-900 text-sm">CV-ConVos</h1>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI Builder</p>
                 </div>
             </div>
 
             {/* Center: View Toggle (Mobile only) */}
-            <div className="sm:hidden">
+            <div className="sm:hidden absolute left-1/2 -translate-x-1/2">
                 <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'editor' | 'preview')}>
-                    <TabsList className="h-9">
-                        <TabsTrigger value="editor" className="gap-1.5 text-xs">
-                            <PenLine className="w-3.5 h-3.5" />
-                            Editar
+                    <TabsList className="h-9 w-[160px] bg-slate-100 p-0.5 border border-slate-200/50">
+                        <TabsTrigger value="editor" className="flex-1 gap-1.5 text-[10px] font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                            <PenLine className="w-3 h-3" />
+                            Editor
                         </TabsTrigger>
-                        <TabsTrigger value="preview" className="gap-1.5 text-xs">
-                            <Eye className="w-3.5 h-3.5" />
+                        <TabsTrigger value="preview" className="flex-1 gap-1.5 text-[10px] font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                            <Eye className="w-3 h-3" />
                             Vista
                         </TabsTrigger>
                     </TabsList>
@@ -128,78 +146,48 @@ export function Header({
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2">
-                {/* Desktop Actions */}
-                <div className="hidden sm:flex items-center gap-2">
-                    {/* Template Selector */}
-                    <DropdownMenu>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <Palette className="w-4 h-4" />
-                                        <span className="hidden md:inline">Plantilla:</span>
-                                        <span className="font-semibold">{currentTemplate?.name}</span>
-                                        <ChevronDown className="w-3 h-3 opacity-50" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent>Cambiar plantilla</TooltipContent>
-                        </Tooltip>
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>Elegí una plantilla</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {templateOptions.map((opt) => (
-                                <DropdownMenuItem
-                                    key={opt.id}
-                                    onClick={() => setTemplate(opt.id as CVTemplate)}
-                                    className="flex items-center gap-3 py-3"
-                                >
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${template === opt.id
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted'
-                                        }`}>
-                                        <opt.icon className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">{opt.name}</span>
-                                            {template === opt.id && (
-                                                <Badge variant="secondary" className="text-xs">Activa</Badge>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">{opt.description}</p>
-                                    </div>
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
 
-                    <div className="w-px h-6 bg-border" />
+                {/* Desktop Actions */}
+                <div className="hidden lg:flex items-center gap-2">
+                    {/* Template Selector */}
+                    <TemplateSelector
+                        currentTemplate={template}
+                        onSelect={setTemplate}
+                        trigger={
+                            <Button variant="outline" size="sm" className="gap-2 h-9 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium">
+                                <Palette className="w-3.5 h-3.5 text-slate-500" />
+                                <span className="hidden xl:inline">Plantilla:</span>
+                                <span className="font-bold">{currentTemplate?.name}</span>
+                                <ChevronDown className="w-3 h-3 opacity-50" />
+                            </Button>
+                        }
+                    />
+
+                    <div className="w-px h-6 bg-slate-200 mx-1" />
 
                     {/* Reset Button */}
                     <Dialog>
-                        <Tooltip>
+                        <Tooltip delayDuration={300}>
                             <TooltipTrigger asChild>
                                 <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
                                         <RotateCcw className="w-4 h-4" />
                                     </Button>
                                 </DialogTrigger>
                             </TooltipTrigger>
-                            <TooltipContent>Empezar de nuevo</TooltipContent>
+                            <TooltipContent>Reiniciar todo</TooltipContent>
                         </Tooltip>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>¿Empezar de nuevo?</DialogTitle>
+                                <DialogTitle>¿Empezar de cero?</DialogTitle>
                                 <DialogDescription>
-                                    Se perderán todos los cambios que hayas hecho en tu CV.
-                                    Esta acción no se puede deshacer.
+                                    Se borrarán todos los datos y cambios actuales. Esta acción es irreversible.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="flex gap-3 justify-end mt-4">
-                                <Button variant="outline">Cancelar</Button>
+                                <Button variant="outline" onClick={() => { }}>Cancelar</Button>
                                 <Button variant="destructive" onClick={onReset}>
-                                    Sí, empezar de nuevo
+                                    Sí, borrar todo
                                 </Button>
                             </div>
                         </DialogContent>
@@ -207,80 +195,78 @@ export function Header({
 
                     {/* Settings */}
                     <DropdownMenu>
-                        <Tooltip>
+                        <Tooltip delayDuration={300}>
                             <TooltipTrigger asChild>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <Settings2 className="w-4 h-4" />
-                                        <span className="hidden lg:inline">Ajustes</span>
+                                    <Button variant="outline" size="sm" className="gap-2 h-9 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium">
+                                        <Settings2 className="w-4 h-4 text-slate-500" />
+                                        <span>Ajustes</span>
                                     </Button>
                                 </DropdownMenuTrigger>
                             </TooltipTrigger>
-                            <TooltipContent>Configuración Visual</TooltipContent>
+                            <TooltipContent>Configuración avanzada</TooltipContent>
                         </Tooltip>
-                        <DropdownMenuContent align="end" className="w-80 p-4 max-h-[80vh] overflow-y-auto">
-                            <DropdownMenuLabel>Control Total del Diseño</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <TemplateConfigurator
-                                config={data.config!}
-                                onChange={(config) => setData({ ...data, config })}
-                            />
+                        <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden border-slate-200 shadow-xl rounded-2xl">
+                            <div className="p-4 bg-slate-50 border-b border-slate-100">
+                                <h4 className="font-bold text-slate-900 text-sm">Personalización</h4>
+                                <p className="text-xs text-slate-500">Ajusta fuentes, colores y espaciado</p>
+                            </div>
+                            <ScrollArea className="h-[400px] p-4">
+                                <TemplateConfigurator
+                                    config={data.config!}
+                                    onChange={(config) => setData({ ...data, config })}
+                                />
+                            </ScrollArea>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
 
-                {/* Finalize Button - Visible on both but smaller on mobile maybe? kept same size for prominence */}
+                {/* Finalize Button */}
                 <FinalizeExport data={data} onDownloadPDF={onDownloadPDF} />
 
                 {/* Mobile Menu Trigger */}
-                <div className="sm:hidden">
+                <div className="lg:hidden ml-1">
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-700">
                                 <Menu className="w-5 h-5" />
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="right" className="w-[85vw] sm:w-[540px] p-0">
-                            <SheetHeader className="p-6 border-b">
-                                <SheetTitle>Menú</SheetTitle>
+                        <SheetContent side="right" className="w-[85vw] sm:w-[400px] p-0 border-l border-slate-200">
+                            <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <SheetTitle className="text-left font-black">Menú Principal</SheetTitle>
                             </SheetHeader>
                             <ScrollArea className="h-[calc(100vh-80px)]">
                                 <div className="p-6 space-y-8">
                                     {/* Template Selection */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Plantilla</h3>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {templateOptions.map((opt) => (
-                                                <Button
-                                                    key={opt.id}
-                                                    variant={template === opt.id ? "secondary" : "outline"}
-                                                    className="w-full justify-start h-auto py-3 px-4"
-                                                    onClick={() => setTemplate(opt.id as CVTemplate)}
-                                                >
-                                                    <div className={`w-8 h-8 rounded-md flex items-center justify-center mr-3 ${template === opt.id ? 'bg-background' : 'bg-muted'
-                                                        }`}>
-                                                        <opt.icon className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="flex-1 text-left">
-                                                        <div className="font-medium flex items-center gap-2">
-                                                            {opt.name}
-                                                            {template === opt.id && <Check className="w-3 h-3 text-primary" />}
+                                    <div className="space-y-3">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Plantilla Activa</h3>
+                                        <TemplateSelector
+                                            currentTemplate={template}
+                                            onSelect={setTemplate}
+                                            trigger={
+                                                <Button variant="outline" className="w-full justify-between h-auto py-4 px-5 border-slate-200 bg-white hover:bg-slate-50 rounded-xl shadow-sm group">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                            <Palette className="w-6 h-6 text-emerald-600" />
                                                         </div>
-                                                        <p className="text-xs text-muted-foreground font-normal line-clamp-1">
-                                                            {opt.description}
-                                                        </p>
+                                                        <div className="text-left">
+                                                            <div className="font-bold text-slate-900 text-base">{currentTemplate?.name}</div>
+                                                            <p className="text-xs text-slate-500">Cambiar diseño</p>
+                                                        </div>
                                                     </div>
+                                                    <ChevronDown className="w-5 h-5 text-slate-400" />
                                                 </Button>
-                                            ))}
-                                        </div>
+                                            }
+                                        />
                                     </div>
 
-                                    <div className="w-full h-px bg-border" />
+                                    <div className="w-full h-px bg-slate-100" />
 
                                     {/* Settings */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Diseño & Estilo</h3>
-                                        <div className="border rounded-xl p-4 bg-muted/30">
+                                    <div className="space-y-3">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ajustes Visuales</h3>
+                                        <div className="border border-slate-200 rounded-xl p-5 bg-slate-50/50">
                                             <TemplateConfigurator
                                                 config={data.config!}
                                                 onChange={(config) => setData({ ...data, config })}
@@ -288,32 +274,36 @@ export function Header({
                                         </div>
                                     </div>
 
-                                    <div className="w-full h-px bg-border" />
+                                    <div className="w-full h-px bg-slate-100" />
 
                                     {/* Reset Actions */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         <Dialog>
                                             <DialogTrigger asChild>
-                                                <Button variant="destructive" className="w-full gap-2">
+                                                <Button variant="ghost" className="w-full h-12 rounded-xl border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 font-bold gap-2">
                                                     <RotateCcw className="w-4 h-4" />
-                                                    Empezar de nuevo
+                                                    Reiniciar CV
                                                 </Button>
                                             </DialogTrigger>
                                             <DialogContent>
                                                 <DialogHeader>
-                                                    <DialogTitle>¿Empezar de nuevo?</DialogTitle>
+                                                    <DialogTitle>¿Estás seguro/a?</DialogTitle>
                                                     <DialogDescription>
-                                                        Se perderán todos los cambios. Esta acción no se puede deshacer.
+                                                        Esta acción borrará todo el contenido de tu CV y no se puede deshacer.
                                                     </DialogDescription>
                                                 </DialogHeader>
                                                 <div className="flex gap-3 justify-end mt-4">
                                                     <Button variant="outline">Cancelar</Button>
                                                     <Button variant="destructive" onClick={onReset}>
-                                                        Sí, reiniciar
+                                                        Sí, borrar todo
                                                     </Button>
                                                 </div>
                                             </DialogContent>
                                         </Dialog>
+                                    </div>
+
+                                    <div className="pt-8 text-center">
+                                        <p className="text-[10px] text-slate-300 font-mono">CV-ConVos Build v2.0</p>
                                     </div>
                                 </div>
                             </ScrollArea>

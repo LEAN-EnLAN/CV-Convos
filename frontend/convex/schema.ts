@@ -4,7 +4,14 @@ import { v } from "convex/values";
 
 const schema = defineSchema({
     ...authTables,
-    // Additional tables can be defined here
+    cvs: defineTable({
+        userId: v.id("users"),
+        title: v.string(),
+        data: v.any(),
+        isActive: v.boolean(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    }).index("by_user", ["userId"]),
 });
 
 export default schema;

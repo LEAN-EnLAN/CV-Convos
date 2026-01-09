@@ -30,3 +30,4 @@ def setup_logging():
     # Set levels for libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("python_multipart.multipart").setLevel(logging.WARNING)
