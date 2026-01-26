@@ -1,0 +1,9 @@
+backend/.env
+backend/__pycache__/**
+backend/.coverage
+backend/*.log
+backend/.venv/
+frontend/node_modules/
+frontend/.next/
+.DS_Store
+firebase-debug.log
