@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -13,7 +12,6 @@ from app.core.config import settings
 def mock_settings_env(monkeypatch):
     """Mock environment variables and settings for testing."""
     monkeypatch.setenv("GROQ_API_KEY", "test_key")
-    from app.core.config import settings
     monkeypatch.setattr(settings, "GROQ_API_KEY", "test_key")
     monkeypatch.setattr(settings, "DEBUG", True)
     return settings

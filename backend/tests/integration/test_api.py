@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock
 from app.main import app
@@ -9,29 +8,35 @@ TEST_CV_DATA = {
     "personalInfo": {
         "fullName": "Juan Pérez",
         "email": "juan@example.com",
-        "summary": "Dev"
+        "summary": "Dev",
     }
 }
+
 
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json()["status"] == "healthy"
+    assert "version" in response.json()
+
 
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
+
 
 def test_optimize_cv(mocker):
     """Test optimization endpoint with mocked AI service."""
     # Mock Groq to avoid real API calls
     mock_groq = mocker.patch("app.services.ai_service.Groq")
     mock_client = mock_groq.return_value
-    
+
     # Mock response structure
     mock_resp = MagicMock()
     mock_resp.choices = [
-        MagicMock(message=MagicMock(content='{"personalInfo": {"fullName": "Juan Pérez"}}'))
+        MagicMock(
+            message=MagicMock(content='{"personalInfo": {"fullName": "Juan Pérez"}}')
+        )
     ]
     mock_client.chat.completions.create.return_value = mock_resp
 
@@ -39,14 +44,19 @@ def test_optimize_cv(mocker):
     assert response.status_code == 200
     assert response.json()["personalInfo"]["fullName"] == "Juan Pérez"
 
+
 def test_critique_cv(mocker):
     """Test critique endpoint with mocked AI service."""
     mock_groq = mocker.patch("app.services.ai_service.Groq")
     mock_client = mock_groq.return_value
-    
+
     mock_resp = MagicMock()
     mock_resp.choices = [
-        MagicMock(message=MagicMock(content='{"critique": [{"id": "1", "target_field": "summary", "suggested_text": "Better summary"}]}'))
+        MagicMock(
+            message=MagicMock(
+                content='{"critique": [{"id": "1", "target_field": "summary", "suggested_text": "Better summary"}]}'
+            )
+        )
     ]
     mock_client.chat.completions.create.return_value = mock_resp
 
@@ -55,6 +65,7 @@ def test_critique_cv(mocker):
     result = response.json()
     assert "critique" in result
     assert len(result["critique"]) == 1
+
 
 def test_generate_cv_no_files():
     """Test generate endpoint with no files."""

@@ -144,3 +144,7 @@ export interface CritiqueResponse {
     critique: ImprovementCard[];
 }
 
+export interface TemplateProps {
+    data: CVData;
+}
+

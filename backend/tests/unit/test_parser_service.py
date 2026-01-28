@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import MagicMock, Mock
-from app.services.parser_service import extract_text_from_file, parse_pdf, parse_docx
+from unittest.mock import Mock
+from app.services.parser_service import extract_text_from_file
 
 @pytest.mark.asyncio
 async def test_extract_text_txt():

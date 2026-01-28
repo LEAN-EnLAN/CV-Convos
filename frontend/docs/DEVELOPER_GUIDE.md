@@ -64,7 +64,6 @@ frontend/
 │   ├── COMPONENTS.md
 │   ├── CODE_CONVENTIONS.md
 │   └── DEVELOPER_GUIDE.md
-├── convex/                    # Convex backend
 ├── public/                    # Static assets
 ├── components.json            # Shadcn config
 ├── tsconfig.json              # TypeScript config
@@ -188,58 +187,8 @@ npx shadcn@latest add [component-name]
 import { Button } from '@/components/ui/button';
 ```
 
-## Working with Convex
-
-### Reading Data
-
-```typescript
-import { useQuery } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-
-function MyComponent() {
-  const cv = useQuery(api.cvOperations.getCV, { id: '123' });
-
-  if (!cv) return <div>Loading...</div>;
-
-  return <div>{cv.personalInfo.fullName}</div>;
-}
-```
-
-### Writing Data
-
-```typescript
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-
-function MyComponent() {
-  const updateCV = useMutation(api.cvOperations.updateCV);
-
-  const handleSave = async (data: CVData) => {
-    await updateCV({ id: '123', data });
-  };
-
-  return <button onClick={() => handleSave(data)}>Save</button>;
-}
-```
-
-### Convex Schema
-
-Edit `convex/schema.ts` to add/change database schema:
-
-```typescript
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-
-export default defineSchema({
-  cvs: defineTable({
-    userId: v.string(),
-    data: v.any(), // CVData
-    createdAt: v.number(),
-  }).index("by_user", ["userId"]),
-});
-```
-
 ## Styling Guidelines
+
 
 ### Using Tailwind Classes
 
@@ -515,7 +464,6 @@ import Image from 'next/image';
 
 3. Add environment variables:
    ```
-   NEXT_PUBLIC_CONVEX_URL=your-convex-url
    NEXT_PUBLIC_API_URL=your-api-url
    ```
 
@@ -535,7 +483,6 @@ npm run start
 
 Create `.env.local`:
 ```env
-NEXT_PUBLIC_CONVEX_URL=
 NEXT_PUBLIC_API_URL=
 ```
 
@@ -603,7 +550,6 @@ npm run lint
 - **Shadcn UI**: https://ui.shadcn.com
 - **Tailwind CSS**: https://tailwindcss.com/docs
 - **Next.js**: https://nextjs.org/docs
-- **Convex**: https://docs.convex.dev
 - **Radix UI**: https://www.radix-ui.com
 
 ## Next Steps

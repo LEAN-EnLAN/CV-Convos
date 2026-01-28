@@ -191,44 +191,15 @@ const { theme, setTheme } = useTheme();
 
 ## Backend Integration
 
-### Convex 1.31.2
+### FastAPI (Python)
 
-**Backend-as-a-Service**:
-- Database (real-time)
-- Server functions (API endpoints)
-- Authentication
-- File storage
+El frontend se comunica con una API de Python que maneja:
+- Extracción de texto de PDFs y DOCX.
+- Procesamiento de IA (Groq/Llama 3).
+- Análisis ATS.
 
-**Convex files**:
-```
-convex/
-├── schema.ts          # Database schema
-├── auth.ts            # Auth configuration
-├── users.ts           # User operations
-├── cvOperations.ts    # CV operations
-└── http.ts            # HTTP endpoints
-```
-
-**Ejemplo de uso**:
-```tsx
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-
-// Query
-const cv = useQuery(api.cvOperations.getCV, { id });
-
-// Mutation
-const updateCV = useMutation(api.cvOperations.updateCV);
-
-await updateCV({ id, data: newData });
-```
-
-### @convex-dev/auth 0.0.90
-
-**Authentication**:
-- Email/password
-- OAuth providers (configurables)
-- Session management
+**Variables de entorno**:
+- `NEXT_PUBLIC_API_URL`: URL base del backend.
 
 ## File Handling
 

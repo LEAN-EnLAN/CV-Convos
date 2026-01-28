@@ -1,10 +1,13 @@
 import json
 import logging
-import os
 import copy
-from typing import Optional, Dict, Any
+import asyncio
 from groq import Groq
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.core.config import settings
+
+# Valid Groq Models
+MODEL_ID = "llama-3.1-8b-instant"
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +31,20 @@ Rules:
 - If a value is missing, use "".
 - If the text is in Spanish, keep it in Spanish.
 - EDUCATION: Always try to separate the 'degree' (e.g., "Técnico", "Licenciatura") from the 'fieldOfStudy' (e.g., "Radiología", "Informática"). If the text says "Técnico en Informática", degree is "Técnico" and fieldOfStudy is "Informática".
-- Do NOT normalize job titles. 
+- Do NOT normalize job titles.
+- DATE FORMATS (CRITICAL):
+  - For dates, use YYYY-MM format (e.g., "2020-01") when month is known, or just YYYY (e.g., "2024") when only year is available.
+  - For current positions, use "Present" for endDate (English) or "Presente" (Spanish).
+- SKILL LEVELS (CRITICAL):
+  - Use ONLY ONE of these exact values: "Beginner", "Intermediate", "Advanced", "Expert" (or Spanish: "Principiante", "Intermedio", "Avanzado", "Experto").
+  - Do NOT use the example text "Beginner/Intermediate/Advanced/Expert" - pick ONE value.
+- PHONE NUMBERS: Keep as-is, including parentheses and spaces.
 - Strictly follow this schema:
 {{
   "personalInfo": {{ "fullName": "", "email": "", "phone": "", "location": "", "summary": "", "website": "", "linkedin": "", "github": "" }},
   "experience": [ {{ "company": "", "position": "", "location": "", "startDate": "", "endDate": "", "current": false, "description": "" }} ],
   "education": [ {{ "institution": "", "degree": "", "fieldOfStudy": "", "location": "", "startDate": "", "endDate": "" }} ],
-  "skills": [ {{ "name": "", "level": "Beginner/Intermediate/Advanced/Expert" }} ],
+  "skills": [ {{ "name": "", "level": "" }} ],
   "languages": [ {{ "language": "", "fluency": "" }} ],
   "projects": [ {{ "name": "", "description": "", "technologies": [] }} ],
   "certifications": [ {{ "name": "", "issuer": "", "date": "" }} ]
@@ -70,7 +80,11 @@ Instructions:
 3. Return a mix of Hard and Soft skills (70% Hard, 30% Soft).
 4. Total suggestions: 10-15 relevant skills.
 5. LANGUAGE: {language} (Match CV language).
-6. FORMAT: JSON {{ "skills": [ {{ "name": "Skill Name", "level": "Advanced" }}, ... ] }}
+6. SKILL LEVELS (CRITICAL): Use ONLY ONE of these exact values:
+   - English: "Beginner", "Intermediate", "Advanced", "Expert"
+   - Spanish: "Principiante", "Intermedio", "Avanzado", "Experto"
+   - Do NOT use the example text "Beginner/Intermediate/Advanced/Expert" - pick ONE value.
+7. FORMAT: JSON {{ "skills": [ {{ "name": "Skill Name", "level": "Advanced" }}, ... ] }}
 
 Input CV:
 {cv_json}
@@ -148,26 +162,47 @@ Return JSON:
 
 # --- SERVICE FUNCTIONS ---
 
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type((Exception,)),
+    reraise=False
+)
+def _call_groq_api(prompt: str, system_msg: str) -> dict:
+    """Internal function to call Groq API with retry logic."""
+    client = Groq(api_key=settings.GROQ_API_KEY)
+    completion = client.chat.completions.create(
+        model=MODEL_ID,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.1,
+        response_format={"type": "json_object"},
+    )
+    message_content = completion.choices[0].message.content
+    if message_content is None:
+        return None
+    return json.loads(message_content)
+
+
 async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES):
     if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
         return None
+
     try:
-        client = Groq(api_key=settings.GROQ_API_KEY)
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.1,
-            response_format={"type": "json_object"},
+        # Run the synchronous Groq call in a thread pool
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, _call_groq_api, prompt, system_msg
         )
-        message_content = completion.choices[0].message.content
-        if message_content is None:
-            return None
-        return json.loads(message_content)
+        return result
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON response from AI: {e}")
+        return None
     except Exception as e:
-        logger.error(f"AI Error: {str(e)}", exc_info=True)
+        logger.error(f"AI Error after retries: {str(e)}")
         return None
 
 
@@ -178,7 +213,7 @@ async def extract_cv_data(text: str):
 async def optimize_cv_data(cv_data: dict, target: str, section: str):
     original_copy = copy.deepcopy(cv_data)
     cv_json = json.dumps(cv_data, indent=2)
-    
+
     # Detect language (simplified helper or assumption)
     # We'll assume the prompt instruction "Match CV language" handles it enough.
     language_instruction = "Spanish if the input is Spanish, English if English."
@@ -189,13 +224,15 @@ async def optimize_cv_data(cv_data: dict, target: str, section: str):
     # ROUTING LOGIC
     if section == "summary" or target == "summarize_profile":
         prompt = SUMMARIZE_PROMPT.format(cv_json=cv_json, language=language_instruction)
-    
+
     elif section == "skills" or target == "suggest_skills":
-        prompt = SUGGEST_SKILLS_PROMPT.format(cv_json=cv_json, language=language_instruction)
-        
+        prompt = SUGGEST_SKILLS_PROMPT.format(
+            cv_json=cv_json, language=language_instruction
+        )
+
     elif target == "one_page" or target == "try_one_page":
         prompt = ONE_PAGE_OPTIMIZER_PROMPT.format(cv_json=cv_json)
-        
+
     else:
         # Fallback to generic optimization
         # Use a simpler generic prompt if needed, or re-use the old logic structure
@@ -214,7 +251,9 @@ async def optimize_cv_data(cv_data: dict, target: str, section: str):
         
         Return JSON with the updated '{section}'.
         """
-        prompt = GENERIC_OPTIMIZE_PROMPT.format(target=target, section=section, cv_json=cv_json)
+        prompt = GENERIC_OPTIMIZE_PROMPT.format(
+            target=target, section=section, cv_json=cv_json
+        )
 
     ai_response = await get_ai_completion(prompt, system_msg)
 
@@ -225,16 +264,18 @@ async def optimize_cv_data(cv_data: dict, target: str, section: str):
 
     # SECURE MERGE LOGIC
     if section == "summary" or target == "summarize_profile":
-        new_summary = ai_response.get("personalInfo", {}).get("summary") or ai_response.get("summary")
+        new_summary = ai_response.get("personalInfo", {}).get(
+            "summary"
+        ) or ai_response.get("summary")
         if new_summary:
             result_cv["personalInfo"]["summary"] = new_summary
 
     elif section == "skills" or target == "suggest_skills":
         if "skills" in ai_response and isinstance(ai_response["skills"], list):
-             # Strategy: Replace or Merge? User complained "Useless", implies they want NEW stuff.
-             # We will overwrite to ensure they see the suggestions, effectively "refining" the list.
-             # Ideally we might want to keep proficiency, but the prompt reconstructs it.
-             result_cv["skills"] = ai_response["skills"]
+            # Strategy: Replace or Merge? User complained "Useless", implies they want NEW stuff.
+            # We will overwrite to ensure they see the suggestions, effectively "refining" the list.
+            # Ideally we might want to keep proficiency, but the prompt reconstructs it.
+            result_cv["skills"] = ai_response["skills"]
 
     elif target in ["one_page", "try_one_page"]:
         # Full CV replacement for one-page
@@ -242,11 +283,11 @@ async def optimize_cv_data(cv_data: dict, target: str, section: str):
         # But for one-page, we trust the AI to return the full structure as requested.
         # We'll validte critical fields exist.
         if "experience" in ai_response:
-            return ai_response # Return the full condensed CV
-            
+            return ai_response  # Return the full condensed CV
+
     elif section in ai_response:
         result_cv[section] = ai_response[section]
-    
+
     # Handle the "optimize for specific section" generic case return
     if section != "all" and section in ai_response:
         result_cv[section] = ai_response[section]
@@ -266,7 +307,9 @@ async def optimize_for_role(cv_data: dict, target_role: str):
     language_instruction = "Spanish if the input is Spanish, English if English."
 
     ai_response = await get_ai_completion(
-        ROLE_ALIGNMENT_PROMPT.format(target_role=target_role, cv_json=cv_json, language=language_instruction)
+        ROLE_ALIGNMENT_PROMPT.format(
+            target_role=target_role, cv_json=cv_json, language=language_instruction
+        )
     )
 
     if not ai_response:
@@ -276,11 +319,15 @@ async def optimize_for_role(cv_data: dict, target_role: str):
     # Restore contact info to prevent hallucinations there
     if "personalInfo" in ai_response and "personalInfo" in original_copy:
         for field in ["fullName", "email", "phone", "location", "linkedin", "github"]:
-             ai_response["personalInfo"][field] = original_copy["personalInfo"].get(field, "")
-            
+            ai_response["personalInfo"][field] = original_copy["personalInfo"].get(
+                field, ""
+            )
+
         # Allow summary change
         if "summary" not in ai_response["personalInfo"]:
-             ai_response["personalInfo"]["summary"] = original_copy["personalInfo"].get("summary", "")
+            ai_response["personalInfo"]["summary"] = original_copy["personalInfo"].get(
+                "summary", ""
+            )
 
     return ai_response
 
@@ -373,34 +420,148 @@ async def generate_cover_letter(
 INDUSTRY_KEYWORDS = {
     "tech": {
         "name": "Tecnología / IT / Desarrollo de Software",
-        "keywords": ["Python", "JavaScript", "React", "Node.js", "SQL", "Git", "AWS", "Docker", "Kubernetes", "CI/CD", "API", "Agile", "Scrum", "Machine Learning", "Full Stack", "Backend", "Frontend", "DevOps", "Cloud", "Microservices"],
-        "focus": "habilidades técnicas, tecnologías específicas, proyectos de código, metodologías ágiles"
+        "keywords": [
+            "Python",
+            "JavaScript",
+            "React",
+            "Node.js",
+            "SQL",
+            "Git",
+            "AWS",
+            "Docker",
+            "Kubernetes",
+            "CI/CD",
+            "API",
+            "Agile",
+            "Scrum",
+            "Machine Learning",
+            "Full Stack",
+            "Backend",
+            "Frontend",
+            "DevOps",
+            "Cloud",
+            "Microservices",
+        ],
+        "focus": "habilidades técnicas, tecnologías específicas, proyectos de código, metodologías ágiles",
     },
     "finance": {
         "name": "Finanzas / Banca / Contabilidad",
-        "keywords": ["Excel", "Análisis financiero", "Contabilidad", "Presupuestos", "Auditoría", "Reporting", "SAP", "ERP", "Compliance", "Riesgo", "Inversiones", "Balance", "P&L", "Forecasting", "Power BI", "Tableau", "KPIs", "Due Diligence", "Regulación", "IFRS"],
-        "focus": "análisis numérico, herramientas de reporting, regulaciones financieras, experiencia en auditoría y compliance"
+        "keywords": [
+            "Excel",
+            "Análisis financiero",
+            "Contabilidad",
+            "Presupuestos",
+            "Auditoría",
+            "Reporting",
+            "SAP",
+            "ERP",
+            "Compliance",
+            "Riesgo",
+            "Inversiones",
+            "Balance",
+            "P&L",
+            "Forecasting",
+            "Power BI",
+            "Tableau",
+            "KPIs",
+            "Due Diligence",
+            "Regulación",
+            "IFRS",
+        ],
+        "focus": "análisis numérico, herramientas de reporting, regulaciones financieras, experiencia en auditoría y compliance",
     },
     "healthcare": {
         "name": "Salud / Medicina / Enfermería",
-        "keywords": ["Paciente", "Clínica", "Hospital", "Diagnóstico", "Tratamiento", "Historial clínico", "HIPAA", "Emergencias", "Farmacología", "Enfermería", "Cirugía", "Laboratorio", "Radiología", "Atención primaria", "Cuidados intensivos", "Protocolos", "Esterilización", "Signos vitales"],
-        "focus": "certificaciones médicas, experiencia clínica, atención al paciente, protocolos de seguridad"
+        "keywords": [
+            "Paciente",
+            "Clínica",
+            "Hospital",
+            "Diagnóstico",
+            "Tratamiento",
+            "Historial clínico",
+            "HIPAA",
+            "Emergencias",
+            "Farmacología",
+            "Enfermería",
+            "Cirugía",
+            "Laboratorio",
+            "Radiología",
+            "Atención primaria",
+            "Cuidados intensivos",
+            "Protocolos",
+            "Esterilización",
+            "Signos vitales",
+        ],
+        "focus": "certificaciones médicas, experiencia clínica, atención al paciente, protocolos de seguridad",
     },
     "creative": {
         "name": "Diseño / Marketing / Comunicación",
-        "keywords": ["Photoshop", "Illustrator", "Figma", "UI/UX", "Branding", "Copywriting", "SEO", "Social Media", "Campañas", "Estrategia digital", "Google Ads", "Content", "Creatividad", "Portfolio", "Adobe", "Canva", "Motion Graphics", "Video", "Fotografía"],
-        "focus": "portfolio de trabajos, herramientas de diseño, métricas de campañas, creatividad y storytelling"
+        "keywords": [
+            "Photoshop",
+            "Illustrator",
+            "Figma",
+            "UI/UX",
+            "Branding",
+            "Copywriting",
+            "SEO",
+            "Social Media",
+            "Campañas",
+            "Estrategia digital",
+            "Google Ads",
+            "Content",
+            "Creatividad",
+            "Portfolio",
+            "Adobe",
+            "Canva",
+            "Motion Graphics",
+            "Video",
+            "Fotografía",
+        ],
+        "focus": "portfolio de trabajos, herramientas de diseño, métricas de campañas, creatividad y storytelling",
     },
     "education": {
         "name": "Educación / Docencia / Capacitación",
-        "keywords": ["Docencia", "Curriculum", "Planificación", "Evaluación", "Pedagogía", "E-learning", "Moodle", "Estudiantes", "Aula", "Didáctica", "Capacitación", "Tutoría", "Metodología", "Inclusión", "NEE", "Desarrollo curricular", "Materiales didácticos"],
-        "focus": "experiencia docente, metodologías educativas, gestión de aula, desarrollo de programas"
+        "keywords": [
+            "Docencia",
+            "Curriculum",
+            "Planificación",
+            "Evaluación",
+            "Pedagogía",
+            "E-learning",
+            "Moodle",
+            "Estudiantes",
+            "Aula",
+            "Didáctica",
+            "Capacitación",
+            "Tutoría",
+            "Metodología",
+            "Inclusión",
+            "NEE",
+            "Desarrollo curricular",
+            "Materiales didácticos",
+        ],
+        "focus": "experiencia docente, metodologías educativas, gestión de aula, desarrollo de programas",
     },
     "general": {
         "name": "General / Multiindustria",
-        "keywords": ["Liderazgo", "Gestión", "Comunicación", "Trabajo en equipo", "Organización", "Resolución de problemas", "Excel", "Inglés", "Atención al cliente", "Ventas", "Negociación", "Planificación", "Adaptabilidad", "Proactividad"],
-        "focus": "habilidades transferibles, logros cuantificables, experiencia general relevante"
-    }
+        "keywords": [
+            "Liderazgo",
+            "Gestión",
+            "Comunicación",
+            "Trabajo en equipo",
+            "Organización",
+            "Resolución de problemas",
+            "Excel",
+            "Inglés",
+            "Atención al cliente",
+            "Ventas",
+            "Negociación",
+            "Planificación",
+            "Adaptabilidad",
+            "Proactividad",
+        ],
+        "focus": "habilidades transferibles, logros cuantificables, experiencia general relevante",
+    },
 }
 
 ATS_CHECKER_PROMPT = """
@@ -458,17 +619,16 @@ CV a analizar:
 async def analyze_ats(cv_text: str, target_industry: str = "general"):
     """Analyze CV for ATS compatibility in a specific industry."""
     industry_data = INDUSTRY_KEYWORDS.get(target_industry, INDUSTRY_KEYWORDS["general"])
-    
+
     prompt = ATS_CHECKER_PROMPT.format(
         cv_text=cv_text,
         industry_name=industry_data["name"],
         industry_keywords=", ".join(industry_data["keywords"]),
         industry_focus=industry_data["focus"],
-        target_industry=target_industry
+        target_industry=target_industry,
     )
 
     return await get_ai_completion(
         prompt,
         system_msg=f"Eres un sistema ATS experto especializado en la industria de {industry_data['name']}. Sé riguroso y específico en tu análisis, enfocándote en lo que realmente importa para esta industria.",
     )
-

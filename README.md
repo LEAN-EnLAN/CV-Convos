@@ -6,7 +6,7 @@ Este proyecto es una aplicación web full-stack que permite generar, optimizar y
 ## 🛠️ Estructura del Proyecto
 
 El repositorio se divide en dos partes principales:
-- `/frontend`: Aplicación Next.js (React) con Convex para Auth y Base de Datos.
+- `/frontend`: Aplicación Next.js (React) enfocada en la construcción y exportación de CVs.
 - `/backend`: API de Python (FastAPI) para el procesamiento de documentos e IA.
 
 ## 🚀 Inicio Rápido (Local)
@@ -36,10 +36,6 @@ pip install -r requirements.txt
 cd ../frontend
 npm install
 ```
-- Configura Convex:
-  ```bash
-  npx convex dev
-  ```
 - Ejecuta: `npm run dev`
 
 ---
@@ -54,7 +50,6 @@ npm install
 ### Frontend (Vercel)
 - **Root Directory:** `frontend`
 - **Framework:** Next.js
-- **Integraciones:** Convex Integration (Recomendado)
 - **Variables:** `NEXT_PUBLIC_API_URL` (URL del Backend desplegado)
 
 ## 🧪 Tests y Calidad

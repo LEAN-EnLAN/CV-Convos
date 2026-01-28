@@ -1,64 +1,24 @@
 import React from 'react';
-import { CVData } from '@/types/cv';
+import { TemplateProps } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
-
-/**
- * @component HarvardTemplate
- * @description Official Harvard Business School CV format - ATS-optimized, no colors.
- * 
- * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║ 🤖 AI AGENT GUARDRAILS - READ BEFORE EDITING                             ║
- * ╠══════════════════════════════════════════════════════════════════════════╣
- * ║ 1. STRUCTURE: Single-column, strictly linear layout                      ║
- * ║    - Header: Centered name + contact (no sidebar)                        ║
- * ║    - Sections: EDUCATION first, then EXPERIENCE (Ivy League priority)    ║
- * ║                                                                          ║
- * ║ 2. FONTS: Times New Roman / Georgia (serif) - DO NOT CHANGE              ║
- * ║    - This is a formal academic format, serif fonts are required          ║
- * ║                                                                          ║
- * ║ 3. SECTION PATTERN:                                                      ║
- * ║    {data.arrayName.length > 0 && config.sections.name.visible && (       ║
- * ║      <section className="mb-6">                                          ║
- * ║        <h2 className="text-[14px] font-bold uppercase border-b">TITLE</h2>║
- * ║        <div>{data.arrayName.map(...)}</div>                              ║
- * ║      </section>                                                          ║
- * ║    )}                                                                    ║
- * ║                                                                          ║
- * ║ 4. CRITICAL RULES:                                                       ║
- * ║    - NO COLORS - This template uses only black/white for ATS compliance  ║
- * ║    - Margins: 2.54cm (1 inch) - do not change                            ║
- * ║    - Font size: 12px base - matches real 11-12pt for printing            ║
- * ║                                                                          ║
- * ║ 5. TESTING: Run `npx tsc --noEmit` after edits                           ║
- * ╚══════════════════════════════════════════════════════════════════════════╝
- */
-
-interface TemplateProps {
-    data: CVData;
-}
+import { cleanUrl, formatDateRange } from '@/lib/cv-templates/utils';
+import { BaseTemplate } from './SharedComponents';
 
 export function HarvardTemplate({ data }: TemplateProps) {
     const config = data.config || DEFAULT_CONFIG;
 
-    // Dynamic padding based on density
-    const paddingMap = {
-        compact: '1.5cm',
-        standard: '2.54cm',
-        relaxed: '3cm'
-    };
-
     return (
-        <div
-            className="w-[794px] h-[1122px] max-h-[1122px] overflow-hidden text-[12px] leading-[1.4] print:shadow-none mx-auto"
+        <BaseTemplate 
+            config={config} 
+            paddingUnit="cm"
+            className="text-[12px] leading-[1.4]"
             style={{
-                fontFamily: config.fonts.body,
                 backgroundColor: 'oklch(1 0 0)',
                 color: 'oklch(0.15 0.02 280)',
-                padding: paddingMap[config.layout.density] || '2.54cm',
                 fontSize: '12px',
                 '--section-gap': `${config.layout.sectionGap}px`,
                 '--content-gap': `${config.layout.contentGap}px`
-            } as React.CSSProperties}
+            }}
         >
             {/* Header - Nombre masivo y centrado */}
             <header className="text-center border-b-2 border-foreground pb-4" style={{ marginBottom: `${config.layout.sectionGap}px` }}>
@@ -83,13 +43,13 @@ export function HarvardTemplate({ data }: TemplateProps) {
                 {(data.personalInfo.linkedin || data.personalInfo.github || data.personalInfo.website) && (
                     <div className="text-[11px] flex flex-wrap justify-center gap-x-3 mt-2 font-serif italic">
                         {data.personalInfo.linkedin && (
-                            <span>{data.personalInfo.linkedin.replace('https://', '').replace('www.', '')}</span>
+                            <span>{cleanUrl(data.personalInfo.linkedin)}</span>
                         )}
                         {data.personalInfo.github && (
-                            <span>{data.personalInfo.github.replace('https://', '').replace('www.', '')}</span>
+                            <span>{cleanUrl(data.personalInfo.github)}</span>
                         )}
                         {data.personalInfo.website && (
-                            <span>{data.personalInfo.website.replace('https://', '').replace('www.', '')}</span>
+                            <span>{cleanUrl(data.personalInfo.website)}</span>
                         )}
                     </div>
                 )}
@@ -249,6 +209,6 @@ export function HarvardTemplate({ data }: TemplateProps) {
                     </div>
                 </section>
             )}
-        </div>
+        </BaseTemplate>
     );
 }

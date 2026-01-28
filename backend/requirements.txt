@@ -11,6 +11,9 @@ pydantic
 pydantic-settings
 motor
 httpx
+slowapi
+limits
+tenacity
 
 # Testing & Quality
 pytest==8.3.4

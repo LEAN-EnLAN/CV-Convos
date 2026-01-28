@@ -1,36 +1,17 @@
 import React from 'react';
-import { CVData } from '@/types/cv';
+import { TemplateProps } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
-
-/**
- * @component MinimalTemplate
- * @description Swiss-inspired minimal CV template with sidebar layout.
- */
-
-interface TemplateProps {
-    data: CVData;
-}
+import { cleanUrl, getDensityPadding } from '@/lib/cv-templates/utils';
+import { BaseTemplate } from './SharedComponents';
 
 export function MinimalTemplate({ data }: TemplateProps) {
     const config = data.config || DEFAULT_CONFIG;
 
-    // Mapping density to padding
-    const paddingMap = {
-        compact: '1.5rem',
-        standard: '2.5rem',
-        relaxed: '3.5rem'
-    };
-
-    const sidePadding = paddingMap[config.layout.density] || '2rem';
-
     return (
-        <div
-            className="w-[794px] h-[1122px] max-h-[1122px] overflow-hidden flex print:shadow-none mx-auto"
-            style={{
-                fontFamily: config.fonts.body,
-                backgroundColor: config.colors.background,
-                color: config.colors.text
-            }}
+        <BaseTemplate 
+            config={config} 
+            className="flex"
+            paddingUnit="rem"
         >
             {/* Sidebar (Left Column) - 30% */}
             <aside
@@ -39,7 +20,7 @@ export function MinimalTemplate({ data }: TemplateProps) {
                     backgroundColor: `${config.colors.primary}10`, // 10% opacity of primary for sidebar
                     borderRight: `1px solid ${config.colors.primary}20`,
                     gap: `${config.layout.sectionGap}px`,
-                    padding: sidePadding
+                    padding: '2rem' // Keep manual side padding for sidebar
                 }}
             >
                 {/* Contact */}
@@ -61,10 +42,10 @@ export function MinimalTemplate({ data }: TemplateProps) {
                     <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
                         <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>Social</h3>
                         {data.personalInfo.linkedin && (
-                            <div className="break-all opacity-70 hover:opacity-100 transition-opacity text-xs">{data.personalInfo.linkedin.replace('https://', '')}</div>
+                            <div className="break-all opacity-70 hover:opacity-100 transition-opacity text-xs">{cleanUrl(data.personalInfo.linkedin)}</div>
                         )}
                         {data.personalInfo.github && (
-                            <div className="break-all opacity-70 hover:opacity-100 transition-opacity text-xs">{data.personalInfo.github.replace('https://', '')}</div>
+                            <div className="break-all opacity-70 hover:opacity-100 transition-opacity text-xs">{cleanUrl(data.personalInfo.github)}</div>
                         )}
                     </div>
                 )}
@@ -161,7 +142,7 @@ export function MinimalTemplate({ data }: TemplateProps) {
                 className="flex-1 flex flex-col overflow-hidden"
                 style={{
                     gap: `${config.layout.sectionGap}px`,
-                    padding: paddingMap[config.layout.density] || '2.5rem'
+                    padding: getDensityPadding(config.layout.density, 'rem')
                 }}
             >
                 {/* Header */}
@@ -277,6 +258,6 @@ export function MinimalTemplate({ data }: TemplateProps) {
                     </section>
                 )}
             </main>
-        </div>
+        </BaseTemplate>
     );
 }

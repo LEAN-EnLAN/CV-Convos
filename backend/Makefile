@@ -44,6 +44,14 @@ lint:
 		exit 1; \
 	fi
 
+format:
+	@if [ -d "$(VENV)" ]; then \
+		$(PYTHON) -m ruff format .; \
+	else \
+		echo "❌ Error: No se encontró el entorno virtual."; \
+		exit 1; \
+	fi
+
 clean:
 	rm -rf $(VENV)
 	find . -type d -name "__pycache__" -exec rm -rf {} +
