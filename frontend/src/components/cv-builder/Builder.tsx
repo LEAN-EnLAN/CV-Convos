@@ -15,10 +15,9 @@ import { EducationTemplate } from './templates/EducationTemplate';
 
 import { useReactToPrint } from 'react-to-print';
 import { useCVHistory } from '@/hooks/use-cv-history';
-import { Eye, CheckCircle2 } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Progress } from '@/components/ui/progress';
 import { Header, templateOptions } from './header/Header';
 import { cn } from '@/lib/utils';
 import { useAutoSave } from '@/hooks/use-auto-save';
@@ -188,6 +187,7 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
             <div className="flex flex-col h-screen overflow-hidden bg-background">
                 <FloatingProgress
                     percentage={progress.percentage}
+                    sections={progress.sections}
                     isSaving={isSaving}
                     lastSaved={lastSaved}
                 />
