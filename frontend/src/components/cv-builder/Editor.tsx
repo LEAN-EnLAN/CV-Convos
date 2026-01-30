@@ -381,6 +381,11 @@ export function Editor({
                                     <FileDown className="w-4 h-4 mr-2" />
                                     <span>Intentar One-Page</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setIsCritiqueOpen(true)} className="text-emerald-500 focus:text-emerald-600 focus:bg-emerald-50">
+                                    <ShieldCheck className="w-4 h-4 mr-2" />
+                                    <span>Crítico IA</span>
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -1112,111 +1117,7 @@ export function Editor({
                     </ScrollArea>
                 </div>
 
-                {/* Sentinel Hub - Reworked Design */}
-                <div className="absolute bottom-6 left-6 right-6 z-50">
-                    <div className="relative group">
-                        {/* Glow effect on hover */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                        {/* Main container */}
-                        <div className="relative bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
-                            {/* Top accent line */}
-                            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-
-                            <div className="flex items-center justify-between p-4 gap-4">
-                                {/* Score & Info Section */}
-                                <div
-                                    className="flex items-center gap-4 cursor-pointer flex-1 min-w-0"
-                                    onClick={() => setIsCritiqueOpen(true)}
-                                >
-                                    {/* Score Circle */}
-                                    <div className="relative shrink-0">
-                                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center border-2 transition-all duration-300 ${cvScore
-                                            ? cvScore >= 80
-                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/20'
-                                                : cvScore >= 60
-                                                    ? 'border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/20'
-                                                    : 'border-red-500 bg-red-500/10 shadow-lg shadow-red-500/20'
-                                            : 'border-border bg-muted/50'
-                                            }`}>
-                                            {cvScore ? (
-                                                <span className={`text-lg font-black ${cvScore >= 80 ? 'text-emerald-500' :
-                                                    cvScore >= 60 ? 'text-amber-500' : 'text-red-500'
-                                                    }`}>
-                                                    {cvScore}
-                                                </span>
-                                            ) : (
-                                                <ShieldCheck className="w-6 h-6 text-muted-foreground" />
-                                            )}
-                                        </div>
-                                        {/* Pulse indicator when not scanned */}
-                                        {!cvScore && (
-                                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50" />
-                                        )}
-                                        {/* Score label */}
-                                        {cvScore && (
-                                            <div className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded text-[7px] font-black uppercase ${cvScore >= 80 ? 'bg-emerald-500 text-white' :
-                                                cvScore >= 60 ? 'bg-amber-500 text-white' : 'bg-red-500 text-white'
-                                                }`}>
-                                                /100
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Info */}
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Sentinel AI</p>
-                                            {cvScore && (
-                                                <Badge variant="outline" className={`h-4 px-1.5 text-[8px] font-bold ${cvScore >= 80 ? 'text-emerald-500 border-emerald-500/30' :
-                                                    cvScore >= 60 ? 'text-amber-500 border-amber-500/30' : 'text-red-500 border-red-500/30'
-                                                    }`}>
-                                                    {cvScore >= 80 ? 'Excelente' : cvScore >= 60 ? 'Bueno' : 'Mejorable'}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                                            {cvVerdict}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex items-center gap-2 shrink-0">
-                                    {/* Scan/Rescan Button */}
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-10 px-3 gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 font-bold text-xs"
-                                                onClick={() => setIsCritiqueOpen(true)}
-                                            >
-                                                <Search className="w-4 h-4" />
-                                                <span className="hidden sm:inline">{cvScore ? 'Reanalizar' : 'Analizar'}</span>
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Analizar CV con IA</TooltipContent>
-                                    </Tooltip>
-
-                                    {/* Finalize Button */}
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                size="icon"
-                                                className="h-10 w-10 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all hover:scale-105"
-                                                onClick={onFinalize}
-                                            >
-                                                <Rocket className="w-5 h-5" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Finalizar y Exportar</TooltipContent>
-                                    </Tooltip>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Sentinel Hub Removed as per user request */}
             </div>
         </TooltipProvider >
     );

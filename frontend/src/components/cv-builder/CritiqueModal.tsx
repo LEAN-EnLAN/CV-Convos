@@ -113,7 +113,7 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
                 setStep(data.critique?.length > 0 ? 'results' : 'empty');
                 if (onScanComplete) onScanComplete(data);
                 clearInterval(interval);
-            }, 2500);
+            }, 1000);
 
         } catch (error) {
             console.error('Critique error:', error);
@@ -186,7 +186,7 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[800px] h-[700px] flex flex-col p-0 overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white border-slate-800/50 shadow-2xl">
                 <DialogHeader className="sr-only">
-                    <DialogTitle>Análisis Sentinel CV</DialogTitle>
+                    <DialogTitle>Análisis Crítico con IA</DialogTitle>
                     <DialogDescription>
                         Escaneo y optimización de currículum mediante inteligencia artificial.
                     </DialogDescription>
@@ -213,7 +213,7 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
                             {/* Sentinel Logo Animation */}
                             <div className="relative mb-10">
                                 <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center shadow-2xl shadow-emerald-500/20">
-                                    <ShieldCheck className="w-14 h-14 text-emerald-400" />
+                                    <Search className="w-14 h-14 text-emerald-400" />
                                 </div>
                                 <motion.div
                                     className="absolute -inset-2 rounded-2xl border border-emerald-500/50"
@@ -228,7 +228,7 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
                             </div>
 
                             <h2 className="text-3xl font-black mb-3 tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                                Sentinel Analizando...
+                                Analizando CV...
                             </h2>
                             <p className="text-slate-400 text-center max-w-sm mb-10 text-sm leading-relaxed">
                                 Nuestra IA está evaluando cada sección de tu CV para encontrar oportunidades de mejora de alto impacto.
@@ -282,8 +282,8 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                                                <h2 className="text-xl font-black tracking-tight">Análisis Sentinel</h2>
+                                                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                                                <h2 className="text-xl font-black tracking-tight">Reporte de Análisis</h2>
                                             </div>
                                             <p className="text-sm text-slate-400 max-w-md">
                                                 {results?.overall_verdict}

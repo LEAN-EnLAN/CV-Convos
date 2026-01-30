@@ -39,7 +39,7 @@ export default function RootLayout({
         className={`${outfit.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         {children}
-        <Toaster />
+        <Toaster position="top-center" richColors theme="light" />
       </body>
     </html>
   );

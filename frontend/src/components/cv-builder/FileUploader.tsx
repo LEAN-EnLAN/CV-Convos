@@ -37,7 +37,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
     const [files, setFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [currentStep, setCurrentStep] = useState('');
+
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop: (acceptedFiles) => {
@@ -59,35 +59,14 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
         setFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const simulateProgress = () => {
-        const steps = [
-            { progress: 15, text: 'Analizando documentos...' },
-            { progress: 35, text: 'Extrayendo experiencia laboral...' },
-            { progress: 55, text: 'Identificando habilidades...' },
-            { progress: 75, text: 'Organizando información...' },
-            { progress: 90, text: 'Generando CV profesional...' },
-        ];
 
-        let i = 0;
-        const interval = setInterval(() => {
-            if (i < steps.length) {
-                setUploadProgress(steps[i].progress);
-                setCurrentStep(steps[i].text);
-                i++;
-            } else {
-                clearInterval(interval);
-            }
-        }, 800);
-
-        return interval;
-    };
 
     const handleUpload = async () => {
         if (files.length === 0) return;
 
         setIsUploading(true);
         setUploadProgress(0);
-        const progressInterval = simulateProgress();
+
 
         const formData = new FormData();
         files.forEach((file) => formData.append('files', file));
@@ -99,9 +78,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                 body: formData,
             });
 
-            clearInterval(progressInterval);
             setUploadProgress(100);
-            setCurrentStep('¡CV generado con éxito!');
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -115,14 +92,16 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                 toast.success('¡Tu CV profesional está listo!');
             }, 500);
         } catch (error: any) {
-            clearInterval(progressInterval);
             console.error(error);
-            toast.error(error.message || 'Error al generar el CV. Intentá de nuevo.');
+            if (error.message === 'Failed to fetch') {
+                toast.error('No se pudo conectar con el servidor. Verificá que el backend esté corriendo en el puerto 8000.');
+            } else {
+                toast.error(error.message || 'Error al generar el CV. Intentá de nuevo.');
+            }
         } finally {
             setTimeout(() => {
                 setIsUploading(false);
                 setUploadProgress(0);
-                setCurrentStep('');
             }, 600);
         }
     };
@@ -269,7 +248,7 @@ transition-all duration-200
                                             <div className="space-y-2">
                                                 <Progress value={uploadProgress} className="h-2" />
                                                 <p className="text-sm text-center text-muted-foreground animate-pulse">
-                                                    {currentStep}
+                                                    Procesando tu archivo...
                                                 </p>
                                             </div>
                                         )}
@@ -305,7 +284,7 @@ transition-all duration-200
                 </div>
             </div>
 
-            
+
         </div>
     );
 }

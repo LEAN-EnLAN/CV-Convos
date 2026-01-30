@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { FileUploader } from '@/components/cv-builder/FileUploader';
 import { OnboardingSelection } from '@/components/cv-builder/onboarding/OnboardingSelection';
 import { WizardLayout } from '@/components/cv-builder/wizard/WizardLayout';
@@ -24,6 +25,7 @@ const emptyCV: CVData = {
 };
 
 export default function Home() {
+    const router = useRouter();
     const [flow, setFlow] = useState<FlowState>('onboarding');
     const [cvData, setCvData] = useState<CVData | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate>('creative');
@@ -68,7 +70,7 @@ export default function Home() {
         if (option === 'existing') {
             setFlow('upload');
         } else {
-            setFlow('wizard');
+            router.push('/chat');
         }
     };
 
@@ -109,16 +111,6 @@ export default function Home() {
 
     return (
         <main className="min-h-screen bg-background text-foreground">
-            <Toaster
-                position="top-center"
-                richColors
-                toastOptions={{
-                    style: {
-                        fontFamily: 'var(--font-outfit)',
-                    },
-                }}
-            />
-
             {flow === 'onboarding' && (
                 <OnboardingSelection onSelectOption={handleOnboardingSelect} />
             )}
