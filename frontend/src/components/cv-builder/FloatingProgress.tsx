@@ -71,11 +71,11 @@ const ANIMATION = {
 // ============================================
 // ANIMATED PROGRESS BAR COMPONENT
 // ============================================
-function AnimatedProgressBar({ 
-    value, 
-    isComplete 
-}: { 
-    value: number; 
+function AnimatedProgressBar({
+    value,
+    isComplete
+}: {
+    value: number;
     isComplete: boolean;
 }) {
     const motionValue = useMotionValue(0);
@@ -84,7 +84,7 @@ function AnimatedProgressBar({
         damping: 20,
         mass: 0.8,
     });
-    
+
     const width = useTransform(springValue, [0, 100], ['0%', '100%']);
     const glowOpacity = useTransform(springValue, [0, 50, 100], [0, 0.3, 0.6]);
 
@@ -96,13 +96,13 @@ function AnimatedProgressBar({
         <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted/60">
             {/* Track background with subtle gradient */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-muted/40 via-muted/60 to-muted/40" />
-            
+
             {/* Animated fill */}
             <motion.div
                 className={cn(
                     "absolute inset-y-0 left-0 rounded-full",
-                    isComplete 
-                        ? "bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500" 
+                    isComplete
+                        ? "bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500"
                         : "bg-gradient-to-r from-primary via-primary/90 to-primary"
                 )}
                 style={{ width }}
@@ -124,13 +124,13 @@ function AnimatedProgressBar({
                         repeatDelay: 1,
                     }}
                 />
-                
+
                 {/* Leading edge glow */}
-                <div 
+                <div
                     className={cn(
                         "absolute right-0 top-1/2 -translate-y-1/2 w-4 h-full blur-sm",
                         isComplete ? "bg-emerald-400" : "bg-primary/60"
-                    )} 
+                    )}
                 />
             </motion.div>
 
@@ -155,12 +155,12 @@ function AnimatedProgressBar({
 // ============================================
 // CHECKLIST ITEM COMPONENT
 // ============================================
-function ChecklistItem({ 
-    section, 
+function ChecklistItem({
+    section,
     index,
-    isExpanded 
-}: { 
-    section: SectionProgress; 
+    isExpanded
+}: {
+    section: SectionProgress;
     index: number;
     isExpanded: boolean;
 }) {
@@ -241,7 +241,7 @@ function ChecklistItem({
             </span>
 
             {/* Progress percentage */}
-            <motion.span 
+            <motion.span
                 className={cn(
                     "text-xs font-semibold tabular-nums transition-colors duration-200",
                     section.completed
@@ -301,7 +301,7 @@ function SavingIndicator({ isSaving, lastSaved }: { isSaving: boolean; lastSaved
                         exit={{ opacity: 0, y: -10 }}
                         className="flex items-center gap-2"
                     >
-                        <motion.div 
+                        <motion.div
                             className="w-1.5 h-1.5 rounded-full bg-emerald-500"
                             initial={{ scale: 0 }}
                             animate={{ scale: [0, 1.2, 1] }}
@@ -399,7 +399,7 @@ export function FloatingProgress({
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0, opacity: 0 }}
                             transition={ANIMATION.spring.elastic}
-                            className="fixed bottom-6 right-6 z-[60] no-print"
+                            className="fixed bottom-6 right-6 z-40 no-print"
                         >
                             <Button
                                 onClick={handleShow}
@@ -444,7 +444,7 @@ export function FloatingProgress({
                         exit={{ scale: 0.8, opacity: 0 }}
                         transition={ANIMATION.spring.bouncy}
                         layoutId="progress-widget"
-                        className="fixed bottom-6 right-6 z-[60] no-print"
+                        className="fixed bottom-6 right-6 z-40 no-print"
                     >
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -464,7 +464,7 @@ export function FloatingProgress({
                                                 : "bg-card hover:bg-card/90 text-foreground shadow-black/10 border border-border"
                                         )}
                                     >
-                                        <motion.span 
+                                        <motion.span
                                             className="text-sm font-bold"
                                             key={displayValue}
                                             initial={{ scale: 0.5, opacity: 0 }}
@@ -491,7 +491,7 @@ export function FloatingProgress({
                         transition={ANIMATION.spring.gentle}
                         layoutId="progress-widget"
                         className={cn(
-                            "fixed bottom-6 right-6 z-[60] no-print",
+                            "fixed bottom-6 right-6 z-40 no-print",
                             "w-80 rounded-2xl",
                             "bg-card/95 backdrop-blur-xl",
                             "border shadow-2xl",
@@ -505,7 +505,7 @@ export function FloatingProgress({
                                 <div className="flex-1 min-w-0">
                                     {/* Large percentage and status */}
                                     <div className="flex items-baseline gap-2 mb-3">
-                                        <motion.span 
+                                        <motion.span
                                             className={cn(
                                                 "text-4xl font-black tracking-tight",
                                                 isComplete ? "text-emerald-600" : "text-foreground"
@@ -517,7 +517,7 @@ export function FloatingProgress({
                                         >
                                             {displayValue}%
                                         </motion.span>
-                                        <motion.span 
+                                        <motion.span
                                             className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
@@ -531,7 +531,7 @@ export function FloatingProgress({
                                     <AnimatedProgressBar value={percentage} isComplete={isComplete} />
 
                                     {/* Section counter */}
-                                    <motion.p 
+                                    <motion.p
                                         className="text-xs text-muted-foreground mt-2"
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
@@ -638,7 +638,7 @@ export function FloatingProgress({
                             </div>
 
                             {/* Action buttons */}
-                            <motion.div 
+                            <motion.div
                                 className="flex items-center gap-2 pt-3 border-t border-border/50"
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -710,7 +710,7 @@ export function FloatingProgress({
                             </motion.div>
 
                             {/* Footer with status */}
-                            <motion.div 
+                            <motion.div
                                 className="flex items-center justify-between pt-2"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -727,7 +727,7 @@ export function FloatingProgress({
                                             transition={ANIMATION.spring.bouncy}
                                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20"
                                         >
-                                            <motion.div 
+                                            <motion.div
                                                 className="w-1.5 h-1.5 rounded-full bg-emerald-500"
                                                 animate={{ scale: [1, 1.2, 1] }}
                                                 transition={{ duration: 1.5, repeat: Infinity }}

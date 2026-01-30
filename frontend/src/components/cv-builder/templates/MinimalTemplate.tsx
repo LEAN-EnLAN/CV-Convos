@@ -25,7 +25,7 @@ export function MinimalTemplate({ data }: TemplateProps) {
             >
                 {/* Contact */}
                 <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
-                    <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>Contact</h3>
+                    <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>Contacto</h3>
                     {data.personalInfo.email && (
                         <div className="break-all font-medium opacity-80 text-xs">{data.personalInfo.email}</div>
                     )}
@@ -40,7 +40,7 @@ export function MinimalTemplate({ data }: TemplateProps) {
                 {/* Socials */}
                 {(data.personalInfo.linkedin || data.personalInfo.github || data.personalInfo.website) && (
                     <div className="flex flex-col" style={{ gap: `${config.layout.contentGap / 2}px` }}>
-                        <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>Social</h3>
+                        <h3 className="font-bold uppercase tracking-widest text-[10px]" style={{ color: config.colors.primary, fontFamily: config.fonts.heading, marginBottom: '4px' }}>Redes</h3>
                         {data.personalInfo.linkedin && (
                             <div className="break-all opacity-70 hover:opacity-100 transition-opacity text-xs">{cleanUrl(data.personalInfo.linkedin)}</div>
                         )}

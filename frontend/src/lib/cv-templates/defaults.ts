@@ -9,8 +9,8 @@ export const DEFAULT_CONFIG: TemplateConfig = {
         text: 'oklch(0.15 0.02 280)', // Sentinel Slate
     },
     fonts: {
-        heading: 'Inter',
-        body: 'Inter',
+        heading: '"Inter"',
+        body: '"Inter"',
     },
     layout: {
         sidebarWidth: 280,
@@ -42,8 +42,8 @@ export const BRUTALIST_CONFIG: TemplateConfig = {
         text: 'oklch(0.15 0.02 280)', // Sentinel Slate
     },
     fonts: {
-        heading: 'Space Mono',
-        body: 'Space Mono',
+        heading: '"Space Mono"',
+        body: '"Space Mono"',
     },
     layout: {
         sidebarWidth: 300,

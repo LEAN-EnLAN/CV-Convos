@@ -14,18 +14,18 @@ interface TemplateConfiguratorProps {
     onChange: (config: TemplateConfig) => void;
 }
 
-// Fuentes disponibles
+// Fuentes disponibles - valores CSS-safe con comillas
 const AVAILABLE_FONTS = [
-    { value: 'Inter', label: 'Inter' },
-    { value: 'Roboto', label: 'Roboto' },
-    { value: 'Open Sans', label: 'Open Sans' },
-    { value: 'Lato', label: 'Lato' },
-    { value: 'Montserrat', label: 'Montserrat' },
-    { value: 'Playfair Display', label: 'Playfair Display' },
-    { value: 'Raleway', label: 'Raleway' },
-    { value: 'Source Sans Pro', label: 'Source Sans Pro' },
-    { value: 'Fira Code', label: 'Fira Code' },
-    { value: 'Space Mono', label: 'Space Mono' },
+    { value: '"Inter"', label: 'Inter' },
+    { value: '"Roboto"', label: 'Roboto' },
+    { value: '"Open Sans"', label: 'Open Sans' },
+    { value: '"Lato"', label: 'Lato' },
+    { value: '"Montserrat"', label: 'Montserrat' },
+    { value: '"Playfair Display"', label: 'Playfair Display' },
+    { value: '"Raleway"', label: 'Raleway' },
+    { value: '"Source Sans Pro"', label: 'Source Sans Pro' },
+    { value: '"Fira Code"', label: 'Fira Code' },
+    { value: '"Space Mono"', label: 'Space Mono' },
 ];
 
 // Colores predefinidos

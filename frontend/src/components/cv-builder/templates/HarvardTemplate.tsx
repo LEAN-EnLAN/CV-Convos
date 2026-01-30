@@ -15,9 +15,7 @@ export function HarvardTemplate({ data }: TemplateProps) {
             style={{
                 backgroundColor: 'oklch(1 0 0)',
                 color: 'oklch(0.15 0.02 280)',
-                fontSize: '12px',
-                '--section-gap': `${config.layout.sectionGap}px`,
-                '--content-gap': `${config.layout.contentGap}px`
+                fontSize: '12px'
             }}
         >
             {/* Header - Nombre masivo y centrado */}

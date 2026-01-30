@@ -29,7 +29,7 @@ export const BaseTemplate = ({
                 color: config.colors.text,
                 padding: getDensityPadding(config.layout.density, paddingUnit),
                 ...style
-            } as React.CSSProperties}
+            }}
         >
             {children}
         </div>

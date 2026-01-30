@@ -180,7 +180,9 @@ export function Editor({
 
     const applyImprovement = (improvement: ImprovementCard) => {
         const newData = JSON.parse(JSON.stringify(data));
-        const path = improvement.target_field.split('.');
+        // Normalizar la ruta: convertir 'a[0].b' en 'a.0.b'
+        const normalizedPath = improvement.target_field.replace(/\[(\d+)\]/g, '.$1');
+        const path = normalizedPath.split('.').filter(Boolean);
 
         let current = newData;
         // Validate path before traversing
@@ -188,12 +190,13 @@ export function Editor({
             const part = path[i];
 
             if (current === undefined || current === null) {
-                console.error(`Invalid path: ${improvement.target_field} (broken at ${part})`);
+                console.error(`Invalid path: ${improvement.target_field} (normalized: ${normalizedPath}, broken at ${part})`);
                 toast.error("Error: No se puede aplicar la mejora en este campo (ruta inválida).");
                 return;
             }
 
-            if (!isNaN(Number(part))) {
+            // Seleccionar el campo, ya sea texto o índice numérico
+            if (!isNaN(Number(part)) && Array.isArray(current)) {
                 current = current[Number(part)];
             } else {
                 current = current[part];
@@ -202,16 +205,14 @@ export function Editor({
 
         const lastPart = path[path.length - 1];
         if (current && typeof current === 'object') {
-            if (!isNaN(Number(lastPart))) {
-                current[Number(lastPart)] = improvement.suggested_text;
-            } else {
-                current[lastPart] = improvement.suggested_text;
-            }
+            const index = !isNaN(Number(lastPart)) ? Number(lastPart) : lastPart;
+            current[index] = improvement.suggested_text;
+
             onChange(newData);
             toast.success("Mejora aplicada correctamente.");
         } else {
-            console.error(`Cannot apply improvement: target is invalid`);
-            toast.error("Error al aplicar mejora.");
+            console.error(`Cannot apply improvement: target is invalid or container not found for ${improvement.target_field}`);
+            toast.error("Error al aplicar la mejora. La estructura del CV cambió.");
         }
     };
 

@@ -2,9 +2,25 @@ import json
 import logging
 import copy
 import asyncio
+from typing import List, Dict, Any, Optional, AsyncGenerator
+from datetime import datetime
 from groq import Groq
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.core.config import settings
+from app.services.chat_prompts import (
+    CONVERSATION_ORCHESTRATOR_PROMPT,
+    DATA_EXTRACTION_PROMPT,
+    NEXT_QUESTION_GENERATOR_PROMPT,
+    JOB_ANALYSIS_PROMPT,
+    get_phase_prompt,
+)
+from app.api.schemas import (
+    ChatMessage,
+    DataExtraction,
+    ConversationPhase,
+    JobAnalysisResponse,
+    TailoringSuggestion,
+)
 
 # Valid Groq Models
 MODEL_ID = "llama-3.1-8b-instant"
@@ -132,31 +148,45 @@ Input CV:
 Return the FULL CV JSON.
 """
 
-CRITIQUE_PROMPT = """
-Task: Provide a professional critique of this CV with actionable feedback.
+SENTINEL_CRITIQUE_PROMPT = """
+Eres el sistema SENTINEL, una IA experta en Análisis de Talento y Arquitectura de Carrera con 15 años de experiencia en reclutamiento técnico de élite. 
+Tu tarea es diseccionar este CV con un estándar de crítica implacable, buscando la excelencia en impacto, claridad y minimalismo intencional.
 
-Analyze:
-1. STRENGTHS: What does this CV do well? (2-3 points)
-2. WEAKNESSES: What could be improved? (2-3 points)
-3. SUGGESTIONS: Concrete steps to make it better (3-5 points)
-4. OVERALL_SCORE: Rate 1-10
+INSTRUCCIONES DE ANÁLISIS:
+1. PERSPECTIVA DE CRITICA: No des elogios vacíos. Analiza por qué el contenido actual falla en capturar la atención de un reclutador en 6 segundos.
+2. DETALLE PROFUNDO: Para cada mejora, explica la psicología detrás del cambio. ¿Por qué el texto original es débil? ¿Qué comunica la nueva versión sobre el candidato?
+3. SIN CONTRADICCIONES: Asegúrate de que tus sugerencias sean coherentes. No pidas "expandir" y "resumir" la misma sección. Mantén una visión unificada.
+4. CALIDAD > CANTIDAD: Identifica exactamente las 4-6 mejores oportunidades de mejora. No satures de trivialidades. Focus en IMPACTO.
+5. LENGUAJE: Responde SIEMPRE en el mismo idioma del CV (Español o Inglés).
 
-Rules:
-- Be constructive but honest.
-- Focus on impact: quantify achievements, use action verbs.
-- Consider ATS compatibility.
-- Language: Same as input CV.
+CAMPOS DEL CRITIQUE (ESTRICTAMENTE ELIGE UNO DE ESTOS VALORES TÉCNICOS):
+- category: ["Impact", "Brevity", "Grammar", "Formatting"] o su traducción ["Impacto", "Brevedad", "Gramática", "Formato"]
+- severity: ["Critical", "Suggested", "Nitpick"] o su traducción ["Crítico", "Sugerido", "Detalle"]
+- target_field: Ruta exacta al campo (ej: 'experience.0.description', 'personalInfo.summary'). Usa puntos para los índices de arreglos.
+- impact_reason: Explicación de qué KPI o percepción profesional mejora con este cambio.
 
-Input CV:
+INPUT CV:
 {cv_json}
 
-Return JSON:
+REGLAS DE SALIDA (JSON):
 {{
-  "strengths": ["strength1", "strength2"],
-  "weaknesses": ["weakness1", "weakness2"],
-  "suggestions": ["suggestion1", "suggestion2"],
-  "overall_score": 7,
-  "summary": "Brief overall assessment"
+  "score": 0-100 (Sé honesto, 100 es perfección absoluta),
+  "one_page_viable": boolean,
+  "word_count_estimate": number,
+  "overall_verdict": "Un análisis ejecutivo de 2 oraciones sobre el estado actual del CV y su potencial.",
+  "critique": [
+    {{
+      "id": "short-uuid",
+      "target_field": "string",
+      "category": "string",
+      "severity": "string",
+      "title": "Título directo",
+      "description": "Análisis profundo de la deficiencia y el por qué del cambio.",
+      "impact_reason": "Valor aportado",
+      "original_text": "Cita exacta del CV",
+      "suggested_text": "Propuesta optimizada"
+    }}
+  ]
 }}
 """
 
@@ -169,7 +199,7 @@ Return JSON:
     retry=retry_if_exception_type((Exception,)),
     reraise=False
 )
-def _call_groq_api(prompt: str, system_msg: str) -> dict:
+def _call_groq_api(prompt: str, system_msg: str, use_json: bool = True) -> Any:
     """Internal function to call Groq API with retry logic."""
     client = Groq(api_key=settings.GROQ_API_KEY)
     completion = client.chat.completions.create(
@@ -179,15 +209,22 @@ def _call_groq_api(prompt: str, system_msg: str) -> dict:
             {"role": "user", "content": prompt},
         ],
         temperature=0.1,
-        response_format={"type": "json_object"},
+        response_format={"type": "json_object"} if use_json else None,
     )
     message_content = completion.choices[0].message.content
     if message_content is None:
         return None
-    return json.loads(message_content)
+    
+    if use_json:
+        try:
+            return json.loads(message_content)
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse JSON from AI: {message_content}")
+            return None
+    return message_content
 
 
-async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES):
+async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES, use_json: bool = True):
     if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
         return None
 
@@ -195,12 +232,9 @@ async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES):
         # Run the synchronous Groq call in a thread pool
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
-            None, _call_groq_api, prompt, system_msg
+            None, _call_groq_api, prompt, system_msg, use_json
         )
         return result
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON response from AI: {e}")
-        return None
     except Exception as e:
         logger.error(f"AI Error after retries: {str(e)}")
         return None
@@ -297,7 +331,7 @@ async def optimize_cv_data(cv_data: dict, target: str, section: str):
 
 async def critique_cv_data(cv_data: dict):
     cv_json = json.dumps(cv_data, indent=2)
-    return await get_ai_completion(CRITIQUE_PROMPT.format(cv_json=cv_json))
+    return await get_ai_completion(SENTINEL_CRITIQUE_PROMPT.format(cv_json=cv_json))
 
 
 async def optimize_for_role(cv_data: dict, target_role: str):
@@ -632,3 +666,479 @@ async def analyze_ats(cv_text: str, target_industry: str = "general"):
         prompt,
         system_msg=f"Eres un sistema ATS experto especializado en la industria de {industry_data['name']}. Sé riguroso y específico en tu análisis, enfocándote en lo que realmente importa para esta industria.",
     )
+
+
+# =============================================================================
+# CONVERSATIONAL CHAT SERVICE
+# =============================================================================
+
+async def generate_conversation_response(
+    message: str,
+    history: List[ChatMessage],
+    cv_data: Dict[str, Any],
+    current_phase: ConversationPhase,
+    job_description: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Genera una respuesta conversacional para el chat del CV builder.
+
+    Args:
+        message: Mensaje del usuario
+        history: Historial de mensajes
+        cv_data: Datos actuales del CV
+        current_phase: Fase actual de la conversación
+        job_description: Descripción del puesto (opcional)
+
+    Returns:
+        Dict con la respuesta, extracción y nueva fase si aplica
+    """
+    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
+        logger.warning("GROQ_API_KEY not configured, returning fallback response")
+        return {
+            "response": "Lo siento, el servicio de IA no está disponible en este momento. Por favor, intenta más tarde.",
+            "extraction": None,
+            "new_phase": None,
+        }
+
+    # Preparar contexto de conversación
+    chat_history = _format_chat_history(history[-5:])  # Últimos 5 mensajes
+    cv_data_json = json.dumps(cv_data, indent=2, default=str)
+
+    # Seleccionar prompt según fase
+    system_prompt = get_phase_prompt(current_phase.value)
+
+    # Construir prompt completo
+    full_prompt = CONVERSATION_ORCHESTRATOR_PROMPT.format(
+        current_phase=current_phase.value,
+        cv_data=cv_data_json,
+        chat_history=chat_history,
+    ) + f"\n\nMENSAJE DEL USUARIO: {message}"
+
+    try:
+        # Llamar a la API de Groq
+        # Ahora el modelo responde con texto directo, no JSON
+        response = await get_ai_completion(full_prompt, system_prompt, use_json=False)
+
+        response_text = str(response) if response else "Disculpa, ¿podrías repetirlo?"
+
+        # Determinar nueva fase
+        new_phase = _detect_phase_transition(message, response_text, current_phase, cv_data)
+
+        return {
+            "response": response_text,
+            "extraction": None,
+            "new_phase": new_phase,
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating conversation response: {e}")
+        return {
+            "response": "Disculpa, tuve un problema procesando tu mensaje. ¿Podrías repetirlo?",
+            "extraction": None,
+            "new_phase": None,
+        }
+
+
+async def generate_conversation_response_stream(
+    message: str,
+    history: List[ChatMessage],
+    cv_data: Dict[str, Any],
+    current_phase: ConversationPhase,
+    job_description: Optional[str] = None,
+) -> AsyncGenerator[str, None]:
+    """
+    Genera una respuesta conversacional en streaming (SSE).
+
+    Yields:
+        Eventos SSE con chunks de texto y extracciones
+    """
+    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
+        yield _format_sse_event({
+            "type": "error",
+            "error": "AI service not configured",
+            "code": "SERVICE_UNAVAILABLE",
+        })
+        return
+
+    try:
+        # Preparar contexto
+        chat_history = _format_chat_history(history[-5:])
+        cv_data_json = json.dumps(cv_data, indent=2, default=str)
+        system_prompt = get_phase_prompt(current_phase.value)
+
+        full_prompt = CONVERSATION_ORCHESTRATOR_PROMPT.format(
+            current_phase=current_phase.value,
+            cv_data=cv_data_json,
+            chat_history=chat_history,
+        ) + f"\n\nMENSAJE DEL USUARIO: {message}"
+
+        # Inicializar cliente Groq para streaming
+        client = Groq(api_key=settings.GROQ_API_KEY)
+
+        # Hacer llamada en streaming
+        stream = client.chat.completions.create(
+            model=MODEL_ID,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": full_prompt},
+            ],
+            temperature=0.7,
+            stream=True,
+        )
+
+        accumulated_content = ""
+
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                accumulated_content += content
+
+                # Enviar delta
+                yield _format_sse_event({
+                    "type": "delta",
+                    "content": content,
+                })
+
+        # Extraer datos al finalizar
+        extraction = await extract_cv_data_from_message(message, history, cv_data, current_phase)
+
+        if extraction and extraction.extracted:
+            yield _format_sse_event({
+                "type": "extraction",
+                "extraction": extraction.model_dump(by_alias=True),
+            })
+
+        # Detectar cambio de fase
+        new_phase = _detect_phase_transition(message, accumulated_content, current_phase, cv_data)
+        if new_phase and new_phase != current_phase:
+            yield _format_sse_event({
+                "type": "phase_change",
+                "newPhase": new_phase.value,
+                "reason": "Conversation progressed naturally",
+            })
+
+        # Enviar evento de completado
+        message_id = f"msg_{datetime.utcnow().timestamp()}"
+        yield _format_sse_event({
+            "type": "complete",
+            "message": {
+                "id": message_id,
+                "role": "assistant",
+                "content": accumulated_content,
+                "timestamp": datetime.utcnow().isoformat(),
+                "extraction": extraction.model_dump(by_alias=True) if extraction else None,
+            },
+            "finalExtraction": extraction.model_dump(by_alias=True) if extraction else None,
+        })
+
+    except Exception as e:
+        logger.error(f"Error in streaming response: {e}")
+        yield _format_sse_event({
+            "type": "error",
+            "error": str(e),
+            "code": "STREAMING_ERROR",
+        })
+
+
+async def extract_cv_data_from_message(
+    message: str,
+    history: List[ChatMessage],
+    cv_data: Dict[str, Any],
+    current_phase: ConversationPhase,
+) -> Optional[DataExtraction]:
+    """
+    Extrae datos estructurados del CV desde un mensaje del usuario.
+
+    Args:
+        message: Mensaje del usuario
+        history: Historial de conversación
+        cv_data: Datos actuales del CV
+        current_phase: Fase actual
+
+    Returns:
+        DataExtraction con los datos extraídos y confianza
+    """
+    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
+        return None
+
+    try:
+        chat_history = _format_chat_history(history[-3:])
+        cv_data_json = json.dumps(cv_data, indent=2, default=str)
+
+        prompt = DATA_EXTRACTION_PROMPT.format(
+            current_phase=current_phase.value,
+            user_message=message,
+            chat_history=chat_history,
+            current_cv_data=cv_data_json,
+        )
+
+        response = await get_ai_completion(prompt, "Eres un extractor de datos preciso y cuidadoso.")
+
+        if not response:
+            return None
+
+        # Parsear respuesta
+        if isinstance(response, dict):
+            extraction_data = response
+        else:
+            try:
+                extraction_data = json.loads(response)
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse extraction response: {response}")
+                return None
+
+        return DataExtraction(
+            extracted=extraction_data.get("extracted", {}),
+            confidence=extraction_data.get("confidence", {}),
+            needs_clarification=extraction_data.get("needs_clarification", []),
+            follow_up_questions=extraction_data.get("follow_up_questions", []),
+        )
+
+    except Exception as e:
+        logger.error(f"Error extracting CV data: {e}")
+        return None
+
+
+async def generate_next_question(
+    cv_data: Dict[str, Any],
+    current_phase: ConversationPhase,
+    history: List[ChatMessage],
+) -> Dict[str, Any]:
+    """
+    Genera la siguiente pregunta apropiada basada en el estado actual.
+
+    Args:
+        cv_data: Datos actuales del CV
+        current_phase: Fase actual
+        history: Historial de mensajes
+
+    Returns:
+        Dict con la pregunta, fase objetivo y prioridad
+    """
+    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
+        return {
+            "next_question": "¿Podrías contarme más sobre tu experiencia?",
+            "target_phase": current_phase.value,
+            "priority": "high",
+            "suggested_answers": [],
+        }
+
+    try:
+        chat_history = _format_chat_history(history[-3:])
+        cv_data_json = json.dumps(cv_data, indent=2, default=str)
+
+        # Calcular completitud por sección
+        completeness = _calculate_completeness(cv_data, current_phase)
+
+        prompt = NEXT_QUESTION_GENERATOR_PROMPT.format(
+            current_phase=current_phase.value,
+            cv_data=cv_data_json,
+            chat_history=chat_history,
+            completeness=json.dumps(completeness, indent=2),
+        )
+
+        response = await get_ai_completion(prompt, "Eres un asistente experto en reclutamiento.")
+
+        if not response:
+            raise Exception("Empty response")
+
+        if isinstance(response, dict):
+            return {
+                "next_question": response.get("next_question", "¿Qué más puedes contarme?"),
+                "target_phase": response.get("target_phase", current_phase.value),
+                "priority": response.get("priority", "medium"),
+                "suggested_answers": response.get("suggested_answers", []),
+            }
+        else:
+            try:
+                parsed = json.loads(response)
+                return {
+                    "next_question": parsed.get("next_question", "¿Qué más puedes contarme?"),
+                    "target_phase": parsed.get("target_phase", current_phase.value),
+                    "priority": parsed.get("priority", "medium"),
+                    "suggested_answers": parsed.get("suggested_answers", []),
+                }
+            except json.JSONDecodeError:
+                return {
+                    "next_question": str(response),
+                    "target_phase": current_phase.value,
+                    "priority": "medium",
+                    "suggested_answers": [],
+                }
+
+    except Exception as e:
+        logger.error(f"Error generating next question: {e}")
+        return {
+            "next_question": _get_default_question(current_phase),
+            "target_phase": current_phase.value,
+            "priority": "high",
+            "suggested_answers": [],
+        }
+
+
+async def analyze_job_description(
+    job_description: str,
+    cv_data: Dict[str, Any],
+) -> Optional[JobAnalysisResponse]:
+    """
+    Analiza una descripción de puesto y compara con el CV.
+
+    Args:
+        job_description: Descripción del puesto
+        cv_data: Datos del CV
+
+    Returns:
+        JobAnalysisResponse con análisis y sugerencias
+    """
+    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
+        return None
+
+    try:
+        cv_data_json = json.dumps(cv_data, indent=2, default=str)
+
+        prompt = JOB_ANALYSIS_PROMPT.format(
+            job_description=job_description,
+            cv_data=cv_data_json,
+        )
+
+        response = await get_ai_completion(
+            prompt,
+            "Eres un experto en reclutamiento y optimización de CVs.",
+        )
+
+        if not response:
+            return None
+
+        if isinstance(response, dict):
+            data = response
+        else:
+            try:
+                data = json.loads(response)
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse job analysis response: {response}")
+                return None
+
+        # Parsear sugerencias
+        suggestions_data = data.get("suggestions", [])
+        suggestions = [
+            TailoringSuggestion(
+                section=s.get("section", ""),
+                current=s.get("current", ""),
+                suggested=s.get("suggested", ""),
+                reason=s.get("reason", ""),
+                priority=s.get("priority", "medium"),
+            )
+            for s in suggestions_data
+        ]
+
+        return JobAnalysisResponse(
+            match_score=data.get("match_score", 50),
+            key_requirements=data.get("key_requirements", []),
+            matched_skills=data.get("matched_skills", []),
+            missing_skills=data.get("missing_skills", []),
+            suggestions=suggestions,
+            optimized_cv=data.get("optimized_cv"),
+        )
+
+    except Exception as e:
+        logger.error(f"Error analyzing job description: {e}")
+        return None
+
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def _format_chat_history(messages: List[ChatMessage]) -> str:
+    """Formatea el historial de mensajes para el prompt."""
+    formatted = []
+    for msg in messages:
+        role_label = "Usuario" if msg.role == "user" else "Asistente"
+        formatted.append(f"{role_label}: {msg.content}")
+    return "\n".join(formatted)
+
+
+def _format_sse_event(data: Dict[str, Any]) -> str:
+    """Formatea un evento SSE."""
+    return f"data: {json.dumps(data)}\n\n"
+
+
+def _detect_phase_transition(
+    user_message: str,
+    ai_response: str,
+    current_phase: ConversationPhase,
+    cv_data: Dict[str, Any],
+) -> Optional[ConversationPhase]:
+    """Detecta si debe haber una transición de fase."""
+    # Lógica simple de transición basada en completitud
+    completeness = _calculate_completeness(cv_data, current_phase)
+
+    phase_order = [
+        ConversationPhase.WELCOME,
+        ConversationPhase.PERSONAL_INFO,
+        ConversationPhase.EXPERIENCE,
+        ConversationPhase.EDUCATION,
+        ConversationPhase.SKILLS,
+        ConversationPhase.PROJECTS,
+        ConversationPhase.SUMMARY,
+        ConversationPhase.REVIEW,
+    ]
+
+    current_idx = phase_order.index(current_phase)
+
+    # Si la fase actual está completa, avanzar
+    if completeness.get("overall", 0) >= 0.8 and current_idx < len(phase_order) - 1:
+        return phase_order[current_idx + 1]
+
+    return None
+
+
+def _calculate_completeness(cv_data: Dict[str, Any], current_phase: ConversationPhase) -> Dict[str, Any]:
+    """Calcula la completitud de los datos del CV por sección."""
+    personal_info = cv_data.get("personalInfo", {})
+    experience = cv_data.get("experience", [])
+    education = cv_data.get("education", [])
+    skills = cv_data.get("skills", [])
+
+    # Completitud de información personal
+    personal_required = ["fullName", "email"]
+    personal_complete = sum(1 for f in personal_required if personal_info.get(f))
+    personal_total = len(personal_required)
+    personal_score = personal_complete / personal_total if personal_total > 0 else 0
+
+    # Completitud de experiencia
+    exp_score = min(len(experience) / 1, 1.0)  # Al menos 1 experiencia
+
+    # Completitud de educación
+    edu_score = min(len(education) / 1, 1.0)  # Al menos 1 educación
+
+    # Completitud de habilidades
+    skills_score = min(len(skills) / 3, 1.0)  # Al menos 3 habilidades
+
+    # Score general
+    overall = (personal_score + exp_score + edu_score + skills_score) / 4
+
+    return {
+        "overall": overall,
+        "personal_info": personal_score,
+        "experience": exp_score,
+        "education": edu_score,
+        "skills": skills_score,
+    }
+
+
+def _get_default_question(phase: ConversationPhase) -> str:
+    """Retorna una pregunta por defecto según la fase."""
+    defaults = {
+        ConversationPhase.WELCOME: "¡Hola! ¿Cómo te llamas?",
+        ConversationPhase.PERSONAL_INFO: "¿Cuál es tu correo electrónico?",
+        ConversationPhase.EXPERIENCE: "¿Dónde has trabajado recientemente?",
+        ConversationPhase.EDUCATION: "¿Cuál es tu formación académica?",
+        ConversationPhase.SKILLS: "¿Qué habilidades tienes?",
+        ConversationPhase.PROJECTS: "¿Has trabajado en algún proyecto interesante?",
+        ConversationPhase.SUMMARY: "¿Cómo describirías tu perfil profesional?",
+        ConversationPhase.JOB_TAILORING: "¿Tienes una descripción de puesto específica?",
+        ConversationPhase.OPTIMIZATION: "¿Qué te gustaría mejorar de tu CV?",
+        ConversationPhase.REVIEW: "¿Todo se ve bien? ¿Quieres hacer algún ajuste?",
+    }
+    return defaults.get(phase, "¿Qué más puedes contarme?")

@@ -1,0 +1,111 @@
+PRODUCT REQUIREMENTS DOCUMENT
+
+Producto: CV-Convos
+Objetivo: Elevar percepción de calidad a nivel SaaS profesional B2C/B2B
+Audiencia: Usuarios no técnicos, uso mobile y desktop
+Restricción: Frontend-only, sin backend, localStorage por seguridad
+
+1. Objetivo del rediseño
+
+Eliminar toda percepción de:
+
+Producto amateur
+
+Generación automática sin control
+
+UI frágil o inestable
+
+Y reemplazarla por:
+
+Confianza
+
+Claridad
+
+Predictibilidad
+
+Profesionalismo conservador
+
+2. Problemas actuales (explícitos)
+
+Preview se rompe en mobile y no se recupera sin reload
+
+Editor y preview compiten por espacio
+
+Falta jerarquía visual clara
+
+Exceso de “chips”, badges y estados decorativos
+
+Layout no determinista según viewport
+
+Estado acoplado a tamaño de pantalla
+
+UX punitiva (reload = pérdida de progreso)
+
+3. Requerimientos funcionales
+3.1 Layout
+
+Mobile-first por defecto
+
+Desktop: split-view estable
+
+Mobile: modo exclusivo
+
+Editor o
+
+Preview
+
+Nunca ambos en mobile
+
+3.2 Preview
+
+Renderizado desacoplado
+
+No depende del tamaño del editor
+
+Escala controlada por zoom, no por viewport
+
+Estado persistente al 100%
+
+3.3 Estado
+
+Single global store
+
+Persistencia incremental en localStorage
+
+Snapshot previo a resize/orientation change
+
+Recuperación automática sin reload
+
+3.4 Acciones críticas
+
+Finalizar CV: acción primaria, única y clara
+
+Ajustes: secundarios, ocultables
+
+IA: herramienta, no protagonista visual
+
+4. Requerimientos visuales
+
+Tipografía neutra, corporativa
+
+Colores sobrios, alto contraste
+
+Eliminar sombras innecesarias
+
+Eliminar animaciones no funcionales
+
+Espaciado consistente (8px system)
+
+Iconografía mínima y semántica
+
+5. Criterios de éxito
+
+Preview nunca se rompe
+
+Mobile usable sin pérdida de estado
+
+Usuario entiende dónde está y qué hace
+
+Interfaz “aburrida” pero confiable
+
+Sensación de producto pago
