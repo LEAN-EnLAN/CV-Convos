@@ -79,7 +79,7 @@ export function ConversationalWizard({
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-white overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-background overflow-hidden">
       <div className="flex-1 min-h-0">
         <ChatContainer
           showPhaseIndicator={true}
@@ -95,7 +95,7 @@ export function ConversationalWizard({
       {/* Modern Finalize Modal */}
       <AnimatePresence>
         {showFinalize && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xl p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -103,18 +103,18 @@ export function ConversationalWizard({
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="max-w-md w-full"
             >
-              <Card className="p-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-none rounded-[2.5rem] bg-white relative overflow-hidden">
+              <Card className="p-10 shadow-2xl border border-border rounded-[2rem] bg-card relative overflow-hidden">
                 {/* Decoration */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[100px] -z-10" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[100px] -z-10" />
 
                 <div className="text-center space-y-8">
-                  <div className="w-24 h-24 rounded-3xl bg-slate-900 flex items-center justify-center mx-auto shadow-2xl shadow-slate-200">
-                    <FileText className="w-12 h-12 text-white" />
+                  <div className="w-24 h-24 rounded-3xl bg-primary flex items-center justify-center mx-auto shadow-xl shadow-primary/20">
+                    <FileText className="w-12 h-12 text-primary-foreground" />
                   </div>
 
                   <div className="space-y-3">
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none">¿Todo listo?</h2>
-                    <p className="text-[15px] text-slate-500 font-medium leading-relaxed">
+                    <h2 className="text-3xl font-bold text-foreground tracking-tight leading-none">¿Todo listo?</h2>
+                    <p className="text-[15px] text-muted-foreground font-medium leading-relaxed">
                       Hemos procesado tu información con éxito. Pulsa finalizar para acceder al panel de edición detallado, o continúa conversando con el asistente.
                     </p>
                   </div>
@@ -122,13 +122,13 @@ export function ConversationalWizard({
                   <div className="flex flex-col sm:flex-row gap-4 pt-4">
                     <Button
                       variant="ghost"
-                      className="flex-1 h-16 rounded-2xl font-bold text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                      className="flex-1 h-14 rounded-xl font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
                       onClick={() => setShowFinalize(false)}
                     >
                       Seguir Editando
                     </Button>
                     <Button
-                      className="flex-1 h-16 rounded-2xl bg-slate-900 hover:bg-black text-white font-black shadow-2xl shadow-slate-200 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                      className="flex-1 h-14 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                       onClick={handleFinalize}
                     >
                       Finalizar CV

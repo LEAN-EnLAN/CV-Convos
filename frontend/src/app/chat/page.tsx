@@ -82,10 +82,10 @@ export default function ChatPage() {
   }, [router]);
 
   return (
-    <main className="h-screen w-full flex flex-col bg-[#F3F4F6] overflow-hidden">
+    <main className="h-screen w-full flex flex-col bg-background overflow-hidden">
       {/* High-Contrast Unified Header */}
       <motion.header
-        className="h-16 px-6 flex items-center justify-between bg-slate-900 text-white z-50 shrink-0 shadow-xl"
+        className="h-16 px-6 flex items-center justify-between bg-card border-b border-border z-50 shrink-0"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >
@@ -94,21 +94,21 @@ export default function ChatPage() {
             variant="ghost"
             size="sm"
             onClick={handleBack}
-            className="group px-3 hover:bg-white/10 text-white/70 hover:text-white font-bold transition-all"
+            className="group px-3 hover:bg-muted text-muted-foreground hover:text-foreground font-medium transition-all"
           >
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             Salir
           </Button>
 
-          <div className="h-6 w-[1px] bg-white/10 hidden sm:block" />
+          <div className="h-6 w-[1px] bg-border hidden sm:block" />
 
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-              <MessageCircle className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+              <MessageCircle className="w-5 h-5 text-primary" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-sm font-black tracking-tight leading-none mb-1 text-white">Editor Inteligente</h1>
-              <p className="text-[10px] text-white/60 font-black uppercase tracking-[0.2em]">Chat & Preview</p>
+              <h1 className="text-sm font-bold tracking-tight leading-none mb-1 text-foreground">Editor Inteligente</h1>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Chat & Preview</p>
             </div>
           </div>
         </div>
@@ -116,36 +116,36 @@ export default function ChatPage() {
         <div className="flex items-center gap-4">
           {/* Preview Toggle */}
           <Button
-            variant={showCVPreview ? "secondary" : "outline"}
+            variant={showCVPreview ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setShowCVPreview(!showCVPreview)}
             className={cn(
-              "hidden md:flex gap-2 rounded-xl font-black transition-all text-[10px] uppercase tracking-widest h-9 px-4",
+              "hidden md:flex gap-2 rounded-lg font-medium transition-all text-xs h-9 px-4",
               showCVPreview
-                ? "bg-white text-slate-900 border-none shadow-xl"
-                : "bg-transparent text-white border-white/30 hover:bg-white/10"
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-transparent text-muted-foreground hover:text-foreground"
             )}
           >
             <FileText className="w-4 h-4" />
             {showCVPreview ? "Ocultar Vista" : "Mostrar Vista"}
           </Button>
 
-          <div className="h-8 w-[1px] bg-white/10" />
+          <div className="h-8 w-[1px] bg-border" />
 
           {/* Template Selection */}
           <div className="flex items-center gap-3">
             <select
               value={selectedTemplate}
               onChange={(e) => setSelectedTemplate(e.target.value as CVTemplate)}
-              className="text-[10px] font-black bg-white/5 hover:bg-white/10 text-white border-2 border-white/20 rounded-xl px-4 py-2 outline-none focus:ring-2 ring-white/40 transition-all cursor-pointer min-w-[150px] appearance-none uppercase tracking-widest"
+              className="text-[10px] font-bold bg-background hover:bg-muted text-foreground border border-input rounded-lg px-4 py-2 outline-none focus:ring-2 ring-ring transition-all cursor-pointer min-w-[150px] appearance-none uppercase tracking-wider"
               style={{ textAlignLast: 'center' }}
             >
-              <option className="bg-slate-900" value="professional">PROFESIONAL</option>
-              <option className="bg-slate-900" value="minimal">MINIMALISTA</option>
-              <option className="bg-slate-900" value="creative">CREATIVO</option>
-              <option className="bg-slate-900" value="tech">TECH STACK</option>
-              <option className="bg-slate-900" value="harvard">HARVARD</option>
-              <option className="bg-slate-900" value="bian">MODERN BIAN</option>
+              <option className="bg-popover text-popover-foreground" value="professional">PROFESIONAL</option>
+              <option className="bg-popover text-popover-foreground" value="minimal">MINIMALISTA</option>
+              <option className="bg-popover text-popover-foreground" value="creative">CREATIVO</option>
+              <option className="bg-popover text-popover-foreground" value="tech">TECH STACK</option>
+              <option className="bg-popover text-popover-foreground" value="harvard">HARVARD</option>
+              <option className="bg-popover text-popover-foreground" value="bian">MODERN BIAN</option>
             </select>
           </div>
         </div>
@@ -172,7 +172,7 @@ export default function ChatPage() {
       <AnimatePresence>
         {isComplete && (
           <motion.div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-white/90 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -183,18 +183,18 @@ export default function ChatPage() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1, type: 'spring' }}
             >
-              <div className="w-24 h-24 rounded-3xl bg-slate-900 flex items-center justify-center mx-auto shadow-2xl shadow-slate-400 rotation-slow">
-                <Sparkles className="w-12 h-12 text-white" />
+              <div className="w-24 h-24 rounded-3xl bg-primary flex items-center justify-center mx-auto shadow-2xl shadow-primary/30 rotation-slow">
+                <Sparkles className="w-12 h-12 text-primary-foreground" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">¡CV Perfeccionado!</h2>
-                <p className="text-slate-500 font-medium leading-relaxed">
+                <h2 className="text-3xl font-bold text-foreground tracking-tight">¡CV Perfeccionado!</h2>
+                <p className="text-muted-foreground font-medium leading-relaxed">
                   Estamos preparando tu entorno de edición final. Un segundo...
                 </p>
               </div>
-              <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+              <div className="w-full bg-muted h-1 rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full bg-slate-900"
+                  className="h-full bg-primary"
                   initial={{ width: 0 }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 1.5 }}

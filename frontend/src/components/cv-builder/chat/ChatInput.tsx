@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   SendHorizontal,
   RotateCcw,
+  Sparkles
 } from 'lucide-react';
 
 interface ChatInputProps {
@@ -59,37 +60,38 @@ export function ChatInput({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {showQuickActions && (
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => handleQuickActionClick('optimize', 'Optimiza mi perfil profesional')}
-            className="rounded-none border-black hover:bg-black hover:text-white text-[10px] font-bold uppercase tracking-widest h-8 px-4 whitespace-nowrap"
+            className="rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary text-xs font-medium h-7 px-4 whitespace-nowrap border border-transparent hover:border-primary/20 transition-all"
           >
+            <Sparkles className="w-3 h-3 mr-2" />
             Optimizar Perfil
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => handleQuickActionClick('job_targeting', 'Adapta mi CV para esta vacante')}
-            className="rounded-none border-black hover:bg-black hover:text-white text-[10px] font-bold uppercase tracking-widest h-8 px-4 whitespace-nowrap"
+            className="rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary text-xs font-medium h-7 px-4 whitespace-nowrap border border-transparent hover:border-primary/20 transition-all"
           >
             Adaptar a Vacante
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => handleQuickActionClick('fix_grammar', 'Corrige la gramática de todo mi CV')}
-            className="rounded-none border-black hover:bg-black hover:text-white text-[10px] font-bold uppercase tracking-widest h-8 px-4 whitespace-nowrap"
+            className="rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary text-xs font-medium h-7 px-4 whitespace-nowrap border border-transparent hover:border-primary/20 transition-all"
           >
             Corregir Gramática
           </Button>
         </div>
       )}
 
-      <div className="relative border-2 border-black group focus-within:shadow-[8px_8px_0_0_#000] transition-all duration-300">
+      <div className="relative border border-input bg-background rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-ring/20 focus-within:border-primary transition-all duration-300">
         <Textarea
           ref={textareaRef}
           value={message}
@@ -97,29 +99,31 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled || isLoading}
-          className="min-h-[50px] max-h-[200px] w-full resize-none border-none bg-white py-4 pl-4 pr-16 text-sm font-medium focus-visible:ring-0 placeholder:text-black/30 placeholder:font-bold placeholder:uppercase placeholder:tracking-widest placeholder:text-[10px] rounded-none"
+          className="min-h-[50px] max-h-[200px] w-full resize-none border-none bg-transparent py-4 pl-4 pr-24 text-sm focus-visible:ring-0 placeholder:text-muted-foreground/60 rounded-2xl"
         />
 
-        <div className="absolute right-2 bottom-2 flex items-center gap-2">
+        <div className="absolute right-2 bottom-2 flex items-center gap-1">
           {message.length > 0 && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => {
                 setMessage('');
                 if (textareaRef.current) textareaRef.current.style.height = 'auto';
               }}
-              className="p-2 hover:bg-slate-100 transition-colors"
+              className="h-8 w-8 rounded-full hover:bg-muted text-muted-foreground transition-colors"
             >
-              <RotateCcw className="w-4 h-4 text-black" />
-            </button>
+              <RotateCcw className="w-4 h-4" />
+            </Button>
           )}
 
           <Button
             size="icon"
             onClick={handleSend}
             disabled={!message.trim() || isLoading || disabled}
-            className="h-10 w-10 bg-black text-white hover:bg-white hover:text-black hover:border-black border border-transparent transition-all rounded-none"
+            className="h-9 w-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all"
           >
-            <SendHorizontal className="h-5 w-5" />
+            <SendHorizontal className="h-4 w-4" />
           </Button>
         </div>
       </div>
