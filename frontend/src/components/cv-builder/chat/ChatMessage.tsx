@@ -16,6 +16,11 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, isStreaming, className }: ChatMessageProps) {
   const isAssistant = message.role === 'assistant';
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const formatMessageContent = (content: string) => {
     if (!content) return null;
@@ -73,8 +78,10 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
         </div>
 
         <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity px-1">
-          <span className="text-[10px] font-medium text-muted-foreground">
-            {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+          <span className="text-[10px] font-medium text-muted-foreground" suppressHydrationWarning>
+            {mounted && message.timestamp 
+              ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+              : mounted ? 'Just now' : ''}
           </span>
         </div>
       </div>
