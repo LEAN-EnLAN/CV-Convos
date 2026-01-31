@@ -115,7 +115,7 @@ export function ChatContainer({
         <div className="flex flex-col shrink-0 border-b border-border bg-card/50 backdrop-blur-sm">
           <div className="flex items-center justify-between px-6 py-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                 <Sparkles className="w-4 h-4" />
               </div>
               <div>
@@ -125,7 +125,7 @@ export function ChatContainer({
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                   </span>
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Online</p>
+                  <p className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider">Online</p>
                 </div>
               </div>
             </div>
@@ -209,19 +209,19 @@ export function ChatContainer({
           {onFinalizeRequest && (
             <div className="max-w-2xl mx-auto w-full mt-4 pt-4 border-t border-border flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Progress</span>
+                <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Progreso del CV</span>
                 <span className={cn("text-xs font-bold mt-0.5", canFinalize ? "text-green-600" : "text-foreground")}>
-                  {canFinalize ? 'Listo para finalizar' : 'Información incompleta'}
+                  {canFinalize ? 'Listo para finalizar' : 'Información requerida'}
                 </span>
               </div>
               <Button
                 onClick={onFinalizeRequest}
                 disabled={!canFinalize}
                 className={cn(
-                  "px-6 h-10 rounded-lg font-bold text-xs transition-all shadow-lg",
+                  "px-6 h-10 rounded-lg font-bold text-xs transition-all shadow-md border",
                   canFinalize
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                    ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 shadow-primary/20"
+                    : "bg-muted text-muted-foreground border-border cursor-not-allowed"
                 )}
               >
                 Finalizar CV

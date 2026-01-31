@@ -38,17 +38,17 @@ export function PhaseIndicator({
       <div className={cn('space-y-2', className)}>
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <span className="text-[9px] uppercase tracking-[0.2em] font-black text-white/40">Phase</span>
-            <span className="text-[11px] font-black text-white uppercase tracking-tight">{currentPhaseInfo.label}</span>
+            <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Phase</span>
+            <span className="text-[11px] font-bold text-foreground uppercase tracking-tight">{currentPhaseInfo.label}</span>
           </div>
-          <span className="text-[10px] font-black text-white tracking-widest">{Math.round(progress)}%</span>
+          <span className="text-[10px] font-bold text-foreground tracking-widest">{Math.round(progress)}%</span>
         </div>
-        <div className="h-1.5 bg-white/10 rounded-none overflow-hidden border border-white/5">
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden border border-border/50">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
-            className="h-full bg-white"
+            className="h-full bg-primary"
           />
         </div>
       </div>
@@ -59,22 +59,22 @@ export function PhaseIndicator({
     <div className={cn('space-y-6', className)}>
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h3 className="text-lg font-black text-black tracking-tight">{currentPhaseInfo.label}</h3>
-          <p className="text-sm text-black font-medium opacity-70">
+          <h3 className="text-lg font-bold text-foreground tracking-tight">{currentPhaseInfo.label}</h3>
+          <p className="text-sm text-muted-foreground font-medium">
             {currentPhaseInfo.description}
           </p>
         </div>
         <div className="flex flex-col items-end">
-          <span className="text-2xl font-black text-black">{Math.round(progress)}%</span>
-          <span className="text-[10px] uppercase font-bold text-black tracking-widest opacity-40">completado</span>
+          <span className="text-2xl font-bold text-foreground">{Math.round(progress)}%</span>
+          <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">completado</span>
         </div>
       </div>
 
-      <div className="h-2 bg-slate-100 rounded-none overflow-hidden border border-slate-200">
+      <div className="h-2 bg-muted rounded-full overflow-hidden border border-border">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          className="h-full bg-black"
+          className="h-full bg-primary"
           transition={{ duration: 0.7, ease: "easeInOut" }}
         />
       </div>

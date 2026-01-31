@@ -67,7 +67,7 @@ export function ChatInput({
             variant="ghost"
             size="sm"
             onClick={() => handleQuickActionClick('optimize', 'Optimiza mi perfil profesional')}
-            className="rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary text-xs font-medium h-7 px-4 whitespace-nowrap border border-transparent hover:border-primary/20 transition-all"
+            className="rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-xs font-semibold h-7 px-4 whitespace-nowrap border border-border hover:border-primary/20 transition-all shadow-sm"
           >
             <Sparkles className="w-3 h-3 mr-2" />
             Optimizar Perfil
@@ -76,7 +76,7 @@ export function ChatInput({
             variant="ghost"
             size="sm"
             onClick={() => handleQuickActionClick('job_targeting', 'Adapta mi CV para esta vacante')}
-            className="rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary text-xs font-medium h-7 px-4 whitespace-nowrap border border-transparent hover:border-primary/20 transition-all"
+            className="rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-xs font-semibold h-7 px-4 whitespace-nowrap border border-border hover:border-primary/20 transition-all shadow-sm"
           >
             Adaptar a Vacante
           </Button>
@@ -84,7 +84,7 @@ export function ChatInput({
             variant="ghost"
             size="sm"
             onClick={() => handleQuickActionClick('fix_grammar', 'Corrige la gramática de todo mi CV')}
-            className="rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary text-xs font-medium h-7 px-4 whitespace-nowrap border border-transparent hover:border-primary/20 transition-all"
+            className="rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-xs font-semibold h-7 px-4 whitespace-nowrap border border-border hover:border-primary/20 transition-all shadow-sm"
           >
             Corregir Gramática
           </Button>

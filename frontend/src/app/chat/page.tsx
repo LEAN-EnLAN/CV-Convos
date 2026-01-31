@@ -108,7 +108,7 @@ export default function ChatPage() {
             </div>
             <div className="hidden sm:block">
               <h1 className="text-sm font-bold tracking-tight leading-none mb-1 text-foreground">Editor Inteligente</h1>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Chat & Preview</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-80">Chat & Preview</p>
             </div>
           </div>
         </div>
@@ -120,10 +120,10 @@ export default function ChatPage() {
             size="sm"
             onClick={() => setShowCVPreview(!showCVPreview)}
             className={cn(
-              "hidden md:flex gap-2 rounded-lg font-medium transition-all text-xs h-9 px-4",
+              "hidden md:flex gap-2 rounded-lg font-medium transition-all text-xs h-9 px-4 border border-transparent",
               showCVPreview
-                ? "bg-secondary text-secondary-foreground"
-                : "bg-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-secondary text-secondary-foreground border-border shadow-sm"
+                : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
             <FileText className="w-4 h-4" />
@@ -137,7 +137,7 @@ export default function ChatPage() {
             <select
               value={selectedTemplate}
               onChange={(e) => setSelectedTemplate(e.target.value as CVTemplate)}
-              className="text-[10px] font-bold bg-background hover:bg-muted text-foreground border border-input rounded-lg px-4 py-2 outline-none focus:ring-2 ring-ring transition-all cursor-pointer min-w-[150px] appearance-none uppercase tracking-wider"
+              className="text-[10px] font-bold bg-background hover:bg-muted text-foreground border border-input rounded-lg px-4 py-2 outline-none focus:ring-2 ring-ring transition-all cursor-pointer min-w-[150px] appearance-none uppercase tracking-wider shadow-sm"
               style={{ textAlignLast: 'center' }}
             >
               <option className="bg-popover text-popover-foreground" value="professional">PROFESIONAL</option>
