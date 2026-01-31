@@ -102,7 +102,7 @@ export function Editor({
     const optimizeContent = async (type: string, action: string) => {
         setIsOptimizing(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             const res = await fetch(`${apiUrl}/api/optimize-cv?target=${action}&section=${type}`, {
                 method: 'POST',
                 headers: {
@@ -140,7 +140,7 @@ export function Editor({
         }
         setIsOptimizing(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             const res = await fetch(
                 `${apiUrl}/api/interview-cv?target_role=${encodeURIComponent(targetRole)}`,
                 {

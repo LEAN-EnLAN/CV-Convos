@@ -72,7 +72,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
         files.forEach((file) => formData.append('files', file));
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             const response = await fetch(`${apiUrl}/api/generate-cv`, {
                 method: 'POST',
                 body: formData,

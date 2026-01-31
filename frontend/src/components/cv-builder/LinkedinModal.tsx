@@ -50,7 +50,7 @@ export function LinkedinModal({ isOpen, onClose, data }: LinkedinModalProps) {
     const fetchAIContent = async () => {
         setLoading(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             const res = await fetch(`${apiUrl}/api/generate-linkedin-post`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
