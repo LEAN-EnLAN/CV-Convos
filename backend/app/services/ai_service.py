@@ -1644,7 +1644,29 @@ def _detect_phase_transition(
     cv_data: Dict[str, Any],
 ) -> Optional[ConversationPhase]:
     """Detecta si debe haber una transición de fase."""
-    # Lógica simple de transición basada en completitud
+    # Lógica de transición más flexible
+    
+    # 1. Detección de intención explícita de avanzar
+    skip_keywords = ["skip", "next", "siguiente", "paso", "continuar", "listo", "ya está", "no tengo", "omitir"]
+    if any(k in user_message.lower() for k in skip_keywords):
+        phase_order = [
+            ConversationPhase.WELCOME,
+            ConversationPhase.PERSONAL_INFO,
+            ConversationPhase.EXPERIENCE,
+            ConversationPhase.EDUCATION,
+            ConversationPhase.SKILLS,
+            ConversationPhase.PROJECTS,
+            ConversationPhase.SUMMARY,
+            ConversationPhase.REVIEW,
+        ]
+        try:
+            current_idx = phase_order.index(current_phase)
+            if current_idx < len(phase_order) - 1:
+                return phase_order[current_idx + 1]
+        except ValueError:
+            pass
+
+    # 2. Transición basada en completitud relajada
     completeness = _calculate_completeness(cv_data, current_phase)
 
     phase_order = [
@@ -1658,39 +1680,58 @@ def _detect_phase_transition(
         ConversationPhase.REVIEW,
     ]
 
-    current_idx = phase_order.index(current_phase)
+    try:
+        current_idx = phase_order.index(current_phase)
+    except ValueError:
+        return None
 
-    # Si la fase actual está completa, avanzar
-    if completeness.get("overall", 0) >= 0.8 and current_idx < len(phase_order) - 1:
+    # Threshold dinámico según la fase
+    threshold = 0.5  # Default más bajo para fluidez
+    
+    # Si la fase actual está suficientemente completa, avanzar
+    if completeness.get("overall", 0) >= threshold and current_idx < len(phase_order) - 1:
         return phase_order[current_idx + 1]
 
     return None
 
 
 def _calculate_completeness(cv_data: Dict[str, Any], current_phase: ConversationPhase) -> Dict[str, Any]:
-    """Calcula la completitud de los datos del CV por sección."""
+    """Calcula la completitud de los datos del CV por sección de forma relajada."""
     personal_info = cv_data.get("personalInfo", {})
     experience = cv_data.get("experience", [])
     education = cv_data.get("education", [])
     skills = cv_data.get("skills", [])
 
-    # Completitud de información personal
-    personal_required = ["fullName", "email"]
+    # Completitud de información personal (Solo nombre es crítico para empezar)
+    personal_required = ["fullName"]
     personal_complete = sum(1 for f in personal_required if personal_info.get(f))
     personal_total = len(personal_required)
     personal_score = personal_complete / personal_total if personal_total > 0 else 0
 
-    # Completitud de experiencia
-    exp_score = min(len(experience) / 1, 1.0)  # Al menos 1 experiencia
+    # Completitud de experiencia (Flexible)
+    exp_score = min(len(experience) / 1, 1.0) if len(experience) > 0 else 0.5 # 0.5 de base para no bloquear
 
-    # Completitud de educación
-    edu_score = min(len(education) / 1, 1.0)  # Al menos 1 educación
+    # Completitud de educación (Flexible)
+    edu_score = min(len(education) / 1, 1.0) if len(education) > 0 else 0.5
 
-    # Completitud de habilidades
-    skills_score = min(len(skills) / 3, 1.0)  # Al menos 3 habilidades
+    # Completitud de habilidades (Mínimo 1)
+    skills_score = min(len(skills) / 1, 1.0)
 
-    # Score general
-    overall = (personal_score + exp_score + edu_score + skills_score) / 4
+    # Score ponderado según la fase actual
+    # Si estamos en 'welcome' o 'personal_info', solo importa personal_score
+    overall = 0.0
+    
+    if current_phase == ConversationPhase.WELCOME or current_phase == ConversationPhase.PERSONAL_INFO:
+        overall = personal_score
+    elif current_phase == ConversationPhase.EXPERIENCE:
+        overall = exp_score
+    elif current_phase == ConversationPhase.EDUCATION:
+        overall = edu_score
+    elif current_phase == ConversationPhase.SKILLS:
+        overall = skills_score
+    else:
+        # Promedio general para fases avanzadas
+        overall = (personal_score + exp_score + edu_score + skills_score) / 4
 
     return {
         "overall": overall,

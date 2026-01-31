@@ -62,7 +62,7 @@ export function ChatInput({
   return (
     <div className="flex flex-col gap-3">
       {showQuickActions && (
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
           <Button
             variant="ghost"
             size="sm"

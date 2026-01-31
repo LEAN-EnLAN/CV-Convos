@@ -145,27 +145,59 @@ export function ConversationalWizard({
 }
 
 /**
- * Merge profundo de objetos
+ * Merge profundo de objetos con manejo inteligente de arrays
  */
 function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
   const result = { ...target };
+  
   for (const key in source) {
-    if (source[key] !== undefined && source[key] !== null) {
-      if (typeof source[key] === 'object' && !Array.isArray(source[key]) && typeof result[key] === 'object' && !Array.isArray(result[key])) {
-        result[key] = deepMerge(result[key] as Record<string, unknown>, source[key] as Record<string, unknown>) as T[Extract<keyof T, string>];
-      } else if (Array.isArray(source[key]) && Array.isArray(result[key])) {
-        const sourceArray = source[key] as Array<{ id?: string }>;
-        const targetArray = result[key] as Array<{ id?: string }>;
-        const mergedArray = [...targetArray];
+    const sourceValue = source[key];
+    const targetValue = result[key];
+
+    if (sourceValue === undefined || sourceValue === null) {
+      continue;
+    }
+
+    if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
+        // Estrategia para arrays:
+        // Si el array fuente tiene elementos con ID, intentamos mergear por ID.
+        // Si no, o si es un array simple, concatenamos o reemplazamos según el caso.
+        // Para simplificar y asegurar que la extracción se refleje: SIEMPRE mergeamos por ID si existe, 
+        // y si no, agregamos los nuevos.
+        
+        const sourceArray = sourceValue as Array<any>;
+        const targetArray = [...targetValue] as Array<any>;
+        
         sourceArray.forEach((sourceItem) => {
-          const existingIndex = mergedArray.findIndex((item) => item.id && item.id === sourceItem.id);
-          if (existingIndex >= 0) { mergedArray[existingIndex] = { ...mergedArray[existingIndex], ...sourceItem }; }
-          else { mergedArray.push(sourceItem); }
+            if (sourceItem && typeof sourceItem === 'object' && 'id' in sourceItem) {
+                const existingIndex = targetArray.findIndex(item => item.id === sourceItem.id);
+                if (existingIndex >= 0) {
+                    targetArray[existingIndex] = deepMerge(targetArray[existingIndex], sourceItem);
+                } else {
+                    targetArray.push(sourceItem);
+                }
+            } else {
+                // Si no tiene ID o es primitivo, lo agregamos si no existe (set behavior)
+                if (!targetArray.includes(sourceItem)) {
+                    targetArray.push(sourceItem);
+                }
+            }
         });
-        result[key] = mergedArray as T[Extract<keyof T, string>];
-      } else {
-        result[key] = source[key] as T[Extract<keyof T, string>];
-      }
+        
+        result[key] = targetArray as T[Extract<keyof T, string>];
+
+    } else if (
+      typeof sourceValue === 'object' && 
+      sourceValue !== null && 
+      typeof targetValue === 'object' && 
+      targetValue !== null && 
+      !Array.isArray(targetValue)
+    ) {
+      // Objeto anidado
+      result[key] = deepMerge(targetValue as Record<string, unknown>, sourceValue as Record<string, unknown>) as T[Extract<keyof T, string>];
+    } else {
+      // Valor primitivo o reemplazo directo
+      result[key] = sourceValue as T[Extract<keyof T, string>];
     }
   }
   return result;
