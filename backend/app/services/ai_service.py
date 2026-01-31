@@ -200,28 +200,63 @@ REGLAS DE SALIDA (JSON):
     reraise=False
 )
 def _call_groq_api(prompt: str, system_msg: str, use_json: bool = True) -> Any:
-    """Internal function to call Groq API with retry logic."""
-    client = Groq(api_key=settings.GROQ_API_KEY)
-    completion = client.chat.completions.create(
-        model=MODEL_ID,
-        messages=[
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.1,
-        response_format={"type": "json_object"} if use_json else None,
-    )
-    message_content = completion.choices[0].message.content
-    if message_content is None:
+    """Internal function to call Groq API with retry logic and fallback."""
+    try:
+        client = Groq(api_key=settings.GROQ_API_KEY)
+        completion = client.chat.completions.create(
+            model=MODEL_ID,
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.1,
+            response_format={"type": "json_object"} if use_json else None,
+        )
+        message_content = completion.choices[0].message.content
+        if message_content is None:
+            raise ValueError("Empty response from AI")
+        
+        if use_json:
+            try:
+                return json.loads(message_content)
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse JSON from AI: {message_content}")
+                return None
+        return message_content
+
+    except Exception as e:
+        logger.error(f"Groq API Error: {str(e)}")
+        # Fallback for demo/development when API key is invalid
+        if "401" in str(e) or "authentication" in str(e).lower() or "api key" in str(e).lower():
+            logger.warning("Authentication failed. Using mock fallback data.")
+            if use_json:
+                # Return minimal valid JSON based on context (simplified heuristic)
+                if "CV JSON" in system_msg or "structured CV" in prompt:
+                    return {
+                        "personalInfo": {"fullName": "Usuario Demo", "summary": "Perfil generado automáticamente (Modo Demo)."},
+                        "experience": [{"company": "Empresa Demo", "position": "Puesto Demo", "startDate": "2023", "description": "Descripción de ejemplo en modo offline."}],
+                        "skills": [{"name": "Skill Demo", "level": "Advanced"}]
+                    }
+                elif "critique" in system_msg.lower() or "critique" in prompt.lower():
+                    return {
+                        "score": 85,
+                        "overall_verdict": "Buen perfil base (Modo Demo).",
+                        "critique": [{
+                            "id": "demo_1",
+                            "title": "Mejora Demo",
+                            "description": "El servicio de IA no está disponible. Esto es un ejemplo.",
+                            "severity": "Suggested",
+                            "category": "Impact",
+                            "target_field": "personalInfo.summary",
+                            "original_text": "Texto original",
+                            "suggested_text": "Texto sugerido por demo"
+                        }]
+                    }
+                return {} # Empty dict for other JSON requests
+            else:
+                return "El servicio de IA está en modo demostración. Por favor configura una API Key válida para respuestas reales."
+        
         return None
-    
-    if use_json:
-        try:
-            return json.loads(message_content)
-        except json.JSONDecodeError:
-            logger.error(f"Failed to parse JSON from AI: {message_content}")
-            return None
-    return message_content
 
 
 async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES, use_json: bool = True):
@@ -451,32 +486,122 @@ async def generate_cover_letter(
 
 # --- ATS CHECKER ---
 
+# =============================================================================
+# FIELD-CONTEXTUAL VALIDATION SYSTEM
+# =============================================================================
+# This module implements strict industry-specific validation for ATS checking.
+# Key principles:
+# 1. Every recommendation must be relevant to the selected industry
+# 2. Irrelevant technical suggestions are suppressed for non-technical roles
+# 3. Resume content is verified against selected industry indicators
+# 4. Mismatches between resume content and selected industry are flagged
+# =============================================================================
+
 INDUSTRY_KEYWORDS = {
     "tech": {
         "name": "Tecnología / IT / Desarrollo de Software",
         "keywords": [
             "Python",
             "JavaScript",
+            "TypeScript",
             "React",
+            "Angular",
+            "Vue.js",
             "Node.js",
+            "Django",
+            "Flask",
+            "FastAPI",
+            "Spring Boot",
             "SQL",
+            "NoSQL",
+            "MongoDB",
+            "PostgreSQL",
+            "MySQL",
+            "Redis",
             "Git",
+            "GitHub",
+            "GitLab",
             "AWS",
+            "Azure",
+            "GCP",
             "Docker",
             "Kubernetes",
+            "Terraform",
             "CI/CD",
+            "Jenkins",
+            "GitHub Actions",
             "API",
+            "REST",
+            "GraphQL",
+            "gRPC",
             "Agile",
             "Scrum",
+            "Kanban",
             "Machine Learning",
+            "TensorFlow",
+            "PyTorch",
+            "NLP",
             "Full Stack",
             "Backend",
             "Frontend",
             "DevOps",
             "Cloud",
             "Microservices",
+            "Architecture",
+            "Testing",
+            "Unit Testing",
+            "TDD",
+            "Security",
+            "OAuth",
+            "JWT",
         ],
-        "focus": "habilidades técnicas, tecnologías específicas, proyectos de código, metodologías ágiles",
+        "focus": "habilidades técnicas, tecnologías específicas, proyectos de código, metodologías ágiles, arquitectura de sistemas",
+        # Terms that SHOULD NOT be suggested for tech industry
+        "anti_keywords": [
+            "Photoshop",
+            "Illustrator",
+            "Figma",
+            "Branding",
+            "Copywriting",
+            "Paciente",
+            "Clínica",
+            "Auditoría",
+            "Contabilidad",
+            "Docencia",
+            "Curriculum",
+            "Pedagogía",
+        ],
+        # Words that indicate genuine tech experience
+        "content_indicators": [
+            "desarroll",
+            "program",
+            "code",
+            "coding",
+            "software",
+            "engineer",
+            "developer",
+            "frontend",
+            "backend",
+            "fullstack",
+            "api",
+            "database",
+            "server",
+            "deploy",
+            "cloud",
+            "aws",
+            "azure",
+            "docker",
+            "kubernetes",
+            "git",
+            "framework",
+            "javascript",
+            "python",
+            "java",
+            "react",
+            "node",
+            "sql",
+            "nosql",
+        ],
     },
     "finance": {
         "name": "Finanzas / Banca / Contabilidad",
@@ -501,8 +626,65 @@ INDUSTRY_KEYWORDS = {
             "Due Diligence",
             "Regulación",
             "IFRS",
+            "GAAP",
+            "Tesorería",
+            "Cash Flow",
+            "Modelado financiero",
+            "Valoración",
+            "M&A",
+            "Fusiones",
+            "Adquisiciones",
+            "Crédito",
+            "Financiamiento",
+            "Capital",
+            "Rentabilidad",
+            "Margen",
+            "ROI",
         ],
-        "focus": "análisis numérico, herramientas de reporting, regulaciones financieras, experiencia en auditoría y compliance",
+        "focus": "análisis numérico, herramientas de reporting, regulaciones financieras, experiencia en auditoría y compliance, modelado financiero",
+        # Terms that SHOULD NOT be suggested for finance industry
+        "anti_keywords": [
+            "Photoshop",
+            "Illustrator",
+            "Figma",
+            "React",
+            "Node.js",
+            "JavaScript",
+            "Python",
+            "Docker",
+            "Kubernetes",
+            "Paciente",
+            "Clínica",
+            "Docencia",
+            "Curriculum",
+            "Pedagogía",
+            "Portfolio",
+            "Branding",
+        ],
+        # Words that indicate genuine finance experience
+        "content_indicators": [
+            "financiero",
+            "contabil",
+            "auditor",
+            "presupuesto",
+            "balance",
+            "p&l",
+            "forecast",
+            "reporting",
+            "excel",
+            "sap",
+            "erp",
+            "compliance",
+            "riesgo",
+            "inversion",
+            "valoracion",
+            "tesoreria",
+            "cash flow",
+            "credito",
+            "banca",
+            "acciones",
+            "bolsa",
+        ],
     },
     "healthcare": {
         "name": "Salud / Medicina / Enfermería",
@@ -525,33 +707,140 @@ INDUSTRY_KEYWORDS = {
             "Protocolos",
             "Esterilización",
             "Signos vitales",
+            "Triage",
+            "Medicina",
+            "Farmacia",
+            "Terapia",
+            "Rehabilitación",
+            "Epic",
+            "Cerner",
+            "Medication",
+            "Patient care",
+            "Clinical",
+            "Healthcare",
         ],
-        "focus": "certificaciones médicas, experiencia clínica, atención al paciente, protocolos de seguridad",
+        "focus": "certificaciones médicas, experiencia clínica, atención al paciente, protocolos de seguridad, cumplimiento regulatorio",
+        # Terms that SHOULD NOT be suggested for healthcare industry
+        "anti_keywords": [
+            "Photoshop",
+            "Illustrator",
+            "Figma",
+            "React",
+            "Node.js",
+            "JavaScript",
+            "Python",
+            "Docker",
+            "Kubernetes",
+            "API",
+            "DevOps",
+            "AWS",
+            "Auditoría",
+            "Contabilidad",
+            "Docencia",
+            "Curriculum",
+        ],
+        # Words that indicate genuine healthcare experience
+        "content_indicators": [
+            "paciente",
+            "clinica",
+            "hospital",
+            "medico",
+            "enfermer",
+            "diagnostic",
+            "tratamiento",
+            "terapia",
+            "farmaco",
+            "cirugia",
+            "laboratorio",
+            "radiologia",
+            "cuidado",
+            "hipaa",
+            "epic",
+            "cerner",
+            "historial",
+            "signos vitales",
+            "triage",
+        ],
     },
     "creative": {
         "name": "Diseño / Marketing / Comunicación",
         "keywords": [
             "Photoshop",
             "Illustrator",
+            "InDesign",
             "Figma",
+            "Sketch",
             "UI/UX",
             "Branding",
+            "Identidad visual",
             "Copywriting",
             "SEO",
+            "SEM",
             "Social Media",
             "Campañas",
             "Estrategia digital",
             "Google Ads",
-            "Content",
+            "Facebook Ads",
+            "Content Marketing",
+            "Email Marketing",
             "Creatividad",
             "Portfolio",
-            "Adobe",
+            "Adobe Creative Suite",
             "Canva",
             "Motion Graphics",
             "Video",
             "Fotografía",
+            "Dirección de arte",
+            "Packaging",
+            "Tipografía",
+            "Colorimetría",
+            "Storytelling",
+            "Engagement",
+            "Conversion",
         ],
-        "focus": "portfolio de trabajos, herramientas de diseño, métricas de campañas, creatividad y storytelling",
+        "focus": "portfolio de trabajos, herramientas de diseño, métricas de campañas, creatividad y storytelling visual, identidad de marca",
+        # Terms that SHOULD NOT be suggested for creative industry
+        "anti_keywords": [
+            "React",
+            "Node.js",
+            "JavaScript",
+            "Python",
+            "Docker",
+            "Kubernetes",
+            "AWS",
+            "API",
+            "DevOps",
+            "CI/CD",
+            "Auditoría",
+            "Contabilidad",
+            "Paciente",
+            "Clínica",
+            "Docencia",
+        ],
+        # Words that indicate genuine creative experience
+        "content_indicators": [
+            "diseño",
+            "diseno",
+            "grafico",
+            "visual",
+            "brand",
+            "identidad",
+            "ux",
+            "ui",
+            "fotografia",
+            "video",
+            "motion",
+            "animacion",
+            "ilustracion",
+            "arte",
+            "tipografia",
+            "marketing",
+            "campana",
+            "seo",
+            "copywriting",
+            "contenido",
+            "social media",
+        ],
     },
     "education": {
         "name": "Educación / Docencia / Capacitación",
@@ -563,6 +852,8 @@ INDUSTRY_KEYWORDS = {
             "Pedagogía",
             "E-learning",
             "Moodle",
+            "Canvas",
+            "Blackboard",
             "Estudiantes",
             "Aula",
             "Didáctica",
@@ -573,8 +864,56 @@ INDUSTRY_KEYWORDS = {
             "NEE",
             "Desarrollo curricular",
             "Materiales didácticos",
+            "Formación profesional",
+            "Certificaciones",
+            "SQA",
+            "Competencias",
+            "Aprendizaje",
+            "Enseñanza",
+            "Evaluación",
+            "Calificaciones",
+            "Tesis",
+            "Investigación educativa",
         ],
-        "focus": "experiencia docente, metodologías educativas, gestión de aula, desarrollo de programas",
+        "focus": "experiencia docente, metodologías educativas, gestión de aula, desarrollo de programas, formación de competencias",
+        # Terms that SHOULD NOT be suggested for education industry
+        "anti_keywords": [
+            "React",
+            "Node.js",
+            "JavaScript",
+            "Python",
+            "Docker",
+            "Kubernetes",
+            "AWS",
+            "API",
+            "DevOps",
+            "Photoshop",
+            "Illustrator",
+            "Branding",
+            "Paciente",
+            "Clínica",
+            "Auditoría",
+        ],
+        # Words that indicate genuine education experience
+        "content_indicators": [
+            "docencia",
+            "docente",
+            "enseñanza",
+            "educacion",
+            "curriculum",
+            "pedagog",
+            "aula",
+            "estudiante",
+            "alumno",
+            "evaluacion",
+            "didactica",
+            "tutoria",
+            "capacitacion",
+            "formacion",
+            "moodle",
+            "e-learning",
+            "curso",
+        ],
     },
     "general": {
         "name": "General / Multiindustria",
@@ -593,22 +932,160 @@ INDUSTRY_KEYWORDS = {
             "Planificación",
             "Adaptabilidad",
             "Proactividad",
+            "Gestión de proyectos",
+            "Análisis",
+            "Microsoft Office",
+            "PowerPoint",
+            "Word",
+            "Outlook",
+            "CRM",
+            "ERP",
+            "Reporting",
+            "KPIs",
+            "Metas",
+            "Objetivos",
+            "Resultados",
         ],
-        "focus": "habilidades transferibles, logros cuantificables, experiencia general relevante",
+        "focus": "habilidades transferibles, logros cuantificables, experiencia general relevante, competencias blandas",
+        # No specific anti-keywords for general - it's flexible
+        "anti_keywords": [],
+        # Generic indicators for any professional experience
+        "content_indicators": [
+            "gestion",
+            "liderazgo",
+            "proyecto",
+            "equipo",
+            "cliente",
+            "ventas",
+            "atencion",
+            "comunicacion",
+            "organizacion",
+            "analisis",
+            "planificacion",
+        ],
     },
 }
+
+
+# =============================================================================
+# CONTENT VERIFICATION HELPER FUNCTIONS
+# =============================================================================
+
+def check_resume_content_indicators(
+    cv_text: str, industry: str, threshold: float = 0.2
+) -> Dict[str, Any]:
+    """
+    Verifies if resume content contains indicators for the selected industry.
+
+    Args:
+        cv_text: Lowercase text of the resume
+        industry: Selected industry key (e.g., 'tech', 'creative')
+        threshold: Minimum ratio of indicators to keywords (default 20%)
+
+    Returns:
+        Dict with mismatch_detected, match_ratio, found_indicators, and recommendations
+    """
+    industry_data = INDUSTRY_KEYWORDS.get(industry, INDUSTRY_KEYWORDS["general"])
+    indicators = industry_data.get("content_indicators", [])
+    anti_keywords = industry_data.get("anti_keywords", [])
+
+    # Count how many content indicators are present
+    found_indicators = []
+    for indicator in indicators:
+        if indicator.lower() in cv_text:
+            found_indicators.append(indicator)
+
+    # Count anti-keywords that ARE present (these indicate OTHER industries)
+    found_anti_keywords = []
+    for anti_kw in anti_keywords:
+        if anti_kw.lower() in cv_text:
+            found_anti_keywords.append(anti_kw)
+
+    # Calculate match ratio
+    match_ratio = len(found_indicators) / max(len(indicators), 1)
+
+    # Detect mismatch: few indicators but many anti-keywords
+    mismatch_detected = (
+        match_ratio < threshold and len(found_anti_keywords) > 0
+    ) or (match_ratio < threshold and industry != "general")
+
+    return {
+        "mismatch_detected": mismatch_detected,
+        "match_ratio": round(match_ratio, 3),
+        "found_indicators": found_indicators,
+        "found_anti_keywords": found_anti_keywords,
+        "indicator_count": len(found_indicators),
+        "anti_keyword_count": len(found_anti_keywords),
+    }
+
+
+def filter_anti_keywords_for_industry(
+    keywords: List[str], industry: str
+) -> List[str]:
+    """
+    Filters out keywords that are anti-keywords for the selected industry.
+
+    Args:
+        keywords: List of suggested keywords
+        industry: Selected industry key
+
+    Returns:
+        Filtered list without anti-keywords
+    """
+    industry_data = INDUSTRY_KEYWORDS.get(industry, INDUSTRY_KEYWORDS["general"])
+    anti_keywords = industry_data.get("anti_keywords", [])
+
+    # Create lowercase sets for case-insensitive matching
+    anti_keywords_lower = {kw.lower() for kw in anti_keywords}
+
+    filtered = [
+        kw for kw in keywords if kw.lower() not in anti_keywords_lower
+    ]
+
+    return filtered
+
+
+# =============================================================================
+# ENHANCED ATS CHECKER PROMPT WITH STRICT VALIDATION
+# =============================================================================
 
 ATS_CHECKER_PROMPT = """
 Actúa como un sistema ATS (Applicant Tracking System) profesional especializado en la industria de {industry_name}.
 
-CONTEXTO: El candidato busca trabajo en el sector de {industry_name}. Tu análisis DEBE enfocarse en evaluar qué tan adecuado es este CV para esa industria específica.
+═══════════════════════════════════════════════════════════════════════════════
+CRITICAL VALIDATION RULES - READ FIRST
+═══════════════════════════════════════════════════════════════════════════════
 
-KEYWORDS ESPERADAS PARA ESTA INDUSTRIA:
-{industry_keywords}
+1. CONTEXTUAL RELEVANCE: You MUST ONLY suggest keywords and recommendations
+   that are RELEVANT to {industry_name}. Do NOT suggest keywords from other industries.
+
+2. ANTI-KEYWORD SUPPRESSION: You MUST NOT recommend any of these terms for
+   this industry because they are IRRELEVANT or COUNTER-PRODUCTIVE:
+   {anti_keywords_list}
+
+3. CONTENT VERIFICATION: Before making suggestions, verify that the resume
+   actually contains INDICATORS for {industry_name}.
+   - If the resume shows NO indicators for this industry, flag a MISMATCH
+   - Content indicators found: {content_indicators_found}
+   - Anti-keywords found: {anti_keywords_found}
+
+4. MISMATCH DETECTION:
+   - If mismatch_detected is true: Warn the user about the industry selection
+   - Suggest the ACTUAL industry the resume appears to target
+   - Do NOT force recommendations for a mismatched industry
+
+═══════════════════════════════════════════════════════════════════════════════
+INDUSTRY-SPECIFIC REQUIREMENTS
+═══════════════════════════════════════════════════════════════════════════════
 
 ENFOQUE PRINCIPAL: {industry_focus}
 
-ANÁLISIS REQUERIDO:
+KEYWORDS ESPERADAS PARA ESTA INDUSTRIA (SOLO RELEVANTES):
+{industry_keywords}
+
+═══════════════════════════════════════════════════════════════════════════════
+ANÁLISIS REQUERIDO
+═══════════════════════════════════════════════════════════════════════════════
 
 1. SCORE ATS (0-100): Basado en:
    - Formato: ¿Es el texto parseable (no imágenes, no tablas complejas)?
@@ -616,14 +1093,29 @@ ANÁLISIS REQUERIDO:
    - Longitud: ¿Es apropiado (1-2 páginas)?
    - Contacto: ¿Tiene email y teléfono visibles?
    - Extras relevantes para {industry_name}: LinkedIn, portfolio, certificaciones específicas
+   - CONTEXTUAL FIT: ¿Las recomendaciones coinciden con la industria seleccionada?
 
-2. KEYWORDS ENCONTRADAS: Lista las skills y términos relevantes para {industry_name} que detectaste
+2. KEYWORDS ENCONTRADAS (RELEVANTES): Lista SOLO las skills y términos
+   relevantes para {industry_name} que detectaste. NO incluyas anti-keywords.
 
-3. KEYWORDS FALTANTES: Sugiere palabras clave que DEBERÍAN estar para destacar en {industry_name}
+3. KEYWORDS FALTANTES: Sugiere palabras clave que DEBERÍAN estar para
+   destacar en {industry_name}. CRITICAL: Only suggest from the approved list.
+   - Do NOT suggest: {anti_keywords_list}
 
-4. PROBLEMAS DETECTADOS: Lista issues que podrían filtrar el CV en procesos de selección de {industry_name}
+4. PROBLEMAS DETECTADOS: Lista issues que podrían filtrar el CV en
+   procesos de selección de {industry_name}
 
-5. MEJORAS SUGERIDAS: Acciones concretas para mejorar el score en la industria de {industry_name}
+5. MEJORAS SUGERIDAS: Acciones concretas para mejorar el score en la
+   industria de {industry_name}. Ensure all suggestions are contextual.
+
+6. MISMATCH ANALYSIS (CRITICAL): If content_indicators_found is empty or
+   anti_keywords_found is significant, explain the potential mismatch:
+   - "Your resume appears to target [ACTUAL INDUSTRY] but you selected {industry_name}"
+   - Suggest the correct industry based on resume content
+
+═══════════════════════════════════════════════════════════════════════════════
+IDIOMA Y FORMATO
+═══════════════════════════════════════════════════════════════════════════════
 
 IDIOMA: Responde en el mismo idioma del CV.
 
@@ -638,34 +1130,97 @@ Return JSON exactamente así:
   "found_keywords": ["keyword1", "keyword2", ...],
   "missing_keywords": ["keyword1", "keyword2", ...],
   "industry_recommendation": "{target_industry}",
+  "mismatch_detected": boolean,
+  "mismatch_warning": "Warning message if mismatch detected",
+  "suggested_industry": "Actual industry if mismatch detected",
   "issues": [
     {{"severity": "high/medium/low", "message": "descripción del problema", "fix": "cómo solucionarlo"}}
   ],
   "quick_wins": ["acción 1", "acción 2"],
-  "detailed_tips": "consejos específicos para mejorar el CV para {industry_name}"
+  "detailed_tips": "consejos específicos para mejorar el CV para {industry_name}",
+  "relevance_justification": "Explicación de por qué cada sugerencia es relevante para {industry_name}"
 }}
 
-CV a analizar:
+═══════════════════════════════════════════════════════════════════════════════
+CV A ANALIZAR:
+═══════════════════════════════════════════════════════════════════════════════
 {cv_text}
 """
 
 
 async def analyze_ats(cv_text: str, target_industry: str = "general"):
-    """Analyze CV for ATS compatibility in a specific industry."""
+    """
+    Analyze CV for ATS compatibility in a specific industry with strict
+    field-contextual validation.
+
+    Args:
+        cv_text: The resume text to analyze
+        target_industry: The industry to check against (tech, finance, etc.)
+
+    Returns:
+        Dict with ATS analysis including mismatch detection and contextual recommendations
+    """
     industry_data = INDUSTRY_KEYWORDS.get(target_industry, INDUSTRY_KEYWORDS["general"])
 
+    # Perform content verification BEFORE generating the prompt
+    cv_text_lower = cv_text.lower()
+    verification_result = check_resume_content_indicators(
+        cv_text_lower, target_industry
+    )
+
+    # Get anti-keywords for the selected industry
+    anti_keywords = industry_data.get("anti_keywords", [])
+    anti_keywords_list = ", ".join(anti_keywords) if anti_keywords else "None for this industry"
+
+    # Format content indicators for the prompt
+    content_indicators_found = ", ".join(verification_result["found_indicators"]) or "None detected"
+    anti_keywords_found = ", ".join(verification_result["found_anti_keywords"]) or "None detected"
+
+    # Build the prompt with all contextual information
     prompt = ATS_CHECKER_PROMPT.format(
         cv_text=cv_text,
         industry_name=industry_data["name"],
         industry_keywords=", ".join(industry_data["keywords"]),
         industry_focus=industry_data["focus"],
         target_industry=target_industry,
+        anti_keywords_list=anti_keywords_list,
+        content_indicators_found=content_indicators_found,
+        anti_keywords_found=anti_keywords_found,
     )
 
-    return await get_ai_completion(
+    # Generate the analysis
+    result = await get_ai_completion(
         prompt,
-        system_msg=f"Eres un sistema ATS experto especializado en la industria de {industry_data['name']}. Sé riguroso y específico en tu análisis, enfocándote en lo que realmente importa para esta industria.",
+        system_msg=f"""Eres un sistema ATS experto especializado en la industria de {industry_data['name']}. 
+        IMPORTANTE: 
+        - Solo haz recomendaciones RELEVANTES para esta industria
+        - NO sugieras términos técnicos (React, Node, Python, etc.) para roles no-técnicos
+        - NO sugieras términos creativos (Photoshop, Branding, etc.) para roles no-creativos
+        - NO sugieras términos financieros (Auditoría, Contabilidad, etc.) para roles no-financieros
+        - NO sugieras términos médicos (Paciente, Clínica, etc.) para roles no-médicos
+        - NO sugieras términos educativos (Docencia, Curriculum, etc.) para roles no-educativos
+        - Sé riguroso y específico en tu análisis, enfocándote en lo que realmente importa para esta industria.
+        - Si detectas un desbalance entre la industria seleccionada y el contenido del CV, adviértelo claramente.""",
     )
+
+    # Post-process to ensure anti-keywords are filtered from suggestions
+    if result and "missing_keywords" in result:
+        result["missing_keywords"] = filter_anti_keywords_for_industry(
+            result["missing_keywords"], target_industry
+        )
+
+    # Add verification metadata to the result
+    if result:
+        result["content_verification"] = {
+            "mismatch_detected": verification_result["mismatch_detected"],
+            "match_ratio": verification_result["match_ratio"],
+            "found_indicators": verification_result["found_indicators"],
+            "found_anti_keywords": verification_result["found_anti_keywords"],
+        }
+
+    return result
+
+
 
 
 # =============================================================================
@@ -833,11 +1388,30 @@ async def generate_conversation_response_stream(
 
     except Exception as e:
         logger.error(f"Error in streaming response: {e}")
-        yield _format_sse_event({
-            "type": "error",
-            "error": str(e),
-            "code": "STREAMING_ERROR",
-        })
+        # Fallback for Auth/API errors
+        if "401" in str(e) or "authentication" in str(e).lower() or "api key" in str(e).lower():
+             fallback_msg = "Estoy funcionando en modo demostración (sin conexión a IA). Puedo guiarte, pero mis respuestas son automáticas. ¿En qué puedo ayudarte con tu CV?"
+             yield _format_sse_event({
+                "type": "delta",
+                "content": fallback_msg,
+            })
+             yield _format_sse_event({
+                "type": "complete",
+                "message": {
+                    "id": f"msg_fallback_{datetime.utcnow().timestamp()}",
+                    "role": "assistant",
+                    "content": fallback_msg,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "extraction": None,
+                },
+                "finalExtraction": None,
+            })
+        else:
+            yield _format_sse_event({
+                "type": "error",
+                "error": str(e),
+                "code": "STREAMING_ERROR",
+            })
 
 
 async def extract_cv_data_from_message(
