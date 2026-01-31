@@ -99,7 +99,7 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled || isLoading}
-          className="min-h-[50px] max-h-[200px] w-full resize-none border-none bg-transparent py-4 pl-4 pr-24 text-sm focus-visible:ring-0 placeholder:text-muted-foreground/60 rounded-2xl"
+          className="min-h-[50px] max-h-[200px] w-full resize-none border-none bg-transparent py-4 pl-4 pr-24 text-sm focus-visible:ring-0 placeholder:text-foreground/40 rounded-2xl"
         />
 
         <div className="absolute right-2 bottom-2 flex items-center gap-1">

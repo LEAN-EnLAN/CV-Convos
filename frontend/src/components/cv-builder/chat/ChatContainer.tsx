@@ -125,7 +125,7 @@ export function ChatContainer({
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                   </span>
-                  <p className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider">Online</p>
+                  <p className="text-[10px] font-bold text-foreground/80 uppercase tracking-wider">Online</p>
                 </div>
               </div>
             </div>
@@ -209,8 +209,8 @@ export function ChatContainer({
           {onFinalizeRequest && (
             <div className="max-w-2xl mx-auto w-full mt-4 pt-4 border-t border-border flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Progreso del CV</span>
-                <span className={cn("text-xs font-bold mt-0.5", canFinalize ? "text-green-600" : "text-foreground")}>
+                <span className="text-[10px] font-bold text-foreground/60 uppercase tracking-wider">Progreso del CV</span>
+                <span className={cn("text-xs font-bold mt-0.5", canFinalize ? "text-green-600" : "text-foreground/90")}>
                   {canFinalize ? 'Listo para finalizar' : 'Información requerida'}
                 </span>
               </div>

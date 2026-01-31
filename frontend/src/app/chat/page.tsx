@@ -108,7 +108,7 @@ export default function ChatPage() {
             </div>
             <div className="hidden sm:block">
               <h1 className="text-sm font-bold tracking-tight leading-none mb-1 text-foreground">Editor Inteligente</h1>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-80">Chat & Preview</p>
+              <p className="text-[10px] text-foreground/60 font-bold uppercase tracking-wider">Chat & Preview</p>
             </div>
           </div>
         </div>
