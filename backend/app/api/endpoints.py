@@ -1,10 +1,12 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Request
-from fastapi.responses import StreamingResponse
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
-import logging
+import io
 import json
+import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from app.services.parser_service import extract_text_from_file
 from app.services.ai_service import (
     extract_cv_data,
@@ -21,6 +23,7 @@ from app.services.ai_service import (
     analyze_job_description,
 )
 from app.services.cv_generator import generate_complete_cv
+from app.services.export_service import build_export_payload
 from app.api.schemas import (
     CVDataInput,
     CVData,
@@ -100,6 +103,13 @@ class GenerateCompleteCVResponse(BaseModel):
     metadata: Dict[str, Any]
     template_type: str
     generated_at: str
+
+
+class ExportCVRequest(BaseModel):
+    """Request model for exportación de CV."""
+    cv_data: Dict[str, Any]
+    template_id: str = Field(..., description="ID de la plantilla usada")
+    format: str = Field(..., description="Formato de exportación: pdf, docx, txt, json")
 
 
 router = APIRouter()
@@ -329,6 +339,25 @@ async def generate_complete_cv_endpoint(
         raise HTTPException(status_code=503, detail="AI Service is temporarily unavailable")
     except Exception:
         logger.exception("Unexpected error in generate_complete_cv_endpoint")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+@router.post("/export-cv", tags=["exports"])
+@limiter.limit("10/minute")
+async def export_cv_endpoint(request: Request, export_request: ExportCVRequest):
+    """Exporta un CV en el formato solicitado."""
+    try:
+        content, filename, media_type = build_export_payload(
+            cv_data=export_request.cv_data,
+            template_id=export_request.template_id,
+            export_format=export_request.format.lower(),
+        )
+        headers = {"Content-Disposition": f"attachment; filename={filename}"}
+        return StreamingResponse(io.BytesIO(content), media_type=media_type, headers=headers)
+    except (CVProcessingError, ValidationError) as e:
+        raise e
+    except Exception:
+        logger.exception("Unexpected error in export_cv_endpoint")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
