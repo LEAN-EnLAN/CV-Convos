@@ -16,9 +16,13 @@ import {
     Loader2,
     Briefcase,
     Sparkles,
-    MapPin,
     File,
-    FileType
+    FileType,
+    ClipboardCheck,
+    PenLine,
+    Copy,
+    ArrowLeft,
+    ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,7 +34,6 @@ import {
     DialogTrigger,
     DialogFooter
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { CVData } from '@/types/cv';
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
@@ -42,13 +45,33 @@ import { saveAs } from 'file-saver';
 interface FinalizeExportProps {
     data: CVData;
     onDownloadPDF: () => void;
+    onEdit: () => void;
 }
 
-export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
+export function FinalizeExport({ data, onDownloadPDF, onEdit }: FinalizeExportProps) {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isStoryOpen, setIsStoryOpen] = useState(false);
     const [isLinkedinOpen, setIsLinkedinOpen] = useState(false);
     const [downloading, setDownloading] = useState<string | null>(null);
+    const [activePanel, setActivePanel] = useState<'summary' | 'actions'>('summary');
     const storyRef = useRef<HTMLDivElement>(null);
+
+    // Cambiar a resumen cuando el usuario exporta o finaliza
+    const showSummaryPanel = () => {
+        setActivePanel('summary');
+    };
+
+    const handleDialogOpenChange = (open: boolean) => {
+        setIsDialogOpen(open);
+        if (open) {
+            setActivePanel('summary');
+        }
+    };
+
+    const handleEditClick = () => {
+        onEdit();
+        setIsDialogOpen(false);
+    };
 
     // Exportar PNG real usando html-to-image
     const handlePNGDownload = async () => {
@@ -78,6 +101,7 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
             toast.success('PNG exportado correctamente', {
                 description: `Guardado como ${fileName}`
             });
+            showSummaryPanel();
         } catch (error) {
             console.error('Error al exportar PNG:', error);
             toast.error('Error al exportar PNG', {
@@ -104,6 +128,7 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
             toast.success('JSON exportado correctamente', {
                 description: `Guardado como ${fileName}`
             });
+            showSummaryPanel();
         } catch (error) {
             toast.error('Error al exportar JSON');
         } finally {
@@ -338,6 +363,7 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
             toast.success('DOCX exportado correctamente', {
                 description: `Guardado como ${fileName}`
             });
+            showSummaryPanel();
         } catch (error) {
             console.error('Error al exportar DOCX:', error);
             toast.error('Error al exportar DOCX', {
@@ -435,6 +461,7 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
             toast.success('TXT exportado correctamente', {
                 description: `Guardado como ${fileName}`
             });
+            showSummaryPanel();
         } catch (error) {
             toast.error('Error al exportar TXT');
         } finally {
@@ -464,6 +491,7 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
                 description: 'Lista para subir a Instagram'
             });
             setIsStoryOpen(false);
+            showSummaryPanel();
         } catch (error) {
             console.error('Error al guardar Story:', error);
             toast.error('Error al guardar Story');
@@ -475,6 +503,7 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
     const handleLinkedInShare = () => {
         // En lugar de compartir URL, descargamos el PDF preventivamente y abrimos modal IA
         onDownloadPDF();
+        showSummaryPanel();
         setIsLinkedinOpen(true);
     };
 
@@ -484,7 +513,7 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
 
     return (
         <>
-            <Dialog>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogTrigger asChild>
                     <Button
                         size="lg"
@@ -503,187 +532,290 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
                             </div>
                             <div className="space-y-1">
                                 <DialogTitle className="text-2xl font-bold">
-                                    ¡CV Listo! 🚀
+                                    {activePanel === 'summary' ? 'Resumen final' : '¡CV Listo! 🚀'}
                                 </DialogTitle>
                                 <DialogDescription className="text-sm">
-                                    Compartí o descargá en múltiples formatos
+                                    {activePanel === 'summary'
+                                        ? 'Checklist final y próximos pasos recomendados'
+                                        : 'Compartí o descargá en múltiples formatos'}
                                 </DialogDescription>
                             </div>
                         </div>
                     </DialogHeader>
 
-                    <div className="py-6 space-y-8">
-                        {/* Share Section */}
-                        <div className="space-y-4">
-                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                                <Share2 className="w-3 h-3" /> Compartir
-                            </h4>
-                            <div className="grid grid-cols-2 gap-3">
-                                {/* LinkedIn */}
-                                <button
-                                    onClick={handleLinkedInShare}
-                                    className="
-                                        group relative flex items-center gap-3 p-4 rounded-xl border-2 border-blue-500/20 bg-blue-500/5 
-                                        hover:bg-blue-500/10 hover:border-blue-500/40 hover:scale-[1.02] active:scale-95
-                                        transition-all duration-200 text-left overflow-hidden
-                                    "
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="relative w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
-                                        <Linkedin className="w-5 h-5" />
+                    {activePanel === 'summary' ? (
+                        <div className="py-6 space-y-6">
+                            {/* Tips finales */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                    <Sparkles className="w-3 h-3" /> Tips rápidos
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/40 p-3">
+                                        <div className="mt-0.5 text-primary">
+                                            <ClipboardCheck className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold">Personalizá según la oferta</p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Ajustá logros, palabras clave y el resumen para cada rol.
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="relative">
-                                        <p className="text-sm font-bold text-foreground group-hover:text-blue-600 transition-colors">LinkedIn</p>
-                                        <p className="text-[10px] text-muted-foreground">Tarjeta + Post IA</p>
-                                    </div>
-                                </button>
-
-                                {/* Instagram */}
-                                <button
-                                    onClick={() => setIsStoryOpen(true)}
-                                    className="
-                                        group relative flex items-center gap-3 p-4 rounded-xl border-2 border-pink-500/20 bg-pink-500/5 
-                                        hover:bg-pink-500/10 hover:border-pink-500/40 hover:scale-[1.02] active:scale-95
-                                        transition-all duration-200 text-left overflow-hidden
-                                    "
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="relative w-11 h-11 rounded-xl bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform">
-                                        <Instagram className="w-5 h-5" />
-                                    </div>
-                                    <div className="relative">
-                                        <p className="text-sm font-bold text-foreground group-hover:text-pink-500 transition-colors">Instagram</p>
-                                        <p className="text-[10px] text-muted-foreground">Story profesional</p>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Download Section */}
-                        <div className="space-y-4">
-                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                                <Download className="w-3 h-3" /> Descargar
-                            </h4>
-                            <div className="space-y-2">
-                                {/* PDF */}
-                                <Button
-                                    variant="outline"
-                                    className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
-                                    onClick={onDownloadPDF}
-                                    disabled={!!downloading}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center">
+                                    <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/40 p-3">
+                                        <div className="mt-0.5 text-primary">
                                             <FileText className="w-4 h-4" />
                                         </div>
-                                        <div className="text-left">
-                                            <p className="text-sm font-medium">Documento PDF</p>
-                                            <p className="text-[10px] text-muted-foreground">Formato estándar ATS</p>
+                                        <div>
+                                            <p className="text-sm font-semibold">Sumá una carta de presentación</p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Presentá tu motivación y conectá tu experiencia con el puesto.
+                                            </p>
                                         </div>
                                     </div>
-                                    <Download className="w-4 h-4 text-muted-foreground" />
-                                </Button>
+                                    <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/40 p-3">
+                                        <div className="mt-0.5 text-primary">
+                                            <Linkedin className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold">Actualizá LinkedIn en sync</p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Replicá logros y skills para coherencia en todo tu perfil.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                {/* PNG */}
-                                <Button
-                                    variant="outline"
-                                    className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
-                                    onClick={handlePNGDownload}
-                                    disabled={!!downloading}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                            {downloading === 'PNG' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                            {/* Checklist */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                    <Check className="w-3 h-3" /> Checklist antes de enviar
+                                </h4>
+                                <div className="space-y-2 text-sm">
+                                    {[
+                                        'Datos de contacto correctos y visibles.',
+                                        'Logros con métricas concretas (%, $ o impacto).',
+                                        'Formato listo para ATS y sin faltas.'
+                                    ].map((item) => (
+                                        <div key={item} className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2">
+                                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span>{item}</span>
                                         </div>
-                                        <div className="text-left">
-                                            <p className="text-sm font-medium">Imagen PNG</p>
-                                            <p className="text-[10px] text-muted-foreground">Alta resolución</p>
-                                        </div>
-                                    </div>
-                                    {downloading === 'PNG' ? (
-                                        <span className="text-xs text-muted-foreground">Generando...</span>
-                                    ) : (
-                                        <Download className="w-4 h-4 text-muted-foreground" />
-                                    )}
-                                </Button>
+                                    ))}
+                                </div>
+                            </div>
 
-                                {/* JSON */}
+                            {/* Acciones rápidas */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                    <PenLine className="w-3 h-3" /> Acciones rápidas
+                                </h4>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    <Button variant="outline" className="justify-start gap-2" onClick={handleEditClick}>
+                                        <PenLine className="w-4 h-4" />
+                                        Editar CV
+                                    </Button>
+                                    <Button variant="outline" className="justify-start gap-2" onClick={handleJSONDownload}>
+                                        <Copy className="w-4 h-4" />
+                                        Duplicar CV (JSON)
+                                    </Button>
+                                </div>
                                 <Button
-                                    variant="outline"
-                                    className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
-                                    onClick={handleJSONDownload}
-                                    disabled={!!downloading}
+                                    variant="ghost"
+                                    className="w-full justify-center gap-2 text-xs"
+                                    onClick={() => setActivePanel('actions')}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                                            {downloading === 'JSON' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode className="w-4 h-4" />}
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-sm font-medium">Datos JSON</p>
-                                            <p className="text-[10px] text-muted-foreground">Estructura completa</p>
-                                        </div>
-                                    </div>
-                                    {downloading === 'JSON' ? (
-                                        <span className="text-xs text-muted-foreground">Generando...</span>
-                                    ) : (
-                                        <Download className="w-4 h-4 text-muted-foreground" />
-                                    )}
-                                </Button>
-
-                                {/* DOCX */}
-                                <Button
-                                    variant="outline"
-                                    className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
-                                    onClick={handleDOCXDownload}
-                                    disabled={!!downloading}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                                            {downloading === 'DOCX' ? <Loader2 className="w-4 h-4 animate-spin" /> : <File className="w-4 h-4" />}
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-sm font-medium">Documento Word</p>
-                                            <p className="text-[10px] text-muted-foreground">Editable en Word</p>
-                                        </div>
-                                    </div>
-                                    {downloading === 'DOCX' ? (
-                                        <span className="text-xs text-muted-foreground">Generando...</span>
-                                    ) : (
-                                        <Download className="w-4 h-4 text-muted-foreground" />
-                                    )}
-                                </Button>
-
-                                {/* TXT */}
-                                <Button
-                                    variant="outline"
-                                    className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
-                                    onClick={handleTXTDownload}
-                                    disabled={!!downloading}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center">
-                                            {downloading === 'TXT' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileType className="w-4 h-4" />}
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-sm font-medium">Texto Plano</p>
-                                            <p className="text-[10px] text-muted-foreground">Sin formato</p>
-                                        </div>
-                                    </div>
-                                    {downloading === 'TXT' ? (
-                                        <span className="text-xs text-muted-foreground">Generando...</span>
-                                    ) : (
-                                        <Download className="w-4 h-4 text-muted-foreground" />
-                                    )}
+                                    Ver opciones de exportación <ArrowRight className="w-3.5 h-3.5" />
                                 </Button>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="py-6 space-y-8">
+                            {/* Share Section */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                    <Share2 className="w-3 h-3" /> Compartir
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {/* LinkedIn */}
+                                    <button
+                                        onClick={handleLinkedInShare}
+                                        className="
+                                            group relative flex items-center gap-3 p-4 rounded-xl border-2 border-blue-500/20 bg-blue-500/5 
+                                            hover:bg-blue-500/10 hover:border-blue-500/40 hover:scale-[1.02] active:scale-95
+                                            transition-all duration-200 text-left overflow-hidden
+                                        "
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div className="relative w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
+                                            <Linkedin className="w-5 h-5" />
+                                        </div>
+                                        <div className="relative">
+                                            <p className="text-sm font-bold text-foreground group-hover:text-blue-600 transition-colors">LinkedIn</p>
+                                            <p className="text-[10px] text-muted-foreground">Tarjeta + Post IA</p>
+                                        </div>
+                                    </button>
+
+                                    {/* Instagram */}
+                                    <button
+                                        onClick={() => setIsStoryOpen(true)}
+                                        className="
+                                            group relative flex items-center gap-3 p-4 rounded-xl border-2 border-pink-500/20 bg-pink-500/5 
+                                            hover:bg-pink-500/10 hover:border-pink-500/40 hover:scale-[1.02] active:scale-95
+                                            transition-all duration-200 text-left overflow-hidden
+                                        "
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div className="relative w-11 h-11 rounded-xl bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform">
+                                            <Instagram className="w-5 h-5" />
+                                        </div>
+                                        <div className="relative">
+                                            <p className="text-sm font-bold text-foreground group-hover:text-pink-500 transition-colors">Instagram</p>
+                                            <p className="text-[10px] text-muted-foreground">Story profesional</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Download Section */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                    <Download className="w-3 h-3" /> Descargar
+                                </h4>
+                                <div className="space-y-2">
+                                    {/* PDF */}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
+                                        onClick={onDownloadPDF}
+                                        disabled={!!downloading}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center">
+                                                <FileText className="w-4 h-4" />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-sm font-medium">Documento PDF</p>
+                                                <p className="text-[10px] text-muted-foreground">Formato estándar ATS</p>
+                                            </div>
+                                        </div>
+                                        <Download className="w-4 h-4 text-muted-foreground" />
+                                    </Button>
+
+                                    {/* PNG */}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
+                                        onClick={handlePNGDownload}
+                                        disabled={!!downloading}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                                {downloading === 'PNG' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-sm font-medium">Imagen PNG</p>
+                                                <p className="text-[10px] text-muted-foreground">Alta resolución</p>
+                                            </div>
+                                        </div>
+                                        {downloading === 'PNG' ? (
+                                            <span className="text-xs text-muted-foreground">Generando...</span>
+                                        ) : (
+                                            <Download className="w-4 h-4 text-muted-foreground" />
+                                        )}
+                                    </Button>
+
+                                    {/* JSON */}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
+                                        onClick={handleJSONDownload}
+                                        disabled={!!downloading}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                                {downloading === 'JSON' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode className="w-4 h-4" />}
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-sm font-medium">Datos JSON</p>
+                                                <p className="text-[10px] text-muted-foreground">Estructura completa</p>
+                                            </div>
+                                        </div>
+                                        {downloading === 'JSON' ? (
+                                            <span className="text-xs text-muted-foreground">Generando...</span>
+                                        ) : (
+                                            <Download className="w-4 h-4 text-muted-foreground" />
+                                        )}
+                                    </Button>
+
+                                    {/* DOCX */}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
+                                        onClick={handleDOCXDownload}
+                                        disabled={!!downloading}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                                {downloading === 'DOCX' ? <Loader2 className="w-4 h-4 animate-spin" /> : <File className="w-4 h-4" />}
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-sm font-medium">Documento Word</p>
+                                                <p className="text-[10px] text-muted-foreground">Editable en Word</p>
+                                            </div>
+                                        </div>
+                                        {downloading === 'DOCX' ? (
+                                            <span className="text-xs text-muted-foreground">Generando...</span>
+                                        ) : (
+                                            <Download className="w-4 h-4 text-muted-foreground" />
+                                        )}
+                                    </Button>
+
+                                    {/* TXT */}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-auto p-4 justify-between hover:bg-muted/50 border-muted-foreground/20"
+                                        onClick={handleTXTDownload}
+                                        disabled={!!downloading}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                                                {downloading === 'TXT' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileType className="w-4 h-4" />}
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-sm font-medium">Texto Plano</p>
+                                                <p className="text-[10px] text-muted-foreground">Sin formato</p>
+                                            </div>
+                                        </div>
+                                        {downloading === 'TXT' ? (
+                                            <span className="text-xs text-muted-foreground">Generando...</span>
+                                        ) : (
+                                            <Download className="w-4 h-4 text-muted-foreground" />
+                                        )}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <DialogFooter className="sm:justify-center border-t border-border/50 pt-4">
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-                            <Check className="w-3 h-3 text-green-500" />
-                            Guardado automáticamente en la nube
-                        </p>
+                        <div className="flex flex-col items-center gap-2">
+                            {activePanel === 'actions' && (
+                                <Button
+                                    variant="ghost"
+                                    className="h-8 text-xs gap-2"
+                                    onClick={() => setActivePanel('summary')}
+                                >
+                                    <ArrowLeft className="w-3.5 h-3.5" />
+                                    Volver al resumen
+                                </Button>
+                            )}
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                                <Check className="w-3 h-3 text-green-500" />
+                                Guardado automáticamente en la nube
+                            </p>
+                        </div>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -98,6 +98,7 @@ interface HeaderProps {
     activeView: 'editor' | 'preview';
     setActiveView: (view: 'editor' | 'preview') => void;
     onDownloadPDF: () => void;
+    onEdit: () => void;
 }
 
 export function Header({
@@ -109,6 +110,7 @@ export function Header({
     activeView,
     setActiveView,
     onDownloadPDF,
+    onEdit,
 }: HeaderProps) {
     const currentTemplate = templateOptions.find(t => t.id === template);
 
@@ -236,7 +238,7 @@ export function Header({
                 </div>
 
                 {/* Finalize Button */}
-                <FinalizeExport data={data} onDownloadPDF={onDownloadPDF} />
+                <FinalizeExport data={data} onDownloadPDF={onDownloadPDF} onEdit={onEdit} />
 
                 {/* Mobile Menu Trigger */}
                 <div className="lg:hidden ml-1">
