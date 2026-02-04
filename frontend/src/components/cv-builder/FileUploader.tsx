@@ -15,6 +15,10 @@ interface FileUploaderProps {
     onSuccess: (data: any) => void;
 }
 
+const MAX_FILES = 10;
+const MAX_FILE_SIZE_MB = 12;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 const features = [
     {
         icon: Zap,
@@ -38,21 +42,43 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
+    const formatFileSize = (sizeInBytes: number) => {
+        const sizeInMb = sizeInBytes / (1024 * 1024);
+        if (sizeInMb >= 1) {
+            return `${sizeInMb.toFixed(2)} MB`;
+        }
+        return `${(sizeInBytes / 1024).toFixed(1)} KB`;
+    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop: (acceptedFiles) => {
-            if (files.length + acceptedFiles.length > 10) {
-                toast.error('Límite de 10 archivos por sesión');
+        onDrop: (acceptedFiles, fileRejections) => {
+            if (files.length + acceptedFiles.length > MAX_FILES) {
+                toast.error(`Límite de ${MAX_FILES} archivos por sesión`);
                 return;
             }
+
+            if (fileRejections.length > 0) {
+                fileRejections.forEach(({ file, errors }) => {
+                    const hasSizeError = errors.some((error) => error.code === 'file-too-large');
+                    if (hasSizeError) {
+                        toast.error(`"${file.name}" supera el límite de ${MAX_FILE_SIZE_MB} MB`);
+                        return;
+                    }
+                    toast.error(`"${file.name}" no es un formato soportado`);
+                });
+            }
+
             setFiles((prev) => [...prev, ...acceptedFiles]);
-            toast.success(`${acceptedFiles.length} archivo(s) agregado(s)`);
+            if (acceptedFiles.length > 0) {
+                toast.success(`${acceptedFiles.length} archivo(s) agregado(s)`);
+            }
         },
         accept: {
             'application/pdf': ['.pdf'],
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
             'text/plain': ['.txt'],
         },
+        maxSize: MAX_FILE_SIZE_BYTES,
     });
 
     const removeFile = (index: number) => {
@@ -209,7 +235,7 @@ transition-all duration-200
                                                 o hacé clic para seleccionar
                                             </p>
                                             <p className="text-xs text-muted-foreground/70">
-                                                PDF, DOCX o TXT • Hasta 10 archivos
+                                                PDF, DOCX o TXT • Hasta {MAX_FILES} archivos • Máx. {MAX_FILE_SIZE_MB} MB c/u
                                             </p>
                                         </div>
                                     </div>
@@ -233,7 +259,7 @@ transition-all duration-200
                                                         <div className="overflow-hidden">
                                                             <p className="text-sm font-medium truncate">{file.name}</p>
                                                             <p className="text-xs text-muted-foreground">
-                                                                {(file.size / 1024).toFixed(1)} KB
+                                                                {formatFileSize(file.size)}
                                                             </p>
                                                         </div>
                                                     </div>
