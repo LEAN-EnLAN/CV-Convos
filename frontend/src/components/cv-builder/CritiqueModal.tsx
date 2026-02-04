@@ -34,6 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { buildApiUrl } from '@/lib/api/base';
 import { CVData, ImprovementCard, CritiqueResponse } from '@/types/cv';
 import { resolveApiErrorMessage } from '@/lib/error-utils';
+import { useChatActions } from '@/contexts/ChatContext';
 
 interface CritiqueModalProps {
     isOpen: boolean;
@@ -72,6 +73,7 @@ const BEST_PRACTICES = [
 ];
 
 export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onScanComplete }: CritiqueModalProps) {
+    const { sendMessage } = useChatActions();
     const [step, setStep] = useState<'scanning' | 'results' | 'empty'>('scanning');
     const [results, setResults] = useState<CritiqueResponse | null>(null);
     const [scanProgress, setScanProgress] = useState(0);
@@ -406,19 +408,35 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between">
+                                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                                                         <div className="flex items-center gap-1.5 text-xs text-emerald-400/80 font-medium">
                                                             <Zap className="w-3.5 h-3.5" />
                                                             {item.impact_reason}
                                                         </div>
-                                                        <Button
-                                                            size="sm"
-                                                            className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold gap-2 shadow-lg shadow-emerald-500/20"
-                                                            onClick={() => handleApply(item)}
-                                                        >
-                                                            <Check className="w-4 h-4" />
-                                                            Aplicar Mejora
-                                                        </Button>
+                                                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="flex-1 sm:flex-none border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 font-bold gap-2"
+                                                                onClick={() => {
+                                                                    sendMessage(`Corregí el siguiente punto de mi CV: "${item.title}". Contexto: ${item.description}. Texto original: "${item.original_text}". Sugerencia: "${item.suggested_text}"`);
+                                                                    handleDismiss(item.id);
+                                                                    onClose();
+                                                                    toast.info("Enviado al asistente IA para corrección profunda.");
+                                                                }}
+                                                            >
+                                                                <Sparkles className="w-4 h-4" />
+                                                                Chat IA
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 text-white font-bold gap-2 shadow-lg shadow-emerald-500/20"
+                                                                onClick={() => handleApply(item)}
+                                                            >
+                                                                <Check className="w-4 h-4" />
+                                                                Aplicar Ya
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </motion.div>
