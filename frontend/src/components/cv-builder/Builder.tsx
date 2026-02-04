@@ -24,8 +24,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { TEMPLATE_BY_ID } from '@/lib/cv-templates/template-registry';
 import { getTemplateRenderer } from './templates/template-renderer';
-import { TEMPLATE_BY_ID } from '@/lib/cv-templates/template-registry';
-import { getTemplateRenderer } from './templates/template-renderer';
 
 interface BuilderProps {
     initialData: CVData;

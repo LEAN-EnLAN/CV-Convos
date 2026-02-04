@@ -570,6 +570,21 @@ def _apply_optimization_response(
 ) -> Dict[str, Any]:
     result_cv = copy.deepcopy(original_copy)
 
+    def _normalize_skills_list(raw_skills: Any) -> Optional[List[Dict[str, Any]]]:
+        skills = _normalize_list(raw_skills)
+        skill_clean: List[Dict[str, Any]] = []
+        for item in skills:
+            if isinstance(item, str):
+                name = _clean_text(item)
+                if name:
+                    skill_clean.append({"name": name, "level": "Intermediate"})
+            elif isinstance(item, dict):
+                name = _clean_text(item.get("name") or item.get("skill"))
+                level = _clean_text(item.get("level")) or "Intermediate"
+                if name:
+                    skill_clean.append({"name": name, "level": level})
+        return skill_clean or None
+
     if section == "summary" or target == "summarize_profile":
         new_summary = ai_response.get("personalInfo", {}).get(
             "summary"
@@ -582,8 +597,10 @@ def _apply_optimization_response(
             result_cv["personalInfo"]["summary"] = new_summary
 
     elif section == "skills" or target == "suggest_skills":
-        if "skills" in ai_response and isinstance(ai_response["skills"], list):
-            result_cv["skills"] = ai_response["skills"]
+        if "skills" in ai_response:
+            normalized_skills = _normalize_skills_list(ai_response.get("skills"))
+            if normalized_skills:
+                result_cv["skills"] = normalized_skills
 
     elif target in ["one_page", "try_one_page"]:
         if "experience" in ai_response:
@@ -597,9 +614,6 @@ def _apply_optimization_response(
             )
 
     elif section in ai_response:
-        result_cv[section] = ai_response[section]
-
-    if section != "all" and section in ai_response:
         result_cv[section] = ai_response[section]
 
     return result_cv

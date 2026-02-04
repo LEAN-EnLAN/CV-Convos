@@ -15,8 +15,6 @@ import {
 import { CVData } from '@/types/cv';
 import { buildApiUrl } from '@/lib/api/base';
 import { parseApiErrorPayload } from '@/lib/error-utils';
-import { buildApiUrl } from '@/lib/api/base';
-import { parseApiErrorPayload } from '@/lib/error-utils';
 
 // =============================================================================
 // CONFIGURACIÓN
