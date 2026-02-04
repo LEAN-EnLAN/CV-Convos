@@ -11,8 +11,9 @@ from google import genai
 from google.genai import types
 from groq import Groq
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from pydantic import ValidationError as PydanticValidationError
 from app.core.config import settings
-from app.core.exceptions import AIServiceError
+from app.core.exceptions import AIServiceError, CVProcessingError
 from app.services.chat_prompts import (
     CONVERSATION_ORCHESTRATOR_PROMPT,
     DATA_EXTRACTION_PROMPT,
@@ -26,6 +27,8 @@ from app.api.schemas import (
     ConversationPhase,
     JobAnalysisResponse,
     TailoringSuggestion,
+    CVData,
+    CritiqueResponse,
 )
 
 # Valid Groq Models
@@ -404,12 +407,62 @@ async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES, use_jso
     return _get_mock_fallback(prompt, system_msg, use_json)
 
 
+def _parse_ai_payload(response: Any) -> Optional[Dict[str, Any]]:
+    """Convierte la respuesta de la IA en un diccionario, si es posible."""
+    if isinstance(response, dict):
+        return response
+    if isinstance(response, str):
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            return None
+    return None
+
+
+def _validate_ai_payload(model_cls: Any, payload: Optional[Dict[str, Any]], context: str) -> Optional[Any]:
+    """Valida un payload con el modelo Pydantic indicado."""
+    if not payload or not isinstance(payload, dict):
+        logger.warning(f"[AI-VALIDATION] Payload inválido en {context}.")
+        return None
+    try:
+        return model_cls.model_validate(payload)
+    except PydanticValidationError as exc:
+        logger.warning(f"[AI-VALIDATION] Error en {context}: {exc}")
+        return None
+
+
 async def extract_cv_data(text: str):
-    raw_response = await get_ai_completion(EXTRACT_CV_PROMPT.format(text=text))
-    if isinstance(raw_response, dict):
-        normalized = _normalize_extracted_payload(raw_response)
-        return _ensure_cv_schema(normalized)
-    return _ensure_cv_schema(raw_response) if isinstance(raw_response, dict) else raw_response
+    prompt = EXTRACT_CV_PROMPT.format(text=text)
+    raw_response = await get_ai_completion(prompt)
+    parsed_response = _parse_ai_payload(raw_response)
+
+    if parsed_response is None:
+        retry_prompt = f"{prompt}\n\nIMPORTANTE: Devuelve solo JSON válido con el esquema exacto."
+        parsed_response = _parse_ai_payload(await get_ai_completion(retry_prompt))
+
+    if parsed_response is None:
+        raise CVProcessingError(
+            "No pudimos procesar tu CV en este momento. Por favor, intenta nuevamente."
+        )
+
+    normalized = _normalize_extracted_payload(parsed_response)
+    candidate = _ensure_cv_schema(normalized)
+    validated = _validate_ai_payload(CVData, candidate, "extract_cv_data")
+
+    if not validated:
+        retry_prompt = f"{prompt}\n\nIMPORTANTE: Devuelve solo JSON válido con el esquema exacto."
+        retry_response = _parse_ai_payload(await get_ai_completion(retry_prompt))
+        if retry_response:
+            normalized = _normalize_extracted_payload(retry_response)
+            candidate = _ensure_cv_schema(normalized)
+            validated = _validate_ai_payload(CVData, candidate, "extract_cv_data_retry")
+
+    if not validated:
+        raise CVProcessingError(
+            "La IA devolvió un formato incompatible. Intenta nuevamente en unos segundos."
+        )
+
+    return validated.model_dump(by_alias=True)
 
 def _merge_experience_descriptions(
     original: List[Dict[str, Any]],
@@ -503,6 +556,49 @@ def _ensure_cv_schema(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     return merged
 
 
+def _apply_optimization_response(
+    ai_response: Dict[str, Any],
+    original_copy: Dict[str, Any],
+    section: str,
+    target: str,
+) -> Dict[str, Any]:
+    result_cv = copy.deepcopy(original_copy)
+
+    if section == "summary" or target == "summarize_profile":
+        new_summary = ai_response.get("personalInfo", {}).get(
+            "summary"
+        ) or ai_response.get("summary")
+        if new_summary:
+            if target in {"shrink", "shorten", "compact"}:
+                original_summary = original_copy.get("personalInfo", {}).get("summary", "")
+                if original_summary and len(new_summary) > len(original_summary):
+                    new_summary = original_summary
+            result_cv["personalInfo"]["summary"] = new_summary
+
+    elif section == "skills" or target == "suggest_skills":
+        if "skills" in ai_response and isinstance(ai_response["skills"], list):
+            result_cv["skills"] = ai_response["skills"]
+
+    elif target in ["one_page", "try_one_page"]:
+        if "experience" in ai_response:
+            return ai_response
+
+    elif section == "experience":
+        if "experience" in ai_response and isinstance(ai_response["experience"], list):
+            original_experience = original_copy.get("experience", [])
+            result_cv["experience"] = _merge_experience_descriptions(
+                original_experience, ai_response["experience"]
+            )
+
+    elif section in ai_response:
+        result_cv[section] = ai_response[section]
+
+    if section != "all" and section in ai_response:
+        result_cv[section] = ai_response[section]
+
+    return result_cv
+
+
 async def optimize_cv_data(cv_data: dict, target: str, section: str):
     original_copy = copy.deepcopy(cv_data)
     target = (target or "").lower()
@@ -565,53 +661,27 @@ async def optimize_cv_data(cv_data: dict, target: str, section: str):
 
     ai_response = await get_ai_completion(prompt, system_msg)
 
-    if not ai_response:
+    if not ai_response or not isinstance(ai_response, dict):
         return original_copy
 
-    result_cv = copy.deepcopy(original_copy)
+    result_cv = _apply_optimization_response(ai_response, original_copy, section, target)
+    validated = _validate_ai_payload(CVData, result_cv, "optimize_cv_data")
 
-    # SECURE MERGE LOGIC
-    if section == "summary" or target == "summarize_profile":
-        new_summary = ai_response.get("personalInfo", {}).get(
-            "summary"
-        ) or ai_response.get("summary")
-        if new_summary:
-            if target in {"shrink", "shorten", "compact"}:
-                original_summary = original_copy.get("personalInfo", {}).get("summary", "")
-                if original_summary and len(new_summary) > len(original_summary):
-                    new_summary = original_summary
-            result_cv["personalInfo"]["summary"] = new_summary
-
-    elif section == "skills" or target == "suggest_skills":
-        if "skills" in ai_response and isinstance(ai_response["skills"], list):
-            # Strategy: Replace or Merge? User complained "Useless", implies they want NEW stuff.
-            # We will overwrite to ensure they see the suggestions, effectively "refining" the list.
-            # Ideally we might want to keep proficiency, but the prompt reconstructs it.
-            result_cv["skills"] = ai_response["skills"]
-
-    elif target in ["one_page", "try_one_page"]:
-        # Full CV replacement for one-page
-        # We need to be careful not to lose contact info if AI messed up.
-        # But for one-page, we trust the AI to return the full structure as requested.
-        # We'll validte critical fields exist.
-        if "experience" in ai_response:
-            return ai_response  # Return the full condensed CV
-
-    elif section == "experience":
-        if "experience" in ai_response and isinstance(ai_response["experience"], list):
-            original_experience = original_copy.get("experience", [])
-            result_cv["experience"] = _merge_experience_descriptions(
-                original_experience, ai_response["experience"]
+    if not validated:
+        retry_prompt = f"{prompt}\n\nIMPORTANTE: Devuelve solo JSON válido con el esquema exacto."
+        retry_response = await get_ai_completion(retry_prompt, system_msg)
+        if isinstance(retry_response, dict):
+            result_cv = _apply_optimization_response(
+                retry_response, original_copy, section, target
             )
+            validated = _validate_ai_payload(CVData, result_cv, "optimize_cv_data_retry")
 
-    elif section in ai_response:
-        result_cv[section] = ai_response[section]
+    if not validated:
+        raise CVProcessingError(
+            "No pudimos validar la optimización del CV. Intenta nuevamente."
+        )
 
-    # Handle the "optimize for specific section" generic case return
-    if section != "all" and section in ai_response:
-        result_cv[section] = ai_response[section]
-
-    return result_cv
+    return validated.model_dump(by_alias=True)
 
 
 def _collect_cv_text(cv_data: dict) -> str:
@@ -845,8 +915,23 @@ def _normalize_critique_response(cv_data: dict, ai_response: Any) -> Dict[str, A
 
 async def critique_cv_data(cv_data: dict):
     cv_json = json.dumps(cv_data, indent=2)
-    ai_response = await get_ai_completion(SENTINEL_CRITIQUE_PROMPT.format(cv_json=cv_json))
-    return _normalize_critique_response(cv_data, ai_response)
+    prompt = SENTINEL_CRITIQUE_PROMPT.format(cv_json=cv_json)
+    ai_response = await get_ai_completion(prompt)
+    normalized = _normalize_critique_response(cv_data, ai_response)
+    validated = _validate_ai_payload(CritiqueResponse, normalized, "critique_cv_data")
+
+    if not validated:
+        retry_prompt = f"{prompt}\n\nIMPORTANTE: Devuelve solo JSON válido con el esquema exacto."
+        retry_response = await get_ai_completion(retry_prompt)
+        normalized = _normalize_critique_response(cv_data, retry_response)
+        validated = _validate_ai_payload(CritiqueResponse, normalized, "critique_cv_data_retry")
+
+    if not validated:
+        raise CVProcessingError(
+            "No pudimos validar el análisis del CV. Intenta nuevamente."
+        )
+
+    return validated.model_dump(by_alias=True)
 
 
 async def optimize_for_role(cv_data: dict, target_role: str):
@@ -2315,20 +2400,16 @@ async def extract_cv_data_from_message(
             current_cv_data=cv_data_json,
         )
 
-        response = await get_ai_completion(prompt, "Eres un extractor de datos preciso y cuidadoso.")
+        system_msg = "Eres un extractor de datos preciso y cuidadoso."
+        response = await get_ai_completion(prompt, system_msg)
 
         if not response:
             return None
 
-        # Parsear respuesta
-        if isinstance(response, dict):
-            extraction_data = response
-        else:
-            try:
-                extraction_data = json.loads(response)
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse extraction response: {response}")
-                return None
+        extraction_data = _parse_ai_payload(response)
+        if extraction_data is None:
+            logger.error(f"Failed to parse extraction response: {response}")
+            return None
 
         # Limpiar datos extraídos (eliminar campos vacíos para no sobreescribir con nada)
         def clean_extracted(obj):
@@ -2341,13 +2422,40 @@ async def extract_cv_data_from_message(
         clean_data = clean_extracted(extraction_data.get("extracted", {}))
         normalized_data = _normalize_extracted_payload(clean_data)
 
-        return DataExtraction(
-            extracted=normalized_data,
-            confidence=extraction_data.get("confidence", {}),
-            needs_clarification=extraction_data.get("needs_clarification", []),
-            follow_up_questions=extraction_data.get("follow_up_questions", []),
-        )
+        payload = {
+            "extracted": normalized_data,
+            "confidence": extraction_data.get("confidence", {}),
+            "needs_clarification": extraction_data.get("needs_clarification", []),
+            "follow_up_questions": extraction_data.get("follow_up_questions", []),
+        }
+        validated = _validate_ai_payload(DataExtraction, payload, "extract_cv_data_from_message")
 
+        if not validated:
+            retry_prompt = f"{prompt}\n\nIMPORTANTE: Devuelve solo JSON válido con el esquema exacto."
+            retry_response = await get_ai_completion(retry_prompt, system_msg)
+            retry_data = _parse_ai_payload(retry_response)
+            if retry_data:
+                clean_data = clean_extracted(retry_data.get("extracted", {}))
+                normalized_data = _normalize_extracted_payload(clean_data)
+                retry_payload = {
+                    "extracted": normalized_data,
+                    "confidence": retry_data.get("confidence", {}),
+                    "needs_clarification": retry_data.get("needs_clarification", []),
+                    "follow_up_questions": retry_data.get("follow_up_questions", []),
+                }
+                validated = _validate_ai_payload(
+                    DataExtraction, retry_payload, "extract_cv_data_from_message_retry"
+                )
+
+        if not validated:
+            raise CVProcessingError(
+                "No pudimos validar la extracción de datos. Intenta nuevamente."
+            )
+
+        return validated
+
+    except CVProcessingError:
+        raise
     except Exception as e:
         logger.error(f"Error extracting CV data: {e}")
         return None
@@ -2455,22 +2563,19 @@ async def analyze_job_description(
             cv_data=cv_data_json,
         )
 
+        system_msg = "Eres un experto en reclutamiento y optimización de CVs."
         response = await get_ai_completion(
             prompt,
-            "Eres un experto en reclutamiento y optimización de CVs.",
+            system_msg,
         )
 
         if not response:
             return None
 
-        if isinstance(response, dict):
-            data = response
-        else:
-            try:
-                data = json.loads(response)
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse job analysis response: {response}")
-                return None
+        data = _parse_ai_payload(response)
+        if data is None:
+            logger.error(f"Failed to parse job analysis response: {response}")
+            return None
 
         # Parsear sugerencias
         suggestions_data = data.get("suggestions", [])
@@ -2483,17 +2588,57 @@ async def analyze_job_description(
                 priority=s.get("priority", "medium"),
             )
             for s in suggestions_data
+            if isinstance(s, dict)
         ]
 
-        return JobAnalysisResponse(
-            match_score=data.get("match_score", 50),
-            key_requirements=data.get("key_requirements", []),
-            matched_skills=data.get("matched_skills", []),
-            missing_skills=data.get("missing_skills", []),
-            suggestions=suggestions,
-            optimized_cv=data.get("optimized_cv"),
-        )
+        payload = {
+            "match_score": data.get("match_score", 50),
+            "key_requirements": data.get("key_requirements", []),
+            "matched_skills": data.get("matched_skills", []),
+            "missing_skills": data.get("missing_skills", []),
+            "suggestions": [s.model_dump() for s in suggestions],
+            "optimized_cv": data.get("optimized_cv"),
+        }
 
+        validated = _validate_ai_payload(JobAnalysisResponse, payload, "analyze_job_description")
+        if not validated:
+            retry_prompt = f"{prompt}\n\nIMPORTANTE: Devuelve solo JSON válido con el esquema exacto."
+            retry_response = await get_ai_completion(retry_prompt, system_msg)
+            retry_data = _parse_ai_payload(retry_response)
+            if retry_data:
+                retry_suggestions = [
+                    TailoringSuggestion(
+                        section=s.get("section", ""),
+                        current=s.get("current", ""),
+                        suggested=s.get("suggested", ""),
+                        reason=s.get("reason", ""),
+                        priority=s.get("priority", "medium"),
+                    )
+                    for s in retry_data.get("suggestions", [])
+                    if isinstance(s, dict)
+                ]
+                retry_payload = {
+                    "match_score": retry_data.get("match_score", 50),
+                    "key_requirements": retry_data.get("key_requirements", []),
+                    "matched_skills": retry_data.get("matched_skills", []),
+                    "missing_skills": retry_data.get("missing_skills", []),
+                    "suggestions": [s.model_dump() for s in retry_suggestions],
+                    "optimized_cv": retry_data.get("optimized_cv"),
+                }
+                validated = _validate_ai_payload(
+                    JobAnalysisResponse, retry_payload, "analyze_job_description_retry"
+                )
+
+        if not validated:
+            raise CVProcessingError(
+                "La IA devolvió un formato incompatible para el análisis del puesto. "
+                "Intenta nuevamente."
+            )
+
+        return validated
+
+    except CVProcessingError:
+        raise
     except Exception as e:
         logger.error(f"Error analyzing job description: {e}")
         return None
