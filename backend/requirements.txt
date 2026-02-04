@@ -9,6 +9,7 @@ python-dotenv
 groq
 pydantic
 pydantic-settings
+email-validator
 motor
 httpx
 slowapi
