@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Check, Sparkles, ArrowRight, Layout, Zap, Search } from 'lucide-react';
+import { Check, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CVTemplate } from '@/types/cv';
@@ -15,55 +14,77 @@ interface TemplateGalleryProps {
     onBack: () => void;
 }
 
-const ResumeSkeleton = ({ variant }: { variant: string }) => {
-    // Minimalist skeletons for preview
-    const layouts: Record<string, React.ReactNode> = {
-        classic: (
-            <div className="p-4 space-y-4 opacity-50 grayscale">
-                <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-200" />
-                    <div className="space-y-1.5 flex-1">
-                        <div className="h-2 w-24 bg-slate-300 rounded-full" />
-                        <div className="h-1.5 w-16 bg-slate-200 rounded-full" />
-                    </div>
+const mockLayouts: Record<string, React.ReactNode> = {
+    classic: (
+        <div className="p-4 space-y-3">
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-2">
+                <div className="w-9 h-9 rounded-full bg-slate-200" />
+                <div className="space-y-1 flex-1">
+                    <div className="h-2 w-28 bg-slate-300 rounded-full" />
+                    <div className="h-1.5 w-20 bg-slate-200 rounded-full" />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <div className="h-1.5 w-full bg-slate-200 rounded-full" />
+                <div className="h-1.5 w-11/12 bg-slate-100 rounded-full" />
+                <div className="h-1.5 w-10/12 bg-slate-100 rounded-full" />
+            </div>
+            <div className="space-y-1.5">
+                <div className="h-2 w-24 bg-slate-300 rounded-full" />
+                <div className="h-1.5 w-full bg-slate-100 rounded-full" />
+                <div className="h-1.5 w-4/5 bg-slate-100 rounded-full" />
+            </div>
+        </div>
+    ),
+    modern: (
+        <div className="flex h-full">
+            <div className="w-1/3 bg-slate-100 p-3 space-y-3">
+                <div className="w-10 h-10 rounded-full bg-slate-300 mx-auto" />
+                <div className="space-y-1">
+                    <div className="h-1.5 w-full bg-slate-300 rounded-full" />
+                    <div className="h-1.5 w-2/3 bg-slate-200 rounded-full" />
+                </div>
+                <div className="space-y-1.5">
+                    <div className="h-1 w-full bg-slate-200 rounded-full" />
+                    <div className="h-1 w-3/4 bg-slate-200 rounded-full" />
+                    <div className="h-1 w-2/3 bg-slate-200 rounded-full" />
+                </div>
+            </div>
+            <div className="flex-1 p-3 space-y-2">
+                <div className="h-2.5 w-4/5 bg-slate-300 rounded-full" />
+                <div className="h-1.5 w-full bg-slate-200 rounded-full" />
+                <div className="h-1.5 w-11/12 bg-slate-200 rounded-full" />
+                <div className="h-1.5 w-10/12 bg-slate-100 rounded-full" />
+                <div className="h-1.5 w-3/4 bg-slate-100 rounded-full" />
+            </div>
+        </div>
+    ),
+    split: (
+        <div className="p-4 space-y-4">
+            <div className="text-center space-y-1.5">
+                <div className="h-2 w-24 mx-auto bg-slate-300 rounded-full" />
+                <div className="h-1 w-28 mx-auto bg-slate-200 rounded-full" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                    <div className="h-1.5 w-16 bg-slate-300 rounded-full" />
+                    <div className="h-1 w-full bg-slate-100 rounded-full" />
+                    <div className="h-1 w-4/5 bg-slate-100 rounded-full" />
+                    <div className="h-1 w-3/4 bg-slate-100 rounded-full" />
                 </div>
                 <div className="space-y-2">
-                    <div className="h-2 w-full bg-slate-200 rounded-full" />
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full" />
-                    <div className="h-1.5 w-4/5 bg-slate-100 rounded-full" />
+                    <div className="h-1.5 w-16 bg-slate-300 rounded-full" />
+                    <div className="h-1 w-full bg-slate-100 rounded-full" />
+                    <div className="h-1 w-5/6 bg-slate-100 rounded-full" />
+                    <div className="h-1 w-2/3 bg-slate-100 rounded-full" />
                 </div>
             </div>
-        ),
-        modern: (
-            <div className="flex h-full opacity-60">
-                <div className="w-1/3 bg-slate-100 p-3 space-y-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-300 mx-auto" />
-                    <div className="space-y-1">
-                        <div className="h-1.5 w-full bg-slate-300 rounded-full" />
-                        <div className="h-1.5 w-1/2 bg-slate-200 rounded-full" />
-                    </div>
-                </div>
-                <div className="flex-1 p-3 space-y-2">
-                    <div className="h-3 w-3/4 bg-slate-300 rounded-full" />
-                    <div className="h-1.5 w-full bg-slate-200 rounded-full" />
-                    <div className="h-1.5 w-full bg-slate-200 rounded-full" />
-                </div>
-            </div>
-        ),
-        split: (
-            <div className="p-4 space-y-5 opacity-50">
-                <div className="text-center space-y-1.5">
-                    <div className="h-2 w-20 mx-auto bg-slate-300 rounded-full" />
-                    <div className="h-1 w-24 mx-auto bg-slate-200 rounded-full" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-50 rounded h-16 w-full" />
-                    <div className="bg-slate-50 rounded h-16 w-full" />
-                </div>
-            </div>
-        )
-    };
-    return (layouts[variant] || layouts.classic) as React.ReactElement;
+        </div>
+    )
+};
+
+const ResumeMockup = ({ variant }: { variant: string }) => {
+    return (mockLayouts[variant] || mockLayouts.classic) as React.ReactElement;
 };
 
 // Updated categories with better mapping - SYNCED with TemplateSelector
@@ -178,8 +199,8 @@ export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
                                             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.2)_1px,transparent_0)] bg-[length:16px_16px]" />
 
                                             <div className="relative z-10 transform transition-transform duration-500 group-hover:scale-105 group-hover:rotate-1">
-                                                <div className="w-32 h-52 bg-white rounded shadow-2xl skew-y-[-2deg] opacity-95 scale-90 border border-black/5">
-                                                    <ResumeSkeleton variant={meta.skeleton} />
+                                                <div className="w-32 h-52 bg-white rounded shadow-2xl skew-y-[-2deg] opacity-95 scale-90 border border-black/5 overflow-hidden">
+                                                    <ResumeMockup variant={meta.skeleton} />
                                                 </div>
                                             </div>
 
@@ -229,4 +250,3 @@ export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
         </div>
     );
 }
-
