@@ -11,9 +11,11 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { buildApiUrl } from '@/lib/api/base';
+import { getAiConfigErrorMessage } from '@/lib/ai-errors';
+import { CVData } from '@/types/cv';
 
 interface FileUploaderProps {
-    onSuccess: (data: any) => void;
+    onSuccess: (data: CVData) => void;
 }
 
 const MAX_FILES = 10;
@@ -122,12 +124,16 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                 onSuccess(data);
                 toast.success('¡Tu CV profesional está listo!');
             }, 500);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            if (error.message === 'Failed to fetch') {
+            const message = error instanceof Error ? error.message : 'Error desconocido';
+            const aiConfigMessage = getAiConfigErrorMessage(message);
+            if (aiConfigMessage) {
+                toast.error(aiConfigMessage);
+            } else if (message === 'Failed to fetch') {
                 toast.error('No se pudo conectar con el servidor. Verificá que el backend esté corriendo en el puerto 8000.');
             } else {
-                toast.error(error.message || 'Error al generar el CV. Intentá de nuevo.');
+                toast.error(message || 'Error al generar el CV. Intentá de nuevo.');
             }
         } finally {
             setTimeout(() => {

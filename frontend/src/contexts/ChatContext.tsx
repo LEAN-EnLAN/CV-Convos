@@ -23,6 +23,7 @@ import {
   DEFAULT_TOAST_DURATION,
 } from '@/types/notifications';
 import { buildApiUrl } from '@/lib/api/base';
+import { getAiConfigErrorMessage } from '@/lib/ai-errors';
 
 // =============================================================================
 // ESTADO INICIAL
@@ -274,6 +275,7 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
           const isRateLimited = event.error.includes('429') ||
             event.error.includes('RESOURCE_EXHAUSTED') ||
             event.error.includes('quota');
+          const aiConfigMessage = getAiConfigErrorMessage(event.error);
 
           // ═══════════════════════════════════════════════════════════════
           // CONSOLE LOG: Detailed error for DevTools debugging
@@ -293,14 +295,16 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
               '\n• If this persists, check API quotas in Google Cloud Console');
           }
 
-          dispatch({ type: 'SET_ERROR', payload: event.error });
+          dispatch({ type: 'SET_ERROR', payload: aiConfigMessage || event.error });
 
           const errorMessage: ChatMessage = {
             id: `msg_${Date.now()}_error`,
             role: 'assistant',
-            content: isRateLimited
-              ? '⏳ El servicio de IA está temporalmente limitado. Cambiando a modo alternativo...'
-              : '❌ Hubo un problema procesando tu mensaje. Por favor, intenta de nuevo.',
+            content: aiConfigMessage
+              ? `⚙️ ${aiConfigMessage}`
+              : isRateLimited
+                ? '⏳ El servicio de IA está temporalmente limitado. Cambiando a modo alternativo...'
+                : '❌ Hubo un problema procesando tu mensaje. Por favor, intenta de nuevo.',
             timestamp: new Date(),
           };
           dispatch({ type: 'ADD_ASSISTANT_MESSAGE', payload: errorMessage });
@@ -453,6 +457,7 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         const isNetworkError = errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError');
         const isQuotaRelated = errorMessage.includes('503') || errorMessage.includes('429');
+        const aiConfigMessage = getAiConfigErrorMessage(errorMessage);
 
         console.error('%c[CHAT-ERROR]', 'background: #7c2d12; color: white; padding: 2px 6px; border-radius: 4px;', {
           type: isNetworkError ? 'NETWORK' : isQuotaRelated ? 'QUOTA' : 'UNKNOWN',
@@ -469,7 +474,7 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
 
         dispatch({
           type: 'SET_ERROR',
-          payload: errorMessage,
+          payload: aiConfigMessage || errorMessage,
         });
       } finally {
         dispatch({ type: 'SET_STREAMING', payload: false });
