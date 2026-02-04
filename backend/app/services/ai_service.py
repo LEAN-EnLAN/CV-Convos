@@ -33,6 +33,11 @@ MODEL_ID = "llama-3.3-70b-versatile"
 
 logger = logging.getLogger(__name__)
 
+def _raise_if_no_ai_provider() -> None:
+    missing_keys = settings.missing_ai_keys()
+    if len(missing_keys) == 2:
+        settings.raise_if_missing_ai_keys(missing_keys)
+
 # --- SYSTEM PROMPTS (THE BIBLE OF TRUTH) ---
 
 SYSTEM_RULES = """
@@ -264,6 +269,7 @@ REGLAS DE SALIDA (JSON):
 def _call_groq_api(prompt: str, system_msg: str, use_json: bool = True) -> Any:
     """Internal function to call Groq API with retry logic."""
     try:
+        settings.raise_if_missing_ai_keys(["GROQ_API_KEY"])
         client = Groq(api_key=settings.GROQ_API_KEY)
         completion = client.chat.completions.create(
             model=MODEL_ID,
@@ -294,9 +300,7 @@ def _call_groq_api(prompt: str, system_msg: str, use_json: bool = True) -> Any:
 def _call_gemini_api(prompt: str, system_msg: str, use_json: bool = True) -> Any:
     """Internal function to call Google Gemini API as fallback."""
     try:
-        if not settings.GOOGLE_API_KEY or settings.GOOGLE_API_KEY == "placeholder_key":
-            logger.warning("Google API Key not configured for fallback.")
-            return None
+        settings.raise_if_missing_ai_keys(["GOOGLE_API_KEY"])
 
         client = genai.Client(api_key=settings.GOOGLE_API_KEY)
         
@@ -382,6 +386,7 @@ def _get_mock_fallback(prompt: str, system_msg: str, use_json: bool = True) -> A
 
 
 async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES, use_json: bool = True):
+    _raise_if_no_ai_provider()
     # 1. Try Groq (Primary)
     if settings.GROQ_API_KEY and settings.GROQ_API_KEY != "placeholder_key":
         loop = asyncio.get_event_loop()
@@ -392,13 +397,14 @@ async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES, use_jso
             return result
 
     # 2. Try Gemini (Fallback)
-    logger.info("Failing over to Gemini API...")
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        None, _call_gemini_api, prompt, system_msg, use_json
-    )
-    if result:
-        return result
+    if settings.GOOGLE_API_KEY and settings.GOOGLE_API_KEY != "placeholder_key":
+        logger.info("Failing over to Gemini API...")
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, _call_gemini_api, prompt, system_msg, use_json
+        )
+        if result:
+            return result
 
     # 3. Mock Fallback (Last Resort)
     return _get_mock_fallback(prompt, system_msg, use_json)
@@ -1674,11 +1680,7 @@ async def analyze_ats(cv_text: str, target_industry: str = "general"):
     Returns:
         Dict with ATS analysis including mismatch detection and contextual recommendations
     """
-    if (
-        (not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key")
-        and (not settings.GOOGLE_API_KEY or settings.GOOGLE_API_KEY == "placeholder_key")
-    ):
-        raise AIServiceError("ATS analysis requires an active AI provider.")
+    _raise_if_no_ai_provider()
 
     industry_data = INDUSTRY_KEYWORDS.get(target_industry, INDUSTRY_KEYWORDS["general"])
 
@@ -2026,6 +2028,7 @@ async def generate_conversation_response_stream(
     2. Groq LLaMA 3.3 (fallback if Gemini quota exhausted)
     3. Heuristic Engine (offline mode, last resort)
     """
+    _raise_if_no_ai_provider()
     global _gemini_quota_exhausted, _quota_error_count, _last_quota_error_time
     
     # Log entry for debugging

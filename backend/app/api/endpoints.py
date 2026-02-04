@@ -157,8 +157,8 @@ async def generate_cv(request: Request, files: List[UploadFile] = File(...)):
     except (FileProcessingError, ValidationError) as e:
         # Re-raise validation and file processing errors as-is
         raise e
-    except AIServiceError:
-        raise HTTPException(status_code=503, detail="AI Service is temporarily unavailable")
+    except AIServiceError as e:
+        raise e
     except Exception:
         logger.exception("Unexpected error in generate_cv")
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -194,8 +194,8 @@ async def optimize_cv(
 
     except (CVProcessingError, ValidationError) as e:
         raise e
-    except AIServiceError:
-        raise HTTPException(status_code=503, detail="AI Service is temporarily unavailable")
+    except AIServiceError as e:
+        raise e
     except Exception:
         logger.exception("Unexpected error in optimize_cv")
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -325,8 +325,8 @@ async def generate_complete_cv_endpoint(
 
     except (CVProcessingError, ValidationError) as e:
         raise e
-    except AIServiceError:
-        raise HTTPException(status_code=503, detail="AI Service is temporarily unavailable")
+    except AIServiceError as e:
+        raise e
     except Exception:
         logger.exception("Unexpected error in generate_complete_cv_endpoint")
         raise HTTPException(status_code=500, detail="Internal Server Error")
