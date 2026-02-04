@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useReducer, useCallback, useRef, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useRef, ReactNode, useEffect, useMemo } from 'react';
 import {
   ChatState,
   ChatActions,
@@ -180,7 +180,8 @@ interface ChatContextValue {
   actions: ChatActions;
 }
 
-const ChatContext = createContext<ChatContextValue | undefined>(undefined);
+const ChatStateContext = createContext<ChatState | undefined>(undefined);
+const ChatActionsContext = createContext<ChatActions | undefined>(undefined);
 
 // =============================================================================
 // PROVIDER
@@ -790,7 +791,7 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
     dispatch({ type: 'SET_ACTIVE_NOTIFICATION', payload: id });
   }, []);
 
-  const actions: ChatActions = {
+  const actions = useMemo<ChatActions>(() => ({
     sendMessage,
     startNewConversation,
     applyExtraction,
@@ -801,12 +802,25 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
     dismissAllNotifications,
     updateNotification,
     setActiveNotification,
-  };
+  }), [
+    applyExtraction,
+    dismissAllNotifications,
+    dismissNotification,
+    resetChat,
+    sendMessage,
+    setActiveNotification,
+    setJobDescription,
+    showNotification,
+    startNewConversation,
+    updateNotification,
+  ]);
 
   return (
-    <ChatContext.Provider value={{ state, actions }}>
-      {children}
-    </ChatContext.Provider>
+    <ChatStateContext.Provider value={state}>
+      <ChatActionsContext.Provider value={actions}>
+        {children}
+      </ChatActionsContext.Provider>
+    </ChatStateContext.Provider>
   );
 }
 
@@ -818,20 +832,26 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
  * Hook principal para acceder al estado y acciones del chat
  */
 export function useChat(): ChatContextValue {
-  const context = useContext(ChatContext);
+  const state = useContext(ChatStateContext);
+  const actions = useContext(ChatActionsContext);
 
-  if (context === undefined) {
+  if (state === undefined || actions === undefined) {
     throw new Error('useChat must be used within a ChatProvider');
   }
 
-  return context;
+  return { state, actions };
 }
 
 /**
  * Hook para acceder solo al estado del chat
  */
 export function useChatState(): ChatState {
-  const { state } = useChat();
+  const state = useContext(ChatStateContext);
+
+  if (state === undefined) {
+    throw new Error('useChatState must be used within a ChatProvider');
+  }
+
   return state;
 }
 
@@ -839,7 +859,12 @@ export function useChatState(): ChatState {
  * Hook para acceder solo a las acciones del chat
  */
 export function useChatActions(): ChatActions {
-  const { actions } = useChat();
+  const actions = useContext(ChatActionsContext);
+
+  if (actions === undefined) {
+    throw new Error('useChatActions must be used within a ChatProvider');
+  }
+
   return actions;
 }
 
@@ -847,7 +872,7 @@ export function useChatActions(): ChatActions {
  * Hook para verificar si hay un mensaje del asistente en streaming
  */
 export function useIsStreaming(): boolean {
-  const { state } = useChat();
+  const state = useChatState();
   return state.isStreaming;
 }
 
@@ -855,12 +880,10 @@ export function useIsStreaming(): boolean {
  * Hook para obtener el mensaje actual en streaming (si existe)
  */
 export function useStreamingMessage(): ChatMessage | undefined {
-  const { state } = useChat();
+  const state = useChatState();
 
   if (!state.isStreaming) return undefined;
 
   const lastMessage = state.messages[state.messages.length - 1];
   return lastMessage?.role === 'assistant' ? lastMessage : undefined;
 }
-
-export default ChatContext;
