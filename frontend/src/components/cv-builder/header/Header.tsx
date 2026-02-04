@@ -3,10 +3,9 @@ import { CVData, CVTemplate } from '@/types/cv';
 import { Button } from '@/components/ui/button';
 import {
     Layout, RotateCcw,
-    Palette, Settings2, GraduationCap, Terminal, Menu, ChevronDown,
+    Palette, Settings2, Terminal, Menu, ChevronDown,
     MapPin, Mail, Phone, Globe, Linkedin, Github, Twitter,
-    Briefcase, Building2, Calendar, Award, Languages, List, Heart, TrendingUp, Sparkles, FileText,
-    Grid3X3, Code, Users, Landmark, Bug
+    Briefcase, Building2, Calendar, Award, Languages, List, Heart, TrendingUp, Bug
 } from 'lucide-react';
 import { FinalizeExport } from '../FinalizeExport';
 import { TemplateConfigurator } from '../TemplateConfigurator';
@@ -37,57 +36,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PenLine, Eye } from 'lucide-react';
 import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
-
-export const templateOptions = [
-    {
-        id: 'professional',
-        name: 'Executive',
-        description: 'Diseño clásico y elegante para corporativos',
-        icon: FileText
-    },
-    {
-        id: 'creative',
-        name: 'Studio',
-        description: 'Estilo editorial y audaz para creativos',
-        icon: Sparkles
-    },
-    {
-        id: 'harvard',
-        name: 'Ivy',
-        description: 'Estilo Ivy League, ATS-Optimized',
-        icon: GraduationCap
-    },
-    {
-        id: 'pure',
-        name: 'Swiss',
-        description: 'Minimalismo suizo con precisión extrema',
-        icon: Grid3X3
-    },
-    {
-        id: 'terminal',
-        name: 'Code',
-        description: 'Elegancia técnica estilo editor de código',
-        icon: Code
-    },
-    {
-        id: 'care',
-        name: 'Care',
-        description: 'Diseño cálido centrado en las personas',
-        icon: Users
-    },
-    {
-        id: 'capital',
-        name: 'Capital',
-        description: 'Precisión financiera y elegancia institucional',
-        icon: Landmark
-    },
-    {
-        id: 'scholar',
-        name: 'Scholar',
-        description: 'Plantilla académica con rigor investigativo',
-        icon: GraduationCap
-    }
-];
+import { TEMPLATE_BY_ID } from '@/lib/cv-templates/template-registry';
 
 interface HeaderProps {
     data: CVData;
@@ -110,7 +59,7 @@ export function Header({
     setActiveView,
     onDownloadPDF,
 }: HeaderProps) {
-    const currentTemplate = templateOptions.find(t => t.id === template);
+    const currentTemplate = TEMPLATE_BY_ID[template];
 
     return (
         <header className="sticky top-0 z-50 h-16 border-b bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 flex items-center justify-between px-4 sm:px-6 shrink-0 no-print transition-all duration-300">
