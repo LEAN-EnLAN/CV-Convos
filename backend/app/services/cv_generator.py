@@ -22,8 +22,13 @@ logger = logging.getLogger(__name__)
 TemplateType = Literal[
     "professional",
     "harvard",
-    "minimal",
     "creative",
+    "pure",
+    "terminal",
+    "care",
+    "capital",
+    "scholar",
+    "minimal",
     "tech",
     "bian",
     "finance",
@@ -129,79 +134,95 @@ Return a complete CV structure with the following enhanced sections:
 # TEMPLATE-SPECIFIC FORMATTING GUIDES
 # =============================================================================
 
-TEMPLATE_FORMATTING_PROMPTS = {
-    "professional": """
+PROMPT_PROFESSIONAL = """
 Format this CV for a classic professional template:
 - Use formal, traditional structure
 - Clear section headers
 - Emphasis on experience and education
 - Conservative layout with good use of white space
 - Standard chronological format for experience
-""",
-    "harvard": """
+"""
+PROMPT_HARVARD = """
 Format this CV for an academic/Harvard-style template:
 - Academic focus with detailed education section
 - Publications and research highlighted
 - Professional summary with career objectives
 - Detailed description of academic achievements
 - Clear chronological structure
-""",
-    "minimal": """
+"""
+PROMPT_MINIMAL = """
 Format this CV for a minimal template:
 - Stripped-down, clean design
 - Focus on content over decoration
 - Simple formatting with essential information only
 - Good use of spacing for readability
 - Subtle use of bold for headers
-""",
-    "creative": """
+"""
+PROMPT_CREATIVE = """
 Format this CV for a creative template:
 - Emphasize unique skills and achievements
 - Highlight projects and creative work
 - Dynamic layout suggestions
 - Showcase innovation and creativity
 - Modern, engaging presentation
-""",
-    "tech": """
+"""
+PROMPT_TECH = """
 Format this CV for a tech/developer template:
 - Emphasize technical skills and projects
 - GitHub and technical contributions highlighted
 - List technologies and frameworks used
 - Focus on technical achievements
 - Modern, clean layout
-""",
-    "bian": """
+"""
+PROMPT_BIAN = """
 Format this CV for a business/consulting template:
 - Professional business presentation
 - Emphasize business skills and achievements
 - Quantifiable results and metrics
 - Leadership and strategic thinking
 - Corporate, polished look
-""",
-    "finance": """
+"""
+PROMPT_FINANCE = """
 Format this CV for a finance template:
 - Focus on financial skills and certifications
 - Emphasize analytical and quantitative skills
 - Highlight financial achievements with metrics
 - Professional financial presentation
 - Attention to detail
-""",
-    "health": """
+"""
+PROMPT_HEALTH = """
 Format this CV for a healthcare template:
 - Focus on healthcare skills and certifications
 - Emphasize patient care and medical achievements
 - Professional healthcare presentation
 - Highlight clinical experience
 - Medical professional appearance
-""",
-    "education": """
+"""
+PROMPT_EDUCATION = """
 Format this CV for an education/academic template:
 - Emphasize teaching experience and achievements
 - Highlight educational contributions
 - Focus on academic qualifications
 - Student outcomes and achievements
 - Academic professional appearance
-""",
+"""
+
+# Mapeo de prompts para mantener compatibilidad con plantillas nuevas y legacy
+TEMPLATE_FORMATTING_PROMPTS = {
+    "professional": PROMPT_PROFESSIONAL,
+    "harvard": PROMPT_HARVARD,
+    "creative": PROMPT_CREATIVE,
+    "pure": PROMPT_MINIMAL,
+    "terminal": PROMPT_TECH,
+    "care": PROMPT_HEALTH,
+    "capital": PROMPT_FINANCE,
+    "scholar": PROMPT_EDUCATION,
+    "minimal": PROMPT_MINIMAL,
+    "tech": PROMPT_TECH,
+    "bian": PROMPT_BIAN,
+    "finance": PROMPT_FINANCE,
+    "health": PROMPT_HEALTH,
+    "education": PROMPT_EDUCATION,
 }
 
 # =============================================================================

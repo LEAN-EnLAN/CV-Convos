@@ -4,6 +4,7 @@
  */
 
 import { CVData, CVTemplate } from '@/types/cv';
+import { getTemplateIds } from '@/lib/cv-templates/template-registry';
 import {
     GenerateCompleteCVRequest,
     GenerateCompleteCVResponse,
@@ -160,16 +161,7 @@ export async function checkServiceHealth(): Promise<boolean> {
  * Get supported template types
  */
 export function getSupportedTemplates(): CVTemplate[] {
-    return [
-        'professional',
-        'harvard',
-        'creative',
-        'pure',
-        'terminal',
-        'care',
-        'capital',
-        'scholar',
-    ];
+    return getTemplateIds();
 }
 
 /**

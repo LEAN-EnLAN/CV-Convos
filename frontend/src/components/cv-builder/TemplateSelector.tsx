@@ -11,21 +11,15 @@ import {
     DialogTrigger
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Sparkles,
     Check,
-    Layout,
-    Zap,
     ArrowRight,
     Palette,
-    Search,
-    Monitor,
-    Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { templateOptions } from './header/Header';
+import { TEMPLATE_DEFINITIONS, TEMPLATE_CATEGORIES, TEMPLATE_BY_ID } from '@/lib/cv-templates/template-registry';
 
 interface TemplateSelectorProps {
     currentTemplate: CVTemplate;
@@ -84,28 +78,13 @@ const ResumeSkeleton = ({ variant }: { variant: string }) => {
     return (layouts[variant] || layouts.classic) as React.ReactElement;
 };
 
-// Updated categories with better mapping
-const templateMeta: Record<string, { category: string; color: string; tags: string[]; skeleton: string }> = {
-    professional: { category: 'Corporativo', color: 'bg-zinc-800', tags: ['Clean', 'ATS-Ready'], skeleton: 'classic' },
-    creative: { category: 'Diseño', color: 'bg-stone-800', tags: ['Editorial', 'Bold'], skeleton: 'modern' },
-    harvard: { category: 'Académico', color: 'bg-slate-800', tags: ['Ivy League', 'Standard'], skeleton: 'classic' },
-    minimal: { category: 'Moderno', color: 'bg-neutral-200', tags: ['Minimal', 'Light'], skeleton: 'split' },
-    tech: { category: 'Tecnología', color: 'bg-zinc-900', tags: ['Dev', 'Code'], skeleton: 'modern' },
-    bian: { category: 'Académico', color: 'bg-slate-700', tags: ['Formal', 'Classic'], skeleton: 'classic' },
-    finance: { category: 'Corporativo', color: 'bg-slate-900', tags: ['Finance', 'Premium'], skeleton: 'classic' },
-    health: { category: 'Salud', color: 'bg-teal-900', tags: ['Health', 'Clean'], skeleton: 'split' },
-    education: { category: 'Educación', color: 'bg-indigo-950', tags: ['Teaching', 'Warm'], skeleton: 'classic' }
-};
-
-const CATEGORIES = ['Todas', 'Corporativo', 'Académico', 'Moderno', 'Diseño', 'Tecnología'];
-
 export function TemplateSelector({ currentTemplate, onSelect, trigger }: TemplateSelectorProps) {
     const [open, setOpen] = useState(false);
     const [filter, setFilter] = useState('Todas');
 
     const filteredTemplates = filter === 'Todas'
-        ? templateOptions
-        : templateOptions.filter(t => templateMeta[t.id]?.category === filter);
+        ? TEMPLATE_DEFINITIONS
+        : TEMPLATE_DEFINITIONS.filter((template) => template.category === filter);
 
     const handleSelect = (id: string) => {
         onSelect(id as CVTemplate);
@@ -146,7 +125,7 @@ export function TemplateSelector({ currentTemplate, onSelect, trigger }: Templat
 
                     {/* Filter Tabs */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar mask-gradient-x">
-                        {CATEGORIES.map(cat => (
+                        {TEMPLATE_CATEGORIES.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setFilter(cat)}
@@ -167,7 +146,7 @@ export function TemplateSelector({ currentTemplate, onSelect, trigger }: Templat
                 <ScrollArea className="flex-1 w-full h-full bg-slate-50" type="always">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6 md:p-8">
                         {filteredTemplates.map(template => {
-                            const meta = templateMeta[template.id] || { category: 'General', color: 'from-slate-400 to-slate-500', tags: [], skeleton: 'classic' };
+                            const meta = TEMPLATE_BY_ID[template.id];
                             const isSelected = currentTemplate === template.id;
 
                             return (
@@ -184,12 +163,12 @@ export function TemplateSelector({ currentTemplate, onSelect, trigger }: Templat
                                     {/* Preview Header */}
                                     <div className={cn(
                                         "h-32 relative overflow-hidden flex items-center justify-center transition-colors duration-500",
-                                        meta.color
+                                        meta?.previewColor
                                     )}>
                                         <div className="absolute inset-0 bg-black/10" />
                                         <div className="relative z-10 transform transition-transform duration-500 group-hover:scale-105">
                                             <div className="w-32 h-40 bg-white rounded shadow-2xl rotate-[-5deg] translate-y-8 opacity-90 scale-75">
-                                                <ResumeSkeleton variant={meta.skeleton} />
+                                                <ResumeSkeleton variant={meta?.skeleton || 'classic'} />
                                             </div>
                                         </div>
 
@@ -206,7 +185,7 @@ export function TemplateSelector({ currentTemplate, onSelect, trigger }: Templat
                                             <div className="flex items-center justify-between mb-1">
                                                 <h3 className="text-lg font-bold text-slate-900">{template.name}</h3>
                                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                                                    {meta.category}
+                                                    {meta?.category}
                                                 </span>
                                             </div>
                                             <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
@@ -216,7 +195,7 @@ export function TemplateSelector({ currentTemplate, onSelect, trigger }: Templat
 
                                         <div className="pt-4 mt-4 border-t border-slate-50 flex items-center justify-between">
                                             <div className="flex gap-1.5">
-                                                {meta.tags.slice(0, 2).map((tag) => (
+                                                {(meta?.tags || []).slice(0, 2).map((tag) => (
                                                     <span key={tag} className="text-[10px] bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded border border-slate-100">
                                                         {tag}
                                                     </span>
