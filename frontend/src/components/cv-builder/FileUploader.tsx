@@ -6,13 +6,14 @@ import {
     Upload, FileText, X, Loader2, Sparkles,
     FileCheck, Zap, Shield, Clock
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
 import { buildApiUrl } from '@/lib/api/base';
 import { getAiConfigErrorMessage } from '@/lib/ai-errors';
 import { CVData } from '@/types/cv';
+import { resolveApiErrorMessage } from '@/lib/error-utils';
 
 interface FileUploaderProps {
     onSuccess: (data: CVData) => void;
@@ -110,11 +111,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                const detail = errorData.detail;
-                const errorMessage =
-                    typeof detail === 'string'
-                        ? detail
-                        : detail?.message || detail?.error || 'Error al generar el CV';
+                const errorMessage = resolveApiErrorMessage(errorData, 'Error al generar el CV');
                 throw new Error(errorMessage);
             }
 

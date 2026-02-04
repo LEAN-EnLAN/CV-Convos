@@ -2,16 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CVData, ImprovementCard, CritiqueResponse } from '@/types/cv';
-import {
     ShieldCheck,
     Zap,
     X,
@@ -31,8 +21,19 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { buildApiUrl } from '@/lib/api/base';
+import { CVData, ImprovementCard, CritiqueResponse } from '@/types/cv';
+import { resolveApiErrorMessage } from '@/lib/error-utils';
 
 interface CritiqueModalProps {
     isOpen: boolean;
@@ -102,11 +103,10 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('Critique API Error:', response.status, errorData);
-                const detail = errorData.detail;
-                const errorMessage =
-                    typeof detail === 'string'
-                        ? detail
-                        : detail?.message || detail?.error || `Failed to fetch critique: ${response.status}`;
+                const errorMessage = resolveApiErrorMessage(
+                    errorData,
+                    `Failed to fetch critique: ${response.status}`
+                );
                 throw new Error(errorMessage);
             }
 

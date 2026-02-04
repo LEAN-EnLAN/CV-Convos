@@ -1,14 +1,15 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from slowapi.errors import RateLimitExceeded
-from fastapi import Request
-from fastapi.responses import JSONResponse
-from app.api.endpoints import router as api_router
-import uvicorn
-
 from contextlib import asynccontextmanager
+
+import uvicorn
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+
+from app.api.endpoints import router as api_router
 from app.core.logging import setup_logging
 from app.core.limiter import limiter
+from app.core.exceptions import build_error_detail, normalize_error_detail
 from app.core.config import settings
 
 
@@ -48,8 +49,17 @@ app.add_middleware(
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     return JSONResponse(
         status_code=429,
-        content={"detail": "Too many requests. Please try again later."},
+        content=build_error_detail(
+            "rate_limit_exceeded",
+            "Demasiadas solicitudes. Por favor, intentá nuevamente más tarde.",
+        ),
     )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    detail = normalize_error_detail(exc.detail, exc.status_code)
+    return JSONResponse(status_code=exc.status_code, content=detail)
 
 
 # Include Routers

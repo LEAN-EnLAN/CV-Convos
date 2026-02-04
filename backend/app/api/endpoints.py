@@ -1,12 +1,11 @@
-import logging
 import json
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-
 from app.services.parser_service import extract_text_from_file
 from app.services.ai_service import (
     extract_cv_data,
@@ -37,9 +36,12 @@ from app.api.schemas import (
     CritiqueResponse,
 )
 from app.core.exceptions import (
+    APIError,
     CVProcessingError,
     FileProcessingError,
     AIServiceError,
+    InternalServerError,
+    NotFoundError,
     ValidationError,
 )
 from app.core.limiter import limiter
@@ -163,7 +165,7 @@ async def generate_cv(request: Request, files: List[UploadFile] = File(...)):
         raise e
     except Exception:
         logger.exception("Unexpected error in generate_cv")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise InternalServerError("Error interno al procesar el CV. Intentá de nuevo.")
 
 
 @router.post("/optimize-cv", response_model=CVData, response_model_by_alias=True, tags=["cv-gen"])
@@ -200,7 +202,7 @@ async def optimize_cv(
         raise e
     except Exception:
         logger.exception("Unexpected error in optimize_cv")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise InternalServerError("Error interno al optimizar el CV. Intentá de nuevo.")
 
 
 @router.post("/critique-cv", response_model=CritiqueResponse)
@@ -211,15 +213,16 @@ async def critique_cv(request: Request, cv_data: CVDataInput):
 
         if not critique_results:
             logger.error("Critique service returned None")
-            raise HTTPException(status_code=500, detail="El servicio de IA no devolvió resultados.")
+            raise CVProcessingError("El servicio de IA no devolvió resultados.")
 
         return critique_results
+    except APIError:
+        raise
     except Exception as e:
         logger.exception(f"Error in critique_cv endpoint: {str(e)}")
-        detail = "Error interno al procesar el análisis. Por favor, intenta de nuevo."
         if "ValidationError" in str(type(e)):
-            detail = "La IA devolvió un formato incompatible. Reintentando..."
-        raise HTTPException(status_code=500, detail=detail)
+            raise CVProcessingError("La IA devolvió un formato incompatible. Probá de nuevo.")
+        raise InternalServerError("Error interno al procesar el análisis. Intentá de nuevo.")
 
 
 @router.post("/interview-cv", response_model=CVData, response_model_by_alias=True)
@@ -230,47 +233,71 @@ async def interview_cv(
     target_role: str = Query(..., description="Target job position"),
 ):
     """Optimize CV for a specific target role."""
-    result = await optimize_for_role(cv_data.model_dump(), target_role)
+    try:
+        result = await optimize_for_role(cv_data.model_dump(), target_role)
 
-    if not result:
-        raise HTTPException(status_code=500, detail="AI role optimization failed")
+        if not result:
+            raise CVProcessingError("No se pudo optimizar el CV para el puesto.")
 
-    return result
+        return result
+    except APIError:
+        raise
+    except AIServiceError as e:
+        raise e
+    except Exception:
+        logger.exception("Unexpected error in interview_cv")
+        raise InternalServerError("Error al optimizar el CV para el puesto. Intentá de nuevo.")
 
 
 @router.post("/generate-linkedin-post")
 @limiter.limit("10/minute")
 async def generate_linkedin_post_endpoint(request: Request, cv_data: CVDataInput):
     """Generate a LinkedIn post content based on CV data."""
-    result = await generate_linkedin_post(cv_data.model_dump())
+    try:
+        result = await generate_linkedin_post(cv_data.model_dump())
 
-    if not result:
-        raise HTTPException(status_code=500, detail="AI post generation failed")
+        if not result:
+            raise CVProcessingError("No se pudo generar el post de LinkedIn.")
 
-    return result
+        return result
+    except APIError:
+        raise
+    except AIServiceError as e:
+        raise e
+    except Exception:
+        logger.exception("Unexpected error in generate_linkedin_post_endpoint")
+        raise InternalServerError("Error al generar el post de LinkedIn. Intentá de nuevo.")
 
 
 @router.post("/generate-cover-letter", response_model=CoverLetterResponse)
 @limiter.limit("10/minute")
 async def generate_cover_letter_endpoint(request: Request, cover_letter_request: CoverLetterRequest):
     """Generate a personalized cover letter based on CV data and job info."""
-    result = await generate_cover_letter(
-        cv_data=cover_letter_request.cv_data,
-        company_name=cover_letter_request.company_name,
-        recipient_name=cover_letter_request.recipient_name,
-        job_description=cover_letter_request.job_description or "",
-        tone=cover_letter_request.tone,
-    )
+    try:
+        result = await generate_cover_letter(
+            cv_data=cover_letter_request.cv_data,
+            company_name=cover_letter_request.company_name,
+            recipient_name=cover_letter_request.recipient_name,
+            job_description=cover_letter_request.job_description or "",
+            tone=cover_letter_request.tone,
+        )
 
-    if not result:
-        raise HTTPException(status_code=500, detail="AI cover letter generation failed")
+        if not result:
+            raise CVProcessingError("No se pudo generar la carta de presentación.")
 
-    return CoverLetterResponse(
-        opening=result.get("opening", ""),
-        body=result.get("body", ""),
-        closing=result.get("closing", ""),
-        signature=result.get("signature", ""),
-    )
+        return CoverLetterResponse(
+            opening=result.get("opening", ""),
+            body=result.get("body", ""),
+            closing=result.get("closing", ""),
+            signature=result.get("signature", ""),
+        )
+    except APIError:
+        raise
+    except AIServiceError as e:
+        raise e
+    except Exception:
+        logger.exception("Unexpected error in generate_cover_letter_endpoint")
+        raise InternalServerError("Error al generar la carta de presentación. Intentá de nuevo.")
 
 
 @router.post("/generate-complete-cv", response_model=GenerateCompleteCVResponse, response_model_by_alias=True, tags=["cv-gen"])
@@ -331,7 +358,7 @@ async def generate_complete_cv_endpoint(
         raise e
     except Exception:
         logger.exception("Unexpected error in generate_complete_cv_endpoint")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise InternalServerError("Error interno al generar el CV. Intentá de nuevo.")
 
 
 class ATSCheckResponse(BaseModel):
@@ -405,11 +432,11 @@ async def ats_check(
     except (FileProcessingError, ValidationError) as e:
         # Re-raise validation and file processing errors as-is
         raise e
-    except AIServiceError:
-        raise HTTPException(status_code=503, detail="AI Service is temporarily unavailable")
+    except AIServiceError as e:
+        raise e
     except Exception:
         logger.exception("Unexpected error in ats_check")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise InternalServerError("Error interno al analizar el CV. Intentá de nuevo.")
 
 
 # =============================================================================
@@ -484,7 +511,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
 
     except Exception:
         logger.exception("Error in chat_stream endpoint")
-        raise HTTPException(status_code=500, detail="Chat service error")
+        raise InternalServerError("Error en el servicio de chat. Intentá de nuevo.")
 
 
 @router.post("/chat", response_model=ChatResponse, response_model_by_alias=True)
@@ -561,7 +588,7 @@ async def chat(request: Request, chat_request: ChatRequest):
 
     except Exception:
         logger.exception("Error in chat endpoint")
-        raise HTTPException(status_code=500, detail="Chat service error")
+        raise InternalServerError("Error en el servicio de chat. Intentá de nuevo.")
 
 
 @router.post("/chat/extract", response_model=DataExtraction, response_model_by_alias=True)
@@ -584,7 +611,7 @@ async def chat_extract(request: Request, chat_request: ChatRequest):
         )
 
         if not extraction:
-            raise HTTPException(status_code=422, detail="Could not extract data from message")
+            raise CVProcessingError("No se pudieron extraer datos del mensaje.")
 
         return extraction
 
@@ -592,7 +619,7 @@ async def chat_extract(request: Request, chat_request: ChatRequest):
         raise
     except Exception:
         logger.exception("Error in chat_extract endpoint")
-        raise HTTPException(status_code=500, detail="Extraction service error")
+        raise InternalServerError("Error al extraer datos del mensaje. Intentá de nuevo.")
 
 
 @router.post("/chat/job-analysis", response_model=JobAnalysisResponse, response_model_by_alias=True)
@@ -610,7 +637,7 @@ async def chat_job_analysis(request: Request, job_request: JobAnalysisRequest):
         )
 
         if not result:
-            raise HTTPException(status_code=422, detail="Could not analyze job description")
+            raise CVProcessingError("No se pudo analizar la descripción del puesto.")
 
         return result
 
@@ -618,7 +645,7 @@ async def chat_job_analysis(request: Request, job_request: JobAnalysisRequest):
         raise
     except Exception:
         logger.exception("Error in chat_job_analysis endpoint")
-        raise HTTPException(status_code=500, detail="Job analysis service error")
+        raise InternalServerError("Error al analizar el puesto. Intentá de nuevo.")
 
 
 @router.get("/chat/session/{session_id}")
@@ -661,7 +688,7 @@ async def get_next_question(request: Request, session_id: str):
     session = _get_session(session_id)
 
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise NotFoundError("No se encontró la sesión solicitada.")
 
     try:
         result = await generate_next_question(
@@ -674,7 +701,7 @@ async def get_next_question(request: Request, session_id: str):
 
     except Exception:
         logger.exception("Error in get_next_question endpoint")
-        raise HTTPException(status_code=500, detail="Question generation error")
+        raise InternalServerError("Error al generar la siguiente pregunta. Intentá de nuevo.")
 
 
 # =============================================================================

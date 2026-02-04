@@ -10,6 +10,9 @@ import {
     CVGeneratorError,
 } from '@/types/cv-generator';
 import { buildApiUrl } from '@/lib/api/base';
+import { parseApiErrorPayload } from '@/lib/error-utils';
+import { buildApiUrl } from '@/lib/api/base';
+import { parseApiErrorPayload } from '@/lib/error-utils';
 
 // =============================================================================
 // CONFIGURATION
@@ -68,8 +71,7 @@ async function handleApiError(response: Response): Promise<never> {
         // If JSON can't be parsed, use status text
     }
 
-    const message = errorData.detail || errorData.message || response.statusText;
-    const code = errorData.code || `HTTP_${response.status}`;
+    const { message, code } = parseApiErrorPayload(errorData, response.status, response.statusText);
 
     throw new CVGeneratorApiError(message, code, response.status);
 }
