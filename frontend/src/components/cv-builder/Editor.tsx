@@ -342,6 +342,7 @@ export function Editor({
                                         size="icon"
                                         onClick={undo}
                                         disabled={!canUndo}
+                                        aria-label="Deshacer"
                                         className="h-7 w-7 text-muted-foreground hover:text-foreground"
                                     >
                                         <Undo2 className="w-3.5 h-3.5" />
@@ -356,6 +357,7 @@ export function Editor({
                                         size="icon"
                                         onClick={redo}
                                         disabled={!canRedo}
+                                        aria-label="Rehacer"
                                         className="h-7 w-7 text-muted-foreground hover:text-foreground"
                                     >
                                         <Redo2 className="w-3.5 h-3.5" />
@@ -628,6 +630,7 @@ export function Editor({
                                                     size="icon"
                                                     className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                                     onClick={() => removeArrayItem('experience', index)}
+                                                    aria-label="Eliminar experiencia"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </Button>
@@ -711,6 +714,7 @@ export function Editor({
                                                     size="icon"
                                                     className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                                     onClick={() => removeArrayItem('education', index)}
+                                                    aria-label="Eliminar educación"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </Button>
@@ -790,6 +794,7 @@ export function Editor({
                                                             size="icon"
                                                             className="h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                                             onClick={() => removeArrayItem('skills', index)}
+                                                            aria-label="Eliminar skill"
                                                         >
                                                             <Trash2 className="w-3 h-3" />
                                                         </Button>
@@ -802,6 +807,11 @@ export function Editor({
                                                             max="100"
                                                             value={skill.proficiency || 0}
                                                             onChange={(e) => updateArrayField('skills', index, 'proficiency', parseInt(e.target.value))}
+                                                            aria-label={
+                                                                skill.name
+                                                                    ? `Nivel de habilidad para ${skill.name}`
+                                                                    : 'Nivel de habilidad'
+                                                            }
                                                             className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-orange-500"
                                                         />
                                                         <span className="text-[10px] font-mono text-muted-foreground w-7 text-right">
@@ -848,6 +858,7 @@ export function Editor({
                                                     size="icon"
                                                     className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                                     onClick={() => removeArrayItem('projects', index)}
+                                                    aria-label="Eliminar proyecto"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </Button>
@@ -910,7 +921,7 @@ export function Editor({
                                                     value={lang.fluency}
                                                     onValueChange={(val) => updateArrayField('languages', index, 'fluency', val)}
                                                 >
-                                                    <SelectTrigger className="w-[140px] h-9 text-xs">
+                                                    <SelectTrigger className="w-[140px] h-9 text-xs" aria-label="Nivel de idioma">
                                                         <SelectValue placeholder="Nivel" />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -925,6 +936,7 @@ export function Editor({
                                                     size="icon"
                                                     className="h-9 w-9 text-muted-foreground hover:text-destructive"
                                                     onClick={() => removeArrayItem('languages', index)}
+                                                    aria-label="Eliminar idioma"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
@@ -966,6 +978,7 @@ export function Editor({
                                                     size="icon"
                                                     className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                                     onClick={() => removeArrayItem('certifications', index)}
+                                                    aria-label="Eliminar certificación"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </Button>
@@ -1036,6 +1049,7 @@ export function Editor({
                                                             newTools.splice(index, 1);
                                                             onChange({ ...data, tools: newTools });
                                                         }}
+                                                        aria-label={`Eliminar herramienta ${tool}`}
                                                     >
                                                         <Trash2 className="w-2.5 h-2.5" />
                                                     </Button>
@@ -1071,6 +1085,7 @@ export function Editor({
                                                         input.value = '';
                                                     }
                                                 }}
+                                                aria-label="Agregar herramienta"
                                             >
                                                 <Plus className="w-4 h-4" />
                                             </Button>
@@ -1102,6 +1117,7 @@ export function Editor({
                                                         size="icon"
                                                         className="h-4 w-4 rounded-full hover:bg-pink-200/50 hover:text-pink-700"
                                                         onClick={() => removeArrayItem('interests', index)}
+                                                        aria-label={`Eliminar interés ${interest.name}`}
                                                     >
                                                         <Trash2 className="w-2.5 h-2.5" />
                                                     </Button>
@@ -1133,6 +1149,7 @@ export function Editor({
                                                         input.value = '';
                                                     }
                                                 }}
+                                                aria-label="Agregar interés"
                                             >
                                                 <Plus className="w-4 h-4" />
                                             </Button>

@@ -793,6 +793,7 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
                             size="icon"
                             className="absolute top-3 right-3 text-white/30 hover:text-white hover:bg-white/10 z-30 rounded-full w-8 h-8"
                             onClick={() => setIsStoryOpen(false)}
+                            aria-label="Cerrar vista previa"
                         >
                             <X className="w-4 h-4" />
                         </Button>

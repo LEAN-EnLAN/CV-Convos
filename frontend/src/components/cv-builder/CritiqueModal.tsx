@@ -385,6 +385,7 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
                                                         size="icon"
                                                         className="h-6 w-6 text-slate-500 hover:text-white"
                                                         onClick={() => handleDismiss(item.id)}
+                                                        aria-label="Descartar sugerencia"
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </Button>

@@ -128,6 +128,7 @@ export function ChatContainer({
                 size="icon"
                 className="hidden lg:flex rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
                 onClick={() => setShowCVPreview(!showCVPreview)}
+                aria-label={showCVPreview ? 'Ocultar vista previa del CV' : 'Mostrar vista previa del CV'}
               >
                 {showCVPreview ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
               </Button>
@@ -136,6 +137,7 @@ export function ChatContainer({
                 size="icon"
                 className="rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
                 onClick={actions.startNewConversation}
+                aria-label="Iniciar nueva conversación"
               >
                 <RotateCcw className="w-4 h-4" />
               </Button>
