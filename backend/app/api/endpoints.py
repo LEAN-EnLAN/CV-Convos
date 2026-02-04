@@ -104,6 +104,9 @@ class GenerateCompleteCVResponse(BaseModel):
 
 router = APIRouter()
 
+MAX_FILE_SIZE_MB = 12
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+
 
 @router.post("/generate-cv", response_model=CVData, response_model_by_alias=True, tags=["cv-gen"])
 @limiter.limit("10/minute")
@@ -131,6 +134,9 @@ async def generate_cv(request: Request, files: List[UploadFile] = File(...)):
         for file in files:
             content = await file.read()
             filename = file.filename or "unknown"
+
+            if len(content) > MAX_FILE_SIZE_BYTES:
+                raise FileProcessingError(f"El archivo {filename} supera el límite de {MAX_FILE_SIZE_MB} MB")
 
             if not filename.lower().endswith((".pdf", ".docx", ".txt")):
                 raise FileProcessingError(f"Unsupported file type: {filename}")
