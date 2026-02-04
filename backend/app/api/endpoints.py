@@ -1,10 +1,12 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Request
-from fastapi.responses import StreamingResponse
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
 import logging
 import json
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
+
 from app.services.parser_service import extract_text_from_file
 from app.services.ai_service import (
     extract_cv_data,
@@ -41,24 +43,18 @@ from app.core.exceptions import (
     ValidationError,
 )
 from app.core.limiter import limiter
+from app.services.session_store import store as session_store
 
 logger = logging.getLogger(__name__)
 
-# =============================================================================
-# IN-MEMORY SESSION STORE (TEMPORAL - Reemplazar con Redis en producción)
-# =============================================================================
-
-_chat_sessions: Dict[str, ChatSession] = {}
-
-
 def _get_session(session_id: str) -> Optional[ChatSession]:
     """Obtiene una sesión de chat por ID."""
-    return _chat_sessions.get(session_id)
+    return session_store.get_session(session_id)
 
 
 def _save_session(session: ChatSession) -> None:
     """Guarda una sesión de chat."""
-    _chat_sessions[session.session_id] = session
+    session_store.save_session(session)
 
 
 def _update_session_cv_data(session_id: str, new_data: Dict[str, Any]) -> None:
