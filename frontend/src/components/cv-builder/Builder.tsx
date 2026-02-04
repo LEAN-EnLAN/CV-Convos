@@ -337,8 +337,6 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
                     onReset={onReset}
                     activeView={activeView}
                     setActiveView={setActiveView}
-                    onDownloadPDF={handlePrint}
-                    onEdit={() => setActiveView('editor')}
                 />
 
                 {/* Main Workspace */}
