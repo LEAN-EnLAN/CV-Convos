@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Request
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Request, Form
 from fastapi.responses import StreamingResponse
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
@@ -356,6 +356,10 @@ async def ats_check(
         "general",
         description="Target industry: tech, finance, healthcare, creative, education, general",
     ),
+    improvement_context: Optional[str] = Form(
+        None,
+        description="Contexto opcional para asegurar consistencia en mejoras previas",
+    ),
 ):
     """Analyze a CV PDF/DOCX for ATS compatibility."""
     combined_text = ""
@@ -380,7 +384,7 @@ async def ats_check(
         if not combined_text.strip():
             raise FileProcessingError("Could not extract text from files")
 
-        result = await analyze_ats(combined_text, target_industry)
+        result = await analyze_ats(combined_text, target_industry, improvement_context)
 
         if not result:
             raise CVProcessingError("ATS analysis failed")

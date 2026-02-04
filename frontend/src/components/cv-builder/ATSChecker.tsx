@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CVData, CVTemplate } from '@/types/cv';
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 
 // =============================================
 // Types & Interfaces
@@ -61,6 +64,7 @@ interface ATSResult {
     mismatch_warning?: string;
     suggested_industry?: string;
     relevance_justification?: string;
+    extracted_cv_data?: CVData;
 }
 
 interface Industry {
@@ -122,6 +126,24 @@ const categoryConfig: CategoryConfig[] = [
         description: 'Recomendaciones personalizadas'
     },
 ];
+
+const emptyCV: CVData = {
+    personalInfo: {
+        fullName: '',
+        email: '',
+        phone: '',
+        location: '',
+        summary: '',
+    },
+    experience: [],
+    education: [],
+    skills: [],
+    projects: [],
+    languages: [],
+    certifications: [],
+    interests: [],
+    config: DEFAULT_CONFIG,
+};
 
 const industryColors: Record<string, { 
     border: string; 
@@ -1108,14 +1130,40 @@ function MismatchAlert({ result }: { result: ATSResult }) {
     );
 }
 
-function ResetButton({ onReset }: { onReset: () => void }) {
+function ResultsActions({
+    onReset,
+    onApply,
+    isApplying,
+}: {
+    onReset: () => void;
+    onApply: () => void;
+    isApplying: boolean;
+}) {
     return (
         <motion.div 
-            className="text-center pt-6 sm:pt-8"
+            className="pt-6 sm:pt-8 flex flex-col sm:flex-row gap-3 justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
         >
+            <Button
+                onClick={onApply}
+                className="gap-2 rounded-full text-sm h-11 px-6 w-full sm:w-auto focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                disabled={isApplying}
+                aria-label="Aplicar mejoras y abrir el editor"
+            >
+                {isApplying ? (
+                    <>
+                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                        Aplicando mejoras...
+                    </>
+                ) : (
+                    <>
+                        <Sparkles className="w-4 h-4" aria-hidden="true" />
+                        Aplicar mejoras
+                    </>
+                )}
+            </Button>
             <Button
                 variant="outline"
                 onClick={onReset}
@@ -1134,10 +1182,12 @@ function ResetButton({ onReset }: { onReset: () => void }) {
 // =============================================
 
 export function ATSChecker() {
+    const router = useRouter();
     const [file, setFile] = useState<File | null>(null);
     const [result, setResult] = useState<ATSResult | null>(null);
     const [selectedIndustry, setSelectedIndustry] = useState('general');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isApplying, setIsApplying] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
     // Check for mobile viewport
@@ -1190,6 +1240,10 @@ export function ATSChecker() {
             const formData = new FormData();
             formData.append('files', file);
             formData.append('target_industry', selectedIndustry);
+            const improvementContext = localStorage.getItem('ats_improvement_context');
+            if (improvementContext) {
+                formData.append('improvement_context', improvementContext);
+            }
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             const response = await fetch(`${apiUrl}/api/ats-check`, {
@@ -1225,6 +1279,113 @@ export function ATSChecker() {
     const handleClearFile = () => {
         setFile(null);
         setResult(null);
+    };
+
+    const normalizeCVData = useCallback((data: CVData): CVData => {
+        return {
+            ...emptyCV,
+            ...data,
+            config: {
+                ...DEFAULT_CONFIG,
+                ...data.config,
+                sections: {
+                    ...DEFAULT_CONFIG.sections,
+                    ...data.config?.sections,
+                },
+            },
+            experience: (data.experience || []).map((entry) => ({
+                ...entry,
+                id: entry.id || Math.random().toString(36).substr(2, 9),
+            })),
+            education: (data.education || []).map((entry) => ({
+                ...entry,
+                id: entry.id || Math.random().toString(36).substr(2, 9),
+            })),
+            skills: (data.skills || []).map((entry) => ({
+                ...entry,
+                id: entry.id || Math.random().toString(36).substr(2, 9),
+            })),
+            projects: (data.projects || []).map((entry) => ({
+                ...entry,
+                id: entry.id || Math.random().toString(36).substr(2, 9),
+            })),
+            languages: (data.languages || []).map((entry) => ({
+                ...entry,
+                id: entry.id || Math.random().toString(36).substr(2, 9),
+            })),
+            certifications: (data.certifications || []).map((entry) => ({
+                ...entry,
+                id: entry.id || Math.random().toString(36).substr(2, 9),
+            })),
+            interests: (data.interests || []).map((entry) => ({
+                ...entry,
+                id: entry.id || Math.random().toString(36).substr(2, 9),
+            })),
+        };
+    }, []);
+
+    const handleApplyImprovements = async () => {
+        if (!result) return;
+
+        setIsApplying(true);
+        try {
+            const extractedData = result.extracted_cv_data;
+            let cvData = extractedData;
+
+            if (!cvData) {
+                if (!file) {
+                    throw new Error('No encontramos el archivo original para extraer tu CV.');
+                }
+                const formData = new FormData();
+                formData.append('files', file);
+
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+                const response = await fetch(`${apiUrl}/api/generate-cv`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const detail = errorData.detail;
+                    const errorMessage =
+                        typeof detail === 'string'
+                            ? detail
+                            : detail?.message || detail?.error || 'Error al generar el CV';
+                    throw new Error(errorMessage);
+                }
+
+                cvData = await response.json();
+            }
+
+            if (!cvData) {
+                throw new Error('No pudimos generar los datos del CV.');
+            }
+
+            const finalData = normalizeCVData(cvData);
+            const template: CVTemplate = 'professional';
+            localStorage.setItem('cv_data', JSON.stringify(finalData));
+            localStorage.setItem('cv_template', template);
+            localStorage.setItem('ats_improvement_context', JSON.stringify({
+                baselineScore: result.ats_score,
+                industry: selectedIndustry,
+                missingKeywords: result.missing_keywords,
+                issues: result.issues,
+                timestamp: Date.now(),
+            }));
+
+            toast.success('CV listo para editar', {
+                description: 'Abrimos el editor con tus datos cargados.',
+            });
+            router.push('/?flow=builder');
+        } catch (error) {
+            toast.error('No pudimos aplicar las mejoras', {
+                description: error instanceof Error ? error.message : 'Intentá de nuevo más tarde.',
+            });
+            console.error(error);
+        } finally {
+            setIsApplying(false);
+        }
     };
 
     return (
@@ -1283,7 +1444,11 @@ export function ATSChecker() {
                                 isMobile={isMobile}
                             />
 
-                            <ResetButton onReset={handleReset} />
+                            <ResultsActions
+                                onReset={handleReset}
+                                onApply={handleApplyImprovements}
+                                isApplying={isApplying}
+                            />
                         </motion.div>
                     )}
                 </motion.div>

@@ -42,6 +42,27 @@ export default function Home() {
         }
     }, [searchParams, flow]);
 
+    useEffect(() => {
+        if (flow !== 'onboarding') return;
+
+        const storedData = localStorage.getItem('cv_data');
+        if (!storedData) return;
+
+        try {
+            const parsed = JSON.parse(storedData) as CVData;
+            const storedTemplate = localStorage.getItem('cv_template') as CVTemplate | null;
+            setCvData(sanitizeData(parsed));
+            if (storedTemplate) {
+                setSelectedTemplate(storedTemplate);
+            }
+            if (searchParams.get('flow') === 'builder' || parsed) {
+                setFlow('builder');
+            }
+        } catch (error) {
+            console.error('Error al leer los datos del CV desde localStorage', error);
+        }
+    }, [flow, sanitizeData, searchParams]);
+
     const sanitizeData = useCallback((data: CVData): CVData => {
         return {
             ...emptyCV,

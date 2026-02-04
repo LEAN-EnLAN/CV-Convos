@@ -1596,6 +1596,13 @@ ANÁLISIS REQUERIDO
    - "Your resume appears to target [ACTUAL INDUSTRY] but you selected {industry_name}"
    - Suggest the correct industry based on resume content
 
+7. GUARDRAILS DE CONSISTENCIA (MEJORAS PREVIAS):
+   - Contexto de mejora previo (si existe): {improvement_context}
+   - Si el CV actual incorpora mejoras claras sobre el contexto (keywords faltantes ahora presentes,
+     issues resueltos o estructura más alineada a {industry_name}), el score debe reflejar una mejora
+     tangible y no puede quedar igual o peor que el baseline.
+   - Si NO hay mejoras claras, mantené el score sin inflarlo artificialmente.
+
 ═══════════════════════════════════════════════════════════════════════════════
 IDIOMA Y FORMATO
 ═══════════════════════════════════════════════════════════════════════════════
@@ -1662,7 +1669,11 @@ def _build_ats_rule_issues(cv_text: str, language_code: str) -> List[dict]:
     return issues
 
 
-async def analyze_ats(cv_text: str, target_industry: str = "general"):
+async def analyze_ats(
+    cv_text: str,
+    target_industry: str = "general",
+    improvement_context: Optional[str] = None,
+):
     """
     Analyze CV for ATS compatibility in a specific industry with strict
     field-contextual validation.
@@ -1706,6 +1717,7 @@ async def analyze_ats(cv_text: str, target_industry: str = "general"):
         anti_keywords_list=anti_keywords_list,
         content_indicators_found=content_indicators_found,
         anti_keywords_found=anti_keywords_found,
+        improvement_context=improvement_context or "Sin contexto previo",
     )
 
     # Generate the analysis

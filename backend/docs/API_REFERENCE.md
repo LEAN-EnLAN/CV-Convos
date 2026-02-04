@@ -380,6 +380,7 @@ files: [File, File, ...]
   - `creative`: Creative industry
   - `education`: Education sector
   - `general`: General purpose (default)
+- `improvement_context` (optional): Contexto de mejoras previas (JSON en string) para mantener consistencia en el score
 
 **Response (200 OK)**:
 ```json
