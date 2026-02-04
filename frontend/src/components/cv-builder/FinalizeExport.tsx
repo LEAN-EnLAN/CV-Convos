@@ -488,9 +488,9 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
                 <DialogTrigger asChild>
                     <Button
                         size="lg"
-                        className="group bg-gradient-to-r from-slate-900 to-slate-800 hover:from-black hover:to-slate-900 text-white font-bold rounded-xl px-8 gap-3 shadow-xl shadow-slate-900/30 transition-all hover:scale-[1.02] active:scale-95"
+                        className="group bg-gradient-to-r from-slate-900 to-slate-800 hover:from-black hover:to-slate-900 text-white font-bold rounded-xl px-4 sm:px-8 gap-3 shadow-xl shadow-slate-900/30 transition-all hover:scale-[1.02] active:scale-95 h-10 sm:h-12"
                     >
-                        <span>Finalizar CV</span>
+                        <span className="hidden sm:inline">Finalizar CV</span>
                         <Rocket className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </Button>
                 </DialogTrigger>

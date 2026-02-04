@@ -5,11 +5,13 @@ import {
     Layout, RotateCcw,
     Palette, Settings2, GraduationCap, Terminal, Menu, ChevronDown,
     MapPin, Mail, Phone, Globe, Linkedin, Github, Twitter,
-    Briefcase, Building2, Calendar, Award, Languages, List, Heart, TrendingUp, Sparkles, FileText
+    Briefcase, Building2, Calendar, Award, Languages, List, Heart, TrendingUp, Sparkles, FileText,
+    Grid3X3, Code, Users, Landmark, Bug
 } from 'lucide-react';
 import { FinalizeExport } from '../FinalizeExport';
 import { TemplateConfigurator } from '../TemplateConfigurator';
 import { TemplateSelector } from '../TemplateSelector';
+import { getDebugData } from '@/lib/debug-utils';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,6 +36,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PenLine, Eye } from 'lucide-react';
+import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
 
 export const templateOptions = [
     {
@@ -55,39 +58,33 @@ export const templateOptions = [
         icon: GraduationCap
     },
     {
-        id: 'minimal',
-        name: 'Pure',
-        description: 'Diseño limpio y estructurado',
-        icon: Layout
+        id: 'pure',
+        name: 'Swiss',
+        description: 'Minimalismo suizo con precisión extrema',
+        icon: Grid3X3
     },
     {
-        id: 'tech',
-        name: 'Terminal',
-        description: 'Optimizado para desarrolladores',
-        icon: Terminal
+        id: 'terminal',
+        name: 'Code',
+        description: 'Elegancia técnica estilo editor de código',
+        icon: Code
     },
     {
-        id: 'bian',
-        name: 'Direct',
-        description: 'Factual, académico y directo',
-        icon: FileText
-    },
-    {
-        id: 'finance',
-        name: 'Capital',
-        description: 'Perfiles financieros y corporativos',
-        icon: TrendingUp
-    },
-    {
-        id: 'health',
+        id: 'care',
         name: 'Care',
-        description: 'Sector salud y bienestar',
-        icon: Heart
+        description: 'Diseño cálido centrado en las personas',
+        icon: Users
     },
     {
-        id: 'education',
+        id: 'capital',
+        name: 'Capital',
+        description: 'Precisión financiera y elegancia institucional',
+        icon: Landmark
+    },
+    {
+        id: 'scholar',
         name: 'Scholar',
-        description: 'Ámbito académico y educativo',
+        description: 'Plantilla académica con rigor investigativo',
         icon: GraduationCap
     }
 ];
@@ -118,9 +115,9 @@ export function Header({
     return (
         <header className="sticky top-0 z-50 h-16 border-b bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 flex items-center justify-between px-4 sm:px-6 shrink-0 no-print transition-all duration-300">
             {/* Left: Logo & Brand */}
-            <div className="flex items-center gap-3">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-900/20 ring-1 ring-slate-950/5">
-                    <span className="text-sm font-black text-white tracking-tighter">CV</span>
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-900/20 ring-1 ring-slate-950/5">
+                    <span className="text-[10px] sm:text-sm font-black text-white tracking-tighter">CV</span>
                 </div>
                 <div className="hidden sm:block leading-none">
                     <h1 className="font-extrabold tracking-tight text-slate-900 text-sm">CV-ConVos</h1>
@@ -129,15 +126,15 @@ export function Header({
             </div>
 
             {/* Center: View Toggle (Mobile only) */}
-            <div className="sm:hidden absolute left-1/2 -translate-x-1/2">
+            <div className="sm:hidden absolute left-1/2 -translate-x-1/2 z-10">
                 <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'editor' | 'preview')}>
-                    <TabsList className="h-9 w-[160px] bg-slate-100 p-0.5 border border-slate-200/50">
-                        <TabsTrigger value="editor" className="flex-1 gap-1.5 text-[10px] font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            <PenLine className="w-3 h-3" />
+                    <TabsList className="h-8 w-[130px] bg-slate-100 p-0.5 border border-slate-200/50">
+                        <TabsTrigger value="editor" className="flex-1 gap-1 text-[9px] font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm px-1">
+                            <PenLine className="w-2.5 h-2.5" />
                             Editor
                         </TabsTrigger>
-                        <TabsTrigger value="preview" className="flex-1 gap-1.5 text-[10px] font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            <Eye className="w-3 h-3" />
+                        <TabsTrigger value="preview" className="flex-1 gap-1 text-[9px] font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm px-1">
+                            <Eye className="w-2.5 h-2.5" />
                             Vista
                         </TabsTrigger>
                     </TabsList>
@@ -145,7 +142,7 @@ export function Header({
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0 relative z-20">
 
                 {/* Desktop Actions */}
                 <div className="hidden lg:flex items-center gap-2">
@@ -219,6 +216,23 @@ export function Header({
                             </ScrollArea>
                         </DropdownMenuContent>
                     </DropdownMenu>
+
+                    {/* Debug Button (Dev Only) */}
+                    {DEBUG_UI_ENABLED && (
+                        <Tooltip delayDuration={300}>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 text-amber-500 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                                    onClick={() => setData({ ...getDebugData(), config: data.config })}
+                                >
+                                    <Bug className="w-4 h-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Debug: Llenar con Lorem Ipsum</TooltipContent>
+                        </Tooltip>
+                    )}
                 </div>
 
                 {/* Finalize Button */}

@@ -19,6 +19,7 @@ export const DEFAULT_CONFIG: TemplateConfig = {
         density: 'standard',
         showExpertiseBar: true,
         expertiseBarStyle: 'bars',
+        fontSize: 1.0,
     },
     sections: {
         summary: { visible: true, title: 'Sobre Mí' },

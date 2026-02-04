@@ -180,6 +180,13 @@ class PersonalInfo(BaseSchema):
         None, max_length=500, examples=["Experienced software engineer"]
     )
 
+    @field_validator("email", "phone", "location", "website", "linkedin", "github", "summary", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
+
     @field_validator("website", "linkedin", "github")
     @classmethod
     def validate_url(cls, v):

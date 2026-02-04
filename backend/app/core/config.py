@@ -14,6 +14,7 @@ from pydantic import Field, model_validator
 
 class Settings(BaseSettings):
     GROQ_API_KEY: str = Field("placeholder_key", description="Groq API Key")
+    GOOGLE_API_KEY: str = Field("placeholder_key", description="Google AI API Key (Gemini)")
     PROJECT_NAME: str = "CV Builder IA"
     DEBUG: bool = True
     ENVIRONMENT: str = "development"  # development, production, staging

@@ -14,7 +14,7 @@ import {
 // CONFIGURATION
 // =============================================================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 const API_ENDPOINT = `${API_BASE_URL}/api`;
 
 const DEFAULT_RETRY_ATTEMPTS = 3;
@@ -163,13 +163,12 @@ export function getSupportedTemplates(): CVTemplate[] {
     return [
         'professional',
         'harvard',
-        'minimal',
         'creative',
-        'tech',
-        'bian',
-        'finance',
-        'health',
-        'education',
+        'pure',
+        'terminal',
+        'care',
+        'capital',
+        'scholar',
     ];
 }
 

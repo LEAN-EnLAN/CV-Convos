@@ -80,74 +80,46 @@ function AnimatedProgressBar({
 }) {
     const motionValue = useMotionValue(0);
     const springValue = useSpring(motionValue, {
-        stiffness: 60,
-        damping: 20,
-        mass: 0.8,
+        stiffness: 45,
+        damping: 15,
+        mass: 1,
     });
 
     const width = useTransform(springValue, [0, 100], ['0%', '100%']);
-    const glowOpacity = useTransform(springValue, [0, 50, 100], [0, 0.3, 0.6]);
 
     useEffect(() => {
         motionValue.set(value);
     }, [value, motionValue]);
 
     return (
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted/60">
-            {/* Track background with subtle gradient */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-muted/40 via-muted/60 to-muted/40" />
-
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/40 ring-1 ring-inset ring-foreground/[0.03]">
             {/* Animated fill */}
             <motion.div
                 className={cn(
-                    "absolute inset-y-0 left-0 rounded-full",
+                    "absolute inset-y-0 left-0 rounded-full transition-colors duration-700",
                     isComplete
-                        ? "bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500"
-                        : "bg-gradient-to-r from-primary via-primary/90 to-primary"
+                        ? "bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                        : "bg-gradient-to-r from-primary/80 to-primary"
                 )}
                 style={{ width }}
             >
-                {/* Shimmer effect */}
+                {/* Refined Shimmer effect */}
                 <motion.div
-                    className="absolute inset-0 rounded-full"
+                    className="absolute inset-0"
                     style={{
-                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
-                        opacity: glowOpacity,
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)',
                     }}
                     animate={{
                         x: ['-100%', '200%'],
                     }}
                     transition={{
-                        duration: 2,
+                        duration: 3,
                         repeat: Infinity,
                         ease: 'linear',
-                        repeatDelay: 1,
+                        repeatDelay: 0.5,
                     }}
                 />
-
-                {/* Leading edge glow */}
-                <div
-                    className={cn(
-                        "absolute right-0 top-1/2 -translate-y-1/2 w-4 h-full blur-sm",
-                        isComplete ? "bg-emerald-400" : "bg-primary/60"
-                    )}
-                />
             </motion.div>
-
-            {/* Completion sparkle */}
-            <AnimatePresence>
-                {isComplete && (
-                    <motion.div
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        transition={ANIMATION.spring.bouncy}
-                        className="absolute right-1 top-1/2 -translate-y-1/2"
-                    >
-                        <Sparkles className="w-3 h-3 text-white" />
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }
@@ -491,8 +463,8 @@ export function FloatingProgress({
                         transition={ANIMATION.spring.gentle}
                         layoutId="progress-widget"
                         className={cn(
-                            "fixed bottom-6 right-6 z-40 no-print",
-                            "w-80 rounded-2xl",
+                            "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 no-print",
+                            "w-[calc(100vw-2rem)] sm:w-80 rounded-2xl",
                             "bg-card/95 backdrop-blur-xl",
                             "border shadow-2xl",
                             "overflow-hidden",

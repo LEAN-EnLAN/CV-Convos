@@ -88,6 +88,22 @@ export function ChatInput({
           >
             Corregir Gramática
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleQuickActionClick('template_terminal', 'Cambia el estilo de mi CV a un diseño Terminal/Monoespaciado')}
+            className="rounded-full bg-muted hover:bg-slate-900 hover:text-white text-xs font-semibold h-7 px-4 whitespace-nowrap border border-border transition-all shadow-sm"
+          >
+            Estilo Terminal
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleQuickActionClick('template_creative', 'Cambia el estilo de mi CV a un diseño Creativo y Moderno')}
+            className="rounded-full bg-muted hover:bg-emerald-500 hover:text-white text-xs font-semibold h-7 px-4 whitespace-nowrap border border-border transition-all shadow-sm"
+          >
+            Estilo Creativo
+          </Button>
         </div>
       )}
 

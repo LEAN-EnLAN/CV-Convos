@@ -13,23 +13,26 @@ interface BaseTemplateProps {
 /**
  * Common container for all CV templates to ensure consistent sizing and printing
  */
-export const BaseTemplate = ({ 
-    config, 
-    children, 
-    className = '', 
+export const BaseTemplate = ({
+    config,
+    children,
+    className = '',
     style = {},
     paddingUnit = 'rem'
 }: BaseTemplateProps) => {
     return (
         <div
-            className={`w-[794px] h-[1122px] max-h-[1122px] overflow-hidden print:shadow-none mx-auto ${className}`}
+            className={`w-full max-w-[794px] min-h-[1122px] print:shadow-none mx-auto print:w-[794px] print:max-w-none bg-white relative ${className}`}
             style={{
                 fontFamily: config.fonts.body,
                 backgroundColor: config.colors.background,
                 color: config.colors.text,
                 padding: getDensityPadding(config.layout.density, paddingUnit),
+                boxSizing: 'border-box',
+                // Pass scale factor as CSS variable for templates to use
+                '--scale-factor': config.layout.fontSize || 1,
                 ...style
-            }}
+            } as React.CSSProperties}
         >
             {children}
         </div>

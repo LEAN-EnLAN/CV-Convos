@@ -1,17 +1,22 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
 import {
     Upload,
     FileText,
     CheckCircle,
     XCircle,
     AlertTriangle,
-    TrendingUp,
     Target,
     Sparkles,
     Loader2,
@@ -22,11 +27,18 @@ import {
     Shield,
     Zap,
     AlertCircle,
+    Menu,
+    ChevronDown,
+    X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// =============================================
+// Types & Interfaces
+// =============================================
 
 interface ATSResult {
     ats_score: number;
@@ -45,38 +57,1108 @@ interface ATSResult {
     }>;
     quick_wins: string[];
     detailed_tips: string;
+    mismatch_detected?: boolean;
+    mismatch_warning?: string;
+    suggested_industry?: string;
+    relevance_justification?: string;
 }
 
-const industries = [
-    { value: 'general', label: 'General', icon: '📋', shortLabel: 'General' },
-    { value: 'tech', label: 'Tecnología', icon: '💻', shortLabel: 'Tech' },
-    { value: 'finance', label: 'Finanzas', icon: '📊', shortLabel: 'Finanzas' },
-    { value: 'healthcare', label: 'Salud', icon: '🏥', shortLabel: 'Salud' },
-    { value: 'creative', label: 'Creativo', icon: '🎨', shortLabel: 'Creativo' },
-    { value: 'education', label: 'Educación', icon: '📚', shortLabel: 'Edu' },
+interface Industry {
+    value: string;
+    label: string;
+    icon: string;
+    shortLabel: string;
+    color: 'blue' | 'emerald' | 'amber' | 'rose' | 'purple' | 'indigo';
+}
+
+interface CategoryConfig {
+    value: string;
+    label: string;
+    shortLabel: string;
+    icon: React.ComponentType<{ className?: string }>;
+    description: string;
+}
+
+// =============================================
+// Constants & Configuration
+// =============================================
+
+const industries: Industry[] = [
+    { value: 'general', label: 'General', icon: '📋', shortLabel: 'General', color: 'blue' },
+    { value: 'tech', label: 'Tecnología', icon: '💻', shortLabel: 'Tech', color: 'emerald' },
+    { value: 'finance', label: 'Finanzas', icon: '📊', shortLabel: 'Finanzas', color: 'amber' },
+    { value: 'healthcare', label: 'Salud', icon: '🏥', shortLabel: 'Salud', color: 'rose' },
+    { value: 'creative', label: 'Creativo', icon: '🎨', shortLabel: 'Creativo', color: 'purple' },
+    { value: 'education', label: 'Educación', icon: '📚', shortLabel: 'Edu', color: 'indigo' },
 ];
 
-// Mobile-first tab configuration with icons only for small screens
-const tabsConfig = [
-    { value: 'issues', label: 'Problemas', shortLabel: 'Issues', icon: AlertCircle },
-    { value: 'keywords', label: 'Keywords', shortLabel: 'Keywords', icon: Search },
-    { value: 'quick', label: 'Quick Wins', shortLabel: 'Wins', icon: Zap },
-    { value: 'tips', label: 'Consejos', shortLabel: 'Tips', icon: LayoutTemplate },
+const categoryConfig: CategoryConfig[] = [
+    { 
+        value: 'issues', 
+        label: 'Problemas Detectados', 
+        shortLabel: 'Problemas', 
+        icon: AlertCircle,
+        description: 'Errores críticos que debés corregir'
+    },
+    { 
+        value: 'keywords', 
+        label: 'Análisis de Keywords', 
+        shortLabel: 'Keywords', 
+        icon: Search,
+        description: 'Palabras clave encontradas y faltantes'
+    },
+    { 
+        value: 'quick', 
+        label: 'Quick Wins', 
+        shortLabel: 'Quick Wins', 
+        icon: Zap,
+        description: 'Mejoras rápidas para aplicar ahora'
+    },
+    { 
+        value: 'tips', 
+        label: 'Consejos Detallados', 
+        shortLabel: 'Consejos', 
+        icon: LayoutTemplate,
+        description: 'Recomendaciones personalizadas'
+    },
 ];
+
+const industryColors: Record<string, { 
+    border: string; 
+    bg: string; 
+    text: string; 
+    shadow: string; 
+    glow: string;
+    light: string;
+}> = {
+    blue: { 
+        border: 'border-blue-500', 
+        bg: 'bg-blue-500/10', 
+        text: 'text-blue-500', 
+        shadow: 'shadow-blue-500/10', 
+        glow: 'bg-blue-500/5',
+        light: 'bg-blue-500/5'
+    },
+    emerald: { 
+        border: 'border-emerald-500', 
+        bg: 'bg-emerald-500/10', 
+        text: 'text-emerald-500', 
+        shadow: 'shadow-emerald-500/10', 
+        glow: 'bg-emerald-500/5',
+        light: 'bg-emerald-500/5'
+    },
+    amber: { 
+        border: 'border-amber-500', 
+        bg: 'bg-amber-500/10', 
+        text: 'text-amber-500', 
+        shadow: 'shadow-amber-500/10', 
+        glow: 'bg-amber-500/5',
+        light: 'bg-amber-500/5'
+    },
+    rose: { 
+        border: 'border-rose-500', 
+        bg: 'bg-rose-500/10', 
+        text: 'text-rose-500', 
+        shadow: 'shadow-rose-500/10', 
+        glow: 'bg-rose-500/5',
+        light: 'bg-rose-500/5'
+    },
+    purple: { 
+        border: 'border-purple-500', 
+        bg: 'bg-purple-500/10', 
+        text: 'text-purple-500', 
+        shadow: 'shadow-purple-500/10', 
+        glow: 'bg-purple-500/5',
+        light: 'bg-purple-500/5'
+    },
+    indigo: { 
+        border: 'border-indigo-500', 
+        bg: 'bg-indigo-500/10', 
+        text: 'text-indigo-500', 
+        shadow: 'shadow-indigo-500/10', 
+        glow: 'bg-indigo-500/5',
+        light: 'bg-indigo-500/5'
+    },
+};
+
+// =============================================
+// Animation Variants
+// =============================================
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+        opacity: 1, 
+        y: 0,
+        transition: {
+            duration: 0.5,
+            ease: [0.16, 1, 0.3, 1] as const
+        }
+    }
+};
+
+const scoreCircleVariants = {
+    hidden: { scale: 0, opacity: 0 },
+    visible: { 
+        scale: 1, 
+        opacity: 1,
+        transition: {
+            type: 'spring' as const,
+            stiffness: 200,
+            damping: 15,
+            delay: 0.2
+        }
+    }
+};
+
+// =============================================
+// Helper Functions
+// =============================================
+
+function getGradeInfo(grade: string) {
+    switch (grade) {
+        case 'A': return { color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' };
+        case 'B': return { color: 'text-lime-500', bg: 'bg-lime-500/10', border: 'border-lime-500/30', glow: 'shadow-lime-500/20' };
+        case 'C': return { color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30', glow: 'shadow-amber-500/20' };
+        case 'D': return { color: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/30', glow: 'shadow-orange-500/20' };
+        case 'F': return { color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/30', glow: 'shadow-red-500/20' };
+        default: return { color: 'text-slate-500', bg: 'bg-slate-500/10', border: 'border-slate-500/30', glow: '' };
+    }
+}
+
+function getScoreColor(score: number) {
+    if (score >= 80) return 'text-emerald-500';
+    if (score >= 60) return 'text-amber-500';
+    if (score >= 40) return 'text-orange-500';
+    return 'text-red-500';
+}
+
+function getSeverityIcon(severity: string) {
+    switch (severity) {
+        case 'high': return <XCircle className="w-5 h-5 text-red-500" aria-hidden="true" />;
+        case 'medium': return <AlertTriangle className="w-5 h-5 text-amber-500" aria-hidden="true" />;
+        default: return <AlertCircle className="w-5 h-5 text-blue-500" aria-hidden="true" />;
+    }
+}
+
+function getCategoryBadgeCount(category: string, result: ATSResult): number {
+    switch (category) {
+        case 'issues': return result.issues.length;
+        case 'keywords': return result.found_keywords.length + result.missing_keywords.length;
+        case 'quick': return result.quick_wins.length;
+        case 'tips': return result.detailed_tips ? 1 : 0;
+        default: return 0;
+    }
+}
+
+// =============================================
+// Sub-Components
+// =============================================
+
+function BackgroundDecoration() {
+    return (
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+            {/* Primary gradient orb - top */}
+            <div className="absolute top-[-10%] right-[-5%] w-[70%] h-[70%] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
+            {/* Secondary gradient orb - bottom */}
+            <div className="absolute bottom-[-10%] left-[-5%] w-[50%] h-[50%] bg-accent/5 rounded-full blur-[100px]" />
+            {/* Accent gradient orb */}
+            <div className="absolute top-[20%] left-[10%] w-[30%] h-[30%] bg-emerald-500/3 rounded-full blur-[80px]" />
+            {/* Decorative Grid */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+        </div>
+    );
+}
+
+function HeroSection() {
+    return (
+        <motion.div
+            className="text-center mb-8 sm:mb-12 lg:mb-16"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        >
+            <motion.div 
+                className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.2em] border border-primary/20 backdrop-blur-sm mb-6"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+            >
+                <Target className="w-3.5 h-3.5" aria-hidden="true" />
+                ATS Checker Pro
+            </motion.div>
+            
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter leading-[0.9] uppercase mb-4">
+                ¿Tu CV pasa el{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-500 to-accent italic font-serif lowercase tracking-normal">
+                    filtro ATS?
+                </span>
+            </h1>
+            
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-medium">
+                Subí tu CV y te analizamos como lo haría un sistema de contratación real.
+                Descubrí qué keywords faltan y cómo mejorarlo.
+            </p>
+        </motion.div>
+    );
+}
+
+function IndustrySelector({ 
+    selectedIndustry, 
+    onSelect 
+}: { 
+    selectedIndustry: string; 
+    onSelect: (value: string) => void;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const selected = industries.find(i => i.value === selectedIndustry);
+    const colors = selected ? industryColors[selected.color] : industryColors.blue;
+
+    return (
+        <motion.div
+            className="mb-6 sm:mb-8"
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 block">
+                Seleccioná tu industria
+            </label>
+            
+            {/* Desktop: Grid Layout */}
+            <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {industries.map((ind) => {
+                    const indColors = industryColors[ind.color];
+                    const isSelected = selectedIndustry === ind.value;
+                    
+                    return (
+                        <button
+                            key={ind.value}
+                            onClick={() => onSelect(ind.value)}
+                            className={cn(
+                                "group relative p-4 rounded-xl border-2 text-center transition-all duration-300 overflow-hidden",
+                                "hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                                isSelected
+                                    ? `${indColors.border} ${indColors.bg} shadow-lg ${indColors.shadow}`
+                                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                            )}
+                            aria-pressed={isSelected}
+                            aria-label={`Seleccionar industria ${ind.label}`}
+                        >
+                            <div className="relative z-10">
+                                <div className="text-3xl mb-2 transition-transform duration-300 group-hover:scale-110">
+                                    {ind.icon}
+                                </div>
+                                <div className={cn(
+                                    "text-xs font-bold transition-colors",
+                                    isSelected ? indColors.text : "text-muted-foreground"
+                                )}>
+                                    {ind.label}
+                                </div>
+                            </div>
+                            {isSelected && (
+                                <motion.div
+                                    layoutId="industry-selection"
+                                    className={cn("absolute inset-0 border-2 rounded-xl pointer-events-none", indColors.border)}
+                                    initial={false}
+                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                />
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Mobile: Accordion Dropdown */}
+            <div className="sm:hidden">
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={cn(
+                        "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-300",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                        isOpen 
+                            ? `${colors.border} ${colors.bg} shadow-lg ${colors.shadow}`
+                            : "border-border bg-card hover:border-primary/50"
+                    )}
+                    aria-expanded={isOpen}
+                    aria-controls="industry-accordion"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">{selected?.icon}</span>
+                        <div className="text-left">
+                            <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                                Industria seleccionada
+                            </div>
+                            <div className={cn("font-bold", colors.text)}>
+                                {selected?.label}
+                            </div>
+                        </div>
+                    </div>
+                    <ChevronDown 
+                        className={cn(
+                            "w-5 h-5 text-muted-foreground transition-transform duration-300",
+                            isOpen && "rotate-180"
+                        )} 
+                        aria-hidden="true"
+                    />
+                </button>
+
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            id="industry-accordion"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                            className="overflow-hidden mt-2"
+                        >
+                            <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-muted/30 border border-border">
+                                {industries.map((ind) => {
+                                    const indColors = industryColors[ind.color];
+                                    const isSelected = selectedIndustry === ind.value;
+                                    
+                                    return (
+                                        <button
+                                            key={ind.value}
+                                            onClick={() => {
+                                                onSelect(ind.value);
+                                                setIsOpen(false);
+                                            }}
+                                            className={cn(
+                                                "flex items-center gap-2 p-3 rounded-lg transition-all duration-200",
+                                                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                                isSelected
+                                                    ? `${indColors.bg} ${indColors.border} border`
+                                                    : "hover:bg-muted"
+                                            )}
+                                            aria-pressed={isSelected}
+                                        >
+                                            <span className="text-xl">{ind.icon}</span>
+                                            <span className={cn(
+                                                "text-xs font-bold",
+                                                isSelected ? indColors.text : "text-muted-foreground"
+                                            )}>
+                                                {ind.shortLabel}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </motion.div>
+    );
+}
+
+function UploadZone({
+    file,
+    isDragActive,
+    getRootProps,
+    getInputProps,
+    onClear,
+}: {
+    file: File | null;
+    isDragActive: boolean;
+    getRootProps: () => Record<string, unknown>;
+    getInputProps: () => Record<string, unknown>;
+    onClear: () => void;
+}) {
+    return (
+        <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <Card className="mb-6 sm:mb-8 bg-white/5 backdrop-blur-xl border-white/10 overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
+                    <div
+                        {...getRootProps()}
+                        className={cn(
+                            "relative border-2 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 lg:p-10 text-center cursor-pointer transition-all duration-300 min-h-[180px] sm:min-h-[220px] flex items-center justify-center",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                            isDragActive
+                                ? "border-primary bg-primary/10 scale-[1.01]"
+                                : file
+                                    ? "border-primary/30 bg-primary/5"
+                                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        )}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Zona de carga de archivos"
+                    >
+                        <input {...getInputProps()} aria-label="Seleccionar archivo CV" />
+                        <div className="flex flex-col items-center gap-3 sm:gap-4">
+                            <motion.div 
+                                className={cn(
+                                    "w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all",
+                                    file
+                                        ? "bg-primary/10 shadow-lg shadow-primary/20"
+                                        : "bg-muted"
+                                )}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                {file ? (
+                                    <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-primary" aria-hidden="true" />
+                                ) : (
+                                    <Upload className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" aria-hidden="true" />
+                                )}
+                            </motion.div>
+                            <div>
+                                {file ? (
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-base sm:text-lg max-w-[250px] sm:max-w-[350px] truncate">
+                                            {file.name}
+                                        </p>
+                                        <p className="text-xs sm:text-sm text-muted-foreground">
+                                            {(file.size / 1024).toFixed(1)} KB
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1 sm:space-y-2">
+                                        <p className="font-bold text-base sm:text-lg">
+                                            {isDragActive ? 'Soltá el archivo aquí' : 'Arrastrá y soltá tu CV'}
+                                        </p>
+                                        <p className="text-xs sm:text-sm text-muted-foreground">
+                                            o hacé click para seleccionar
+                                        </p>
+                                        <p className="text-[10px] sm:text-xs text-muted-foreground/60 uppercase tracking-wider">
+                                            PDF, DOCX, TXT
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            {file && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onClear();
+                                    }}
+                                    className="text-muted-foreground hover:text-foreground text-xs sm:text-sm h-9 sm:h-10"
+                                    aria-label="Cambiar archivo seleccionado"
+                                >
+                                    Cambiar archivo
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </motion.div>
+    );
+}
+
+function AnalyzeButton({
+    onClick,
+    isAnalyzing,
+    disabled,
+}: {
+    onClick: () => void;
+    isAnalyzing: boolean;
+    disabled: boolean;
+}) {
+    return (
+        <motion.div
+            className="text-center mb-8 sm:mb-12"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+        >
+            <Button
+                size="lg"
+                onClick={onClick}
+                disabled={disabled || isAnalyzing}
+                className={cn(
+                    "gap-2 sm:gap-3 h-14 sm:h-16 px-8 sm:px-12 text-sm sm:text-base rounded-full shadow-xl shadow-primary/25 transition-all",
+                    "hover:scale-[1.02] active:scale-95 w-full sm:w-auto",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                )}
+                aria-label={isAnalyzing ? "Analizando CV" : "Analizar CV"}
+                aria-busy={isAnalyzing}
+            >
+                {isAnalyzing ? (
+                    <>
+                        <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+                        <span>Analizando tu CV...</span>
+                    </>
+                ) : (
+                    <>
+                        <Shield className="w-5 h-5" aria-hidden="true" />
+                        <span>Analizar CV</span>
+                    </>
+                )}
+            </Button>
+        </motion.div>
+    );
+}
+
+function ScoreCard({ result, selectedIndustry }: { result: ATSResult; selectedIndustry: string }) {
+    const gradeInfo = getGradeInfo(result.grade);
+    const industry = industries.find(i => i.value === selectedIndustry);
+    const colors = industry ? industryColors[industry.color] : industryColors.blue;
+
+    return (
+        <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <Card className={cn(
+                "overflow-hidden bg-white/5 backdrop-blur-xl border-white/10 relative mb-6",
+                colors.glow
+            )}>
+                <CardContent className="p-4 sm:p-6 lg:p-8">
+                    {/* Industry Badge */}
+                    <div className="absolute top-4 right-4 z-20">
+                        <Badge 
+                            variant="outline" 
+                            className={cn(
+                                "px-3 py-1 font-bold text-[10px] uppercase tracking-wider backdrop-blur-md",
+                                colors.border,
+                                colors.text
+                            )}
+                        >
+                            {industry?.label}
+                        </Badge>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 lg:gap-10">
+                        {/* Score Circle */}
+                        <motion.div 
+                            className="relative flex-shrink-0"
+                            variants={scoreCircleVariants}
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            <div className={cn(
+                                "absolute inset-0 blur-2xl opacity-50",
+                                gradeInfo.bg
+                            )} />
+                            <div className={cn(
+                                "relative w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-full border-4 flex flex-col items-center justify-center shadow-2xl",
+                                gradeInfo.border,
+                                gradeInfo.bg,
+                                gradeInfo.glow
+                            )}>
+                                <span className={cn("text-4xl sm:text-5xl font-black", gradeInfo.color)}>
+                                    {result.ats_score}
+                                </span>
+                                <span className="text-xs text-muted-foreground font-medium">/100</span>
+                            </div>
+                            <div className={cn(
+                                "absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-black text-lg sm:text-xl border-2",
+                                gradeInfo.bg,
+                                gradeInfo.border,
+                                gradeInfo.color
+                            )}>
+                                {result.grade}
+                            </div>
+                        </motion.div>
+
+                        {/* Score Details */}
+                        <div className="flex-1 text-center md:text-left w-full">
+                            <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+                                Análisis Completado
+                            </h2>
+                            <p className="text-sm sm:text-base text-muted-foreground mb-6 leading-relaxed">
+                                {result.summary}
+                            </p>
+
+                            {/* Sub-scores */}
+                            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                                {[
+                                    { label: 'Formato', score: result.format_score, color: 'from-primary to-primary/80' },
+                                    { label: 'Keywords', score: result.keyword_score, color: 'from-purple-500 to-purple-400' },
+                                    { label: 'Completitud', score: result.completeness_score, color: 'from-amber-500 to-amber-400' },
+                                ].map((item, idx) => (
+                                    <div key={item.label} className="space-y-2">
+                                        <div className="flex justify-between text-xs sm:text-sm">
+                                            <span className="text-muted-foreground font-medium">{item.label}</span>
+                                            <span className={cn("font-bold", getScoreColor(item.score))}>
+                                                {item.score}%
+                                            </span>
+                                        </div>
+                                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                                            <motion.div
+                                                className={cn("h-full bg-gradient-to-r rounded-full", item.color)}
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${item.score}%` }}
+                                                transition={{ duration: 0.8, delay: 0.3 + idx * 0.1 }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </motion.div>
+    );
+}
+
+function CategoryAccordion({ 
+    result, 
+    isMobile 
+}: { 
+    result: ATSResult; 
+    isMobile: boolean;
+}) {
+    const [openCategories, setOpenCategories] = useState<string[]>(['issues']);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    // Get first open category for mobile header display
+    const activeCategory = categoryConfig.find(c => c.value === openCategories[0]) || categoryConfig[0];
+
+    const handleValueChange = (values: string[]) => {
+        setOpenCategories(values);
+        if (isMobile) {
+            setMobileMenuOpen(false);
+        }
+    };
+
+    const getCategoryContent = (category: string) => {
+        switch (category) {
+            case 'issues':
+                return (
+                    <div className="space-y-3">
+                        {result.issues.length === 0 ? (
+                            <Card className="bg-emerald-500/5 border-emerald-500/20">
+                                <CardContent className="flex items-center gap-4 py-6 px-6">
+                                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                                        <CheckCircle className="w-6 h-6 text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-emerald-600">¡Excelente!</h3>
+                                        <p className="text-sm text-muted-foreground">No se detectaron problemas críticos en tu CV.</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            result.issues.map((issue, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                >
+                                    <Card className={cn(
+                                        "overflow-hidden transition-all hover:scale-[1.01]",
+                                        issue.severity === 'high'
+                                            ? 'bg-red-500/5 border-red-500/20'
+                                            : issue.severity === 'medium'
+                                                ? 'bg-amber-500/5 border-amber-500/20'
+                                                : 'bg-blue-500/5 border-blue-500/20'
+                                    )}>
+                                        <CardContent className="p-4">
+                                            <div className="flex gap-4">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                                    issue.severity === 'high' ? 'bg-red-500/10' :
+                                                        issue.severity === 'medium' ? 'bg-amber-500/10' : 'bg-blue-500/10'
+                                                )}>
+                                                    {getSeverityIcon(issue.severity)}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium mb-1">{issue.message}</p>
+                                                    <p className="text-sm text-muted-foreground flex items-start gap-2">
+                                                        <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                                                        <span className="leading-relaxed">{issue.fix}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))
+                        )}
+                    </div>
+                );
+
+            case 'keywords':
+                return (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <Card className="bg-emerald-500/5 border-emerald-500/20">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                        <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                    </div>
+                                    Keywords encontradas
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-wrap gap-2">
+                                    {result.found_keywords.length === 0 ? (
+                                        <p className="text-muted-foreground text-sm">No se detectaron keywords</p>
+                                    ) : (
+                                        result.found_keywords.map((kw, idx) => (
+                                            <Badge key={idx} className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20">
+                                                {kw}
+                                            </Badge>
+                                        ))
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="bg-amber-500/5 border-amber-500/20">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                                        <Search className="w-4 h-4 text-amber-500" />
+                                    </div>
+                                    Keywords faltantes
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-wrap gap-2">
+                                    {result.missing_keywords.length === 0 ? (
+                                        <p className="text-muted-foreground text-sm">¡Tu CV tiene todas las keywords!</p>
+                                    ) : (
+                                        result.missing_keywords.map((kw, idx) => (
+                                            <Badge key={idx} variant="outline" className="border-amber-500/30 text-amber-600 hover:bg-amber-500/10">
+                                                {kw}
+                                            </Badge>
+                                        ))
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                );
+
+            case 'quick':
+                return (
+                    <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+                        <CardContent className="p-6">
+                            <div className="space-y-3">
+                                {result.quick_wins.map((win, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                    >
+                                        <ChevronRight className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                                        <span className="leading-relaxed">{win}</span>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+
+            case 'tips':
+                return (
+                    <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+                        <CardContent className="p-6">
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                                    {result.detailed_tips || 'No hay consejos adicionales disponibles.'}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-4"
+        >
+            {/* Mobile Header Menu */}
+            {isMobile && (
+                <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-background/80 backdrop-blur-xl border-b border-border">
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className={cn(
+                            "w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                            mobileMenuOpen 
+                                ? "bg-primary/10 border border-primary/20" 
+                                : "bg-muted/50 hover:bg-muted"
+                        )}
+                        aria-expanded={mobileMenuOpen}
+                        aria-controls="category-menu"
+                        aria-label="Abrir menú de categorías"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <activeCategory.icon className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                                    Viendo ahora
+                                </div>
+                                <div className="font-bold text-sm">
+                                    {activeCategory.label}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-[10px]">
+                                {getCategoryBadgeCount(activeCategory.value, result)}
+                            </Badge>
+                            {mobileMenuOpen ? (
+                                <X className="w-5 h-5 text-muted-foreground" />
+                            ) : (
+                                <Menu className="w-5 h-5 text-muted-foreground" />
+                            )}
+                        </div>
+                    </button>
+
+                    {/* Mobile Category Dropdown */}
+                    <AnimatePresence>
+                        {mobileMenuOpen && (
+                            <motion.div
+                                id="category-menu"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                                className="overflow-hidden mt-2"
+                            >
+                                <div className="space-y-1 p-2 rounded-xl bg-muted/30 border border-border">
+                                    {categoryConfig.map((cat) => {
+                                        const Icon = cat.icon;
+                                        const isActive = openCategories.includes(cat.value);
+                                        const count = getCategoryBadgeCount(cat.value, result);
+                                        
+                                        return (
+                                            <button
+                                                key={cat.value}
+                                                onClick={() => handleValueChange([cat.value])}
+                                                className={cn(
+                                                    "w-full flex items-center justify-between p-3 rounded-lg transition-all duration-200",
+                                                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                                    isActive
+                                                        ? "bg-primary/10 border border-primary/20"
+                                                        : "hover:bg-muted"
+                                                )}
+                                                aria-pressed={isActive}
+                                                aria-label={`Ver ${cat.label}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <Icon className={cn(
+                                                        "w-5 h-5",
+                                                        isActive ? "text-primary" : "text-muted-foreground"
+                                                    )} />
+                                                    <div className="text-left">
+                                                        <div className={cn(
+                                                            "font-bold text-sm",
+                                                            isActive ? "text-foreground" : "text-muted-foreground"
+                                                        )}>
+                                                            {cat.shortLabel}
+                                                        </div>
+                                                        <div className="text-[10px] text-muted-foreground">
+                                                            {cat.description}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {count > 0 && (
+                                                    <Badge variant="secondary" className="text-[10px]">
+                                                        {count}
+                                                    </Badge>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            )}
+
+            {/* Accordion Navigation */}
+            <Accordion
+                type="multiple"
+                value={openCategories}
+                onValueChange={handleValueChange}
+                className="space-y-3"
+            >
+                {categoryConfig.map((category) => {
+                    const Icon = category.icon;
+                    const isOpen = openCategories.includes(category.value);
+                    const count = getCategoryBadgeCount(category.value, result);
+
+                    return (
+                        <AccordionItem 
+                            key={category.value} 
+                            value={category.value}
+                            className={cn(
+                                "border rounded-xl overflow-hidden transition-all duration-300",
+                                "bg-white/5 backdrop-blur-sm",
+                                isOpen 
+                                    ? "border-primary/30 shadow-lg shadow-primary/5" 
+                                    : "border-white/10 hover:border-white/20"
+                            )}
+                        >
+                            <AccordionTrigger 
+                                className={cn(
+                                    "px-4 sm:px-6 py-4 hover:no-underline transition-all duration-300",
+                                    "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                                    isOpen && "bg-primary/5"
+                                )}
+                                aria-label={`${category.label}${count > 0 ? `, ${count} items` : ''}`}
+                            >
+                                <div className="flex items-center gap-3 sm:gap-4 flex-1">
+                                    <div className={cn(
+                                        "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-colors",
+                                        isOpen ? "bg-primary/10" : "bg-muted"
+                                    )}>
+                                        <Icon className={cn(
+                                            "w-5 h-5 sm:w-6 sm:h-6 transition-colors",
+                                            isOpen ? "text-primary" : "text-muted-foreground"
+                                        )} />
+                                    </div>
+                                    <div className="text-left flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className={cn(
+                                                "font-bold text-sm sm:text-base transition-colors",
+                                                isOpen ? "text-foreground" : "text-muted-foreground"
+                                            )}>
+                                                {category.label}
+                                            </span>
+                                            {count > 0 && (
+                                                <Badge 
+                                                    variant={isOpen ? "default" : "secondary"} 
+                                                    className="text-[10px] h-5 px-1.5"
+                                                >
+                                                    {count}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground hidden sm:block">
+                                            {category.description}
+                                        </p>
+                                    </div>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-4 sm:px-6 pb-4">
+                                {getCategoryContent(category.value)}
+                            </AccordionContent>
+                        </AccordionItem>
+                    );
+                })}
+            </Accordion>
+        </motion.div>
+    );
+}
+
+function MismatchAlert({ result }: { result: ATSResult }) {
+    if (!result.mismatch_detected) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative overflow-hidden mb-6"
+        >
+            <div className="absolute inset-0 bg-red-500/10 animate-pulse" />
+            <Alert 
+                variant="destructive" 
+                className="relative z-10 border-2 border-red-500/50 bg-background/50 backdrop-blur-xl py-6 px-6"
+            >
+                <div className="flex items-start gap-4">
+                    <AlertTriangle className="h-8 w-8 text-red-500 shrink-0" aria-hidden="true" />
+                    <div className="space-y-2">
+                        <AlertTitle className="text-xl font-bold text-red-500 uppercase tracking-tight">
+                            ¡Incoherencia Detectada!
+                        </AlertTitle>
+                        <AlertDescription className="text-base text-foreground/90 font-medium">
+                            {result.mismatch_warning || "Tu CV no parece coincidir con la industria seleccionada."}
+                            {result.suggested_industry && (
+                                <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 inline-block">
+                                    <p className="text-sm font-bold flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4" aria-hidden="true" />
+                                        Industria Recomendada: <span className="text-red-600 uppercase underline decoration-2 underline-offset-4">{result.suggested_industry}</span>
+                                    </p>
+                                </div>
+                            )}
+                        </AlertDescription>
+                    </div>
+                </div>
+            </Alert>
+        </motion.div>
+    );
+}
+
+function ResetButton({ onReset }: { onReset: () => void }) {
+    return (
+        <motion.div 
+            className="text-center pt-6 sm:pt-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+        >
+            <Button
+                variant="outline"
+                onClick={onReset}
+                className="gap-2 rounded-full text-sm h-11 px-6 w-full sm:w-auto hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                aria-label="Analizar otro CV"
+            >
+                <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                Analizar otro CV
+            </Button>
+        </motion.div>
+    );
+}
+
+// =============================================
+// Main Component
+// =============================================
 
 export function ATSChecker() {
     const [file, setFile] = useState<File | null>(null);
     const [result, setResult] = useState<ATSResult | null>(null);
     const [selectedIndustry, setSelectedIndustry] = useState('general');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [activeTab, setActiveTab] = useState('issues');
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Check for mobile viewport
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 640);
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const uploadedFile = acceptedFiles[0];
         if (uploadedFile) {
-            if (uploadedFile.type !== 'application/pdf' &&
-                !uploadedFile.name.endsWith('.docx') &&
-                !uploadedFile.name.endsWith('.txt')) {
+            const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+            const validExtensions = ['.pdf', '.docx', '.txt'];
+            const hasValidExtension = validExtensions.some(ext => uploadedFile.name.toLowerCase().endsWith(ext));
+            
+            if (!validTypes.includes(uploadedFile.type) && !hasValidExtension) {
                 toast.error('Formato no soportado', {
                     description: 'Por favor subí un PDF, DOCX o TXT',
                 });
@@ -135,522 +1217,79 @@ export function ATSChecker() {
         }
     };
 
-    const getGradeInfo = (grade: string) => {
-        switch (grade) {
-            case 'A': return { color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' };
-            case 'B': return { color: 'text-lime-500', bg: 'bg-lime-500/10', border: 'border-lime-500/30', glow: 'shadow-lime-500/20' };
-            case 'C': return { color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30', glow: 'shadow-amber-500/20' };
-            case 'D': return { color: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/30', glow: 'shadow-orange-500/20' };
-            case 'F': return { color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/30', glow: 'shadow-red-500/20' };
-            default: return { color: 'text-slate-500', bg: 'bg-slate-500/10', border: 'border-slate-500/30', glow: '' };
-        }
+    const handleReset = () => {
+        setFile(null);
+        setResult(null);
     };
 
-    const getScoreColor = (score: number) => {
-        if (score >= 80) return 'text-emerald-500';
-        if (score >= 60) return 'text-amber-500';
-        if (score >= 40) return 'text-orange-500';
-        return 'text-red-500';
-    };
-
-    const getSeverityIcon = (severity: string) => {
-        switch (severity) {
-            case 'high': return <XCircle className="w-5 h-5 text-red-500" />;
-            case 'medium': return <AlertTriangle className="w-5 h-5 text-amber-500" />;
-            default: return <AlertCircle className="w-5 h-5 text-blue-500" />;
-        }
+    const handleClearFile = () => {
+        setFile(null);
+        setResult(null);
     };
 
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
-            {/* Background effects - optimized for mobile performance */}
-            <div className="absolute inset-0 -z-10">
-                <div className="absolute top-0 left-1/2 w-[600px] h-[600px] sm:w-[800px] sm:h-[800px] bg-primary/5 rounded-full blur-[100px] sm:blur-[150px] -translate-x-1/2 -translate-y-1/2" />
-                <div className="absolute bottom-0 right-0 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] bg-purple-500/5 rounded-full blur-[80px] sm:blur-[120px] translate-x-1/2 translate-y-1/2" />
-            </div>
+            <BackgroundDecoration />
 
-            {/* Mobile-first container: reduced padding on mobile, increased on larger screens */}
-            <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-12">
-                {/* Header - Mobile-first typography */}
+            <main className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
                 <motion.div
-                    className="text-center mb-6 sm:mb-8 lg:mb-12"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
                 >
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20 text-xs sm:text-sm font-bold mb-4 sm:mb-6">
-                        <Target className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-                        <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-                            ATS Checker
-                        </span>
-                    </div>
-                    {/* Mobile-first: text-2xl on smallest screens, scales up */}
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-3 sm:mb-4">
-                        ¿Tu CV pasa el{' '}
-                        <span className="bg-gradient-to-r from-primary via-primary to-purple-500 bg-clip-text text-transparent">
-                            filtro ATS?
-                        </span>
-                    </h1>
-                    <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-0">
-                        Subí tu CV y te analizamos como lo haría un sistema de contratación real.
-                        Descubrí qué keywords faltan y cómo mejorarlo.
-                    </p>
-                </motion.div>
+                    <HeroSection />
 
-                {/* Industry Selection - Mobile-first: 2 columns on smallest screens */}
-                <motion.div
-                    className="mb-6 sm:mb-8"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.1 }}
-                >
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 sm:mb-4 block flex items-center gap-2">
-                        <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
-                        ¿Para qué industria?
-                    </label>
-                    {/* Mobile-first grid: 2 cols on xs, 3 on sm, 6 on lg */}
-                    <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-                        {industries.map((ind) => (
-                            <button
-                                key={ind.value}
-                                onClick={() => setSelectedIndustry(ind.value)}
-                                className={cn(
-                                    // Mobile-first touch target: min-h-[64px] ensures 44px+ tap area
-                                    "group relative p-3 sm:p-4 rounded-xl border-2 text-center transition-all duration-200 overflow-hidden min-h-[64px] sm:min-h-[72px] flex flex-col items-center justify-center",
-                                    selectedIndustry === ind.value
-                                        ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
-                                        : "border-border hover:border-primary/50 hover:bg-muted/50"
-                                )}
-                            >
-                                <div className={cn(
-                                    "absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity",
-                                    selectedIndustry === ind.value ? "opacity-100" : "group-hover:opacity-50"
-                                )} />
-                                <div className="relative">
-                                    {/* Smaller icons on mobile */}
-                                    <div className="text-xl sm:text-2xl mb-1 sm:mb-2">{ind.icon}</div>
-                                    <div className={cn(
-                                        "text-xs font-bold transition-colors leading-tight",
-                                        selectedIndustry === ind.value ? "text-primary" : "text-muted-foreground"
-                                    )}>
-                                        {/* Use shorter label on very small screens */}
-                                        <span className="hidden xs:inline">{ind.label}</span>
-                                        <span className="xs:hidden">{ind.shortLabel}</span>
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </motion.div>
+                    {!result && (
+                        <>
+                            <IndustrySelector 
+                                selectedIndustry={selectedIndustry}
+                                onSelect={setSelectedIndustry}
+                            />
 
-                {/* Upload Area - Mobile-first padding and sizing */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.2 }}
-                >
-                    <Card className="mb-6 sm:mb-8 bg-white/5 backdrop-blur-xl border-white/10 overflow-hidden">
-                        <CardContent className="p-4 sm:p-6">
-                            <div
-                                {...getRootProps()}
-                                className={cn(
-                                    // Mobile-first: reduced padding on small screens
-                                    "relative border-2 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 lg:p-10 text-center cursor-pointer transition-all duration-300 min-h-[160px] sm:min-h-[200px] flex items-center justify-center",
-                                    isDragActive
-                                        ? "border-primary bg-primary/10 scale-[1.01]"
-                                        : file
-                                            ? "border-primary/30 bg-primary/5"
-                                            : "border-border hover:border-primary/50 hover:bg-muted/50"
-                                )}
-                            >
-                                <input {...getInputProps()} />
-                                <div className="flex flex-col items-center gap-3 sm:gap-4">
-                                    <div className={cn(
-                                        // Smaller icon container on mobile
-                                        "w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all",
-                                        file
-                                            ? "bg-primary/10 shadow-lg shadow-primary/20"
-                                            : "bg-muted"
-                                    )}>
-                                        {file ? (
-                                            <FileText className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-primary" />
-                                        ) : (
-                                            <Upload className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-muted-foreground" />
-                                        )}
-                                    </div>
-                                    <div>
-                                        {file ? (
-                                            <div className="space-y-1">
-                                                {/* Truncate filename on mobile */}
-                                                <p className="font-bold text-base sm:text-lg max-w-[200px] sm:max-w-[300px] truncate">{file.name}</p>
-                                                <p className="text-xs sm:text-sm text-muted-foreground">
-                                                    {(file.size / 1024).toFixed(1)} KB
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-1 sm:space-y-2">
-                                                <p className="font-bold text-base sm:text-lg">
-                                                    {isDragActive ? 'Soltá el archivo aquí' : 'Arrastrá y soltá tu CV'}
-                                                </p>
-                                                <p className="text-xs sm:text-sm text-muted-foreground">
-                                                    o hacé click para seleccionar
-                                                </p>
-                                                <p className="text-[10px] sm:text-xs text-muted-foreground/60">
-                                                    PDF, DOCX, TXT
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {file && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setFile(null);
-                                                setResult(null);
-                                            }}
-                                            className="text-muted-foreground hover:text-foreground text-xs sm:text-sm h-8 sm:h-9"
-                                        >
-                                            Cambiar archivo
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
+                            <UploadZone
+                                file={file}
+                                isDragActive={isDragActive}
+                                getRootProps={getRootProps}
+                                getInputProps={getInputProps}
+                                onClear={handleClearFile}
+                            />
 
-                {/* Analyze Button - Mobile-first sizing */}
-                {file && !result && (
-                    <motion.div
-                        className="text-center mb-8 sm:mb-12"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                    >
-                        <Button
-                            size="lg"
-                            onClick={handleAnalyze}
-                            disabled={isAnalyzing}
-                            // Mobile-first: full width on small screens, auto on larger
-                            className="gap-2 sm:gap-3 h-12 sm:h-14 px-6 sm:px-10 text-sm sm:text-base rounded-xl shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-95 w-full sm:w-auto"
-                        >
-                            {isAnalyzing ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                                    <span className="sm:hidden">Analizando...</span>
-                                    <span className="hidden sm:inline">Analizando tu CV...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    Analizar CV
-                                </>
+                            {file && (
+                                <AnalyzeButton
+                                    onClick={handleAnalyze}
+                                    isAnalyzing={isAnalyzing}
+                                    disabled={!file}
+                                />
                             )}
-                        </Button>
-                    </motion.div>
-                )}
+                        </>
+                    )}
 
-                {/* Results */}
-                {result && (
-                    <motion.div
-                        className="space-y-4 sm:space-y-6"
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        {/* Score Overview - Mobile-first responsive layout */}
-                        <Card className="overflow-hidden bg-white/5 backdrop-blur-xl border-white/10">
-                            <CardContent className="p-4 sm:p-6 lg:p-8">
-                                {/* Mobile: stacked vertically, Desktop: side by side */}
-                                <div className="flex flex-col md:flex-row items-center gap-4 sm:gap-6 lg:gap-8">
-                                    {/* Score Circle - Mobile-optimized sizing */}
-                                    <div className="relative flex-shrink-0">
-                                        <div className={cn(
-                                            "absolute inset-0 blur-2xl opacity-50",
-                                            getGradeInfo(result.grade).bg
-                                        )} />
-                                        <div className={cn(
-                                            // Mobile-first: smaller circle on mobile
-                                            "relative w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full border-4 flex flex-col items-center justify-center shadow-2xl",
-                                            getGradeInfo(result.grade).border,
-                                            getGradeInfo(result.grade).bg,
-                                            getGradeInfo(result.grade).glow
-                                        )}>
-                                            <span className={cn("text-3xl sm:text-4xl font-black", getGradeInfo(result.grade).color)}>
-                                                {result.ats_score}
-                                            </span>
-                                            <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">/100</span>
-                                        </div>
-                                        {/* Grade Badge - Mobile-optimized */}
-                                        <div className={cn(
-                                            "absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center font-black text-sm sm:text-base lg:text-lg border-2",
-                                            getGradeInfo(result.grade).bg,
-                                            getGradeInfo(result.grade).border,
-                                            getGradeInfo(result.grade).color
-                                        )}>
-                                            {result.grade}
-                                        </div>
-                                    </div>
+                    {result && (
+                        <motion.div
+                            className="space-y-6"
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            <MismatchAlert result={result} />
+                            
+                            <ScoreCard 
+                                result={result} 
+                                selectedIndustry={selectedIndustry}
+                            />
 
-                                    {/* Summary & Scores */}
-                                    <div className="flex-1 text-center md:text-left w-full">
-                                        <h2 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Análisis Completado</h2>
-                                        <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">{result.summary}</p>
+                            <CategoryAccordion 
+                                result={result}
+                                isMobile={isMobile}
+                            />
 
-                                        {/* Mobile-first: stacked on very small, 3-col on sm+ */}
-                                        <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4">
-                                            {[
-                                                { label: 'Formato', score: result.format_score, color: 'from-primary to-primary/80' },
-                                                { label: 'Keywords', score: result.keyword_score, color: 'from-purple-500 to-purple-400' },
-                                                { label: 'Completitud', score: result.completeness_score, color: 'from-amber-500 to-amber-400' },
-                                            ].map((item, idx) => (
-                                                <div key={item.label} className="space-y-1.5 sm:space-y-2">
-                                                    <div className="flex justify-between text-xs sm:text-sm">
-                                                        <span className="text-muted-foreground">{item.label}</span>
-                                                        <span className={cn("font-bold", getScoreColor(item.score))}>
-                                                            {item.score}%
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-1.5 sm:h-2 rounded-full bg-muted overflow-hidden">
-                                                        <motion.div
-                                                            className={cn("h-full bg-gradient-to-r rounded-full", item.color)}
-                                                            initial={{ width: 0 }}
-                                                            animate={{ width: `${item.score}%` }}
-                                                            transition={{ duration: 0.8, delay: 0.2 + idx * 0.1 }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Mobile-first Tabs - Scrollable on mobile, grid on desktop */}
-                        <div className="space-y-3 sm:space-y-4">
-                            {/* Custom mobile-optimized tabs */}
-                            <div className="relative">
-                                {/* Mobile: Horizontal scrollable tabs */}
-                                <div className="flex sm:grid sm:grid-cols-4 gap-1.5 sm:gap-2 overflow-x-auto pb-2 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
-                                    {tabsConfig.map((tab) => {
-                                        const Icon = tab.icon;
-                                        const isActive = activeTab === tab.value;
-                                        return (
-                                            <button
-                                                key={tab.value}
-                                                onClick={() => setActiveTab(tab.value)}
-                                                className={cn(
-                                                    // Mobile-first: min-w-[72px] ensures touch target, flex-shrink-0 prevents squishing
-                                                    "flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 flex-shrink-0 min-w-[72px] sm:min-w-0",
-                                                    isActive
-                                                        ? "bg-background shadow-lg shadow-black/5 text-foreground border border-border/50"
-                                                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                )}
-                                            >
-                                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                {/* Show short label on mobile, full on sm+ */}
-                                                <span className="hidden sm:inline">{tab.label}</span>
-                                                <span className="sm:hidden">{tab.shortLabel}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                {/* Fade indicator for mobile scroll */}
-                                <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent sm:hidden pointer-events-none" />
-                            </div>
-
-                            {/* Tab Content with AnimatePresence for smooth transitions */}
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={activeTab}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    {/* Issues Tab */}
-                                    {activeTab === 'issues' && (
-                                        <div className="space-y-2 sm:space-y-3">
-                                            {result.issues.length === 0 ? (
-                                                <Card className="bg-emerald-500/5 border-emerald-500/20">
-                                                    <CardContent className="flex items-center gap-3 sm:gap-4 py-4 sm:py-6 px-4 sm:px-6">
-                                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                                                            <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" />
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <h3 className="font-bold text-emerald-600 text-sm sm:text-base">¡Excelente!</h3>
-                                                            <p className="text-xs sm:text-sm text-muted-foreground">No se detectaron problemas críticos en tu CV.</p>
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            ) : (
-                                                result.issues.map((issue, idx) => (
-                                                    <motion.div
-                                                        key={idx}
-                                                        initial={{ opacity: 0, x: -20 }}
-                                                        animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ delay: idx * 0.05 }}
-                                                    >
-                                                        <Card className={cn(
-                                                            "overflow-hidden transition-all hover:scale-[1.01]",
-                                                            issue.severity === 'high'
-                                                                ? 'bg-red-500/5 border-red-500/20'
-                                                                : issue.severity === 'medium'
-                                                                    ? 'bg-amber-500/5 border-amber-500/20'
-                                                                    : 'bg-blue-500/5 border-blue-500/20'
-                                                        )}>
-                                                            <CardContent className="p-3 sm:p-4">
-                                                                <div className="flex gap-3 sm:gap-4">
-                                                                    <div className={cn(
-                                                                        // Mobile-optimized icon container
-                                                                        "w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0",
-                                                                        issue.severity === 'high' ? 'bg-red-500/10' :
-                                                                            issue.severity === 'medium' ? 'bg-amber-500/10' : 'bg-blue-500/10'
-                                                                    )}>
-                                                                        {getSeverityIcon(issue.severity)}
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="font-medium text-sm sm:text-base mb-0.5 sm:mb-1">{issue.message}</p>
-                                                                        <p className="text-xs sm:text-sm text-muted-foreground flex items-start gap-1.5 sm:gap-2">
-                                                                            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary mt-0.5 flex-shrink-0" />
-                                                                            <span className="leading-relaxed">{issue.fix}</span>
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    </motion.div>
-                                                ))
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Keywords Tab */}
-                                    {activeTab === 'keywords' && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                            <Card className="bg-emerald-500/5 border-emerald-500/20">
-                                                <CardHeader className="pb-2 sm:pb-3 px-4 sm:px-6 pt-4 sm:pt-6">
-                                                    <CardTitle className="text-sm sm:text-lg flex items-center gap-2">
-                                                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                                                            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" />
-                                                        </div>
-                                                        <span className="truncate">Keywords encontradas</span>
-                                                    </CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                                                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                                                        {result.found_keywords.length === 0 ? (
-                                                            <p className="text-muted-foreground text-xs sm:text-sm">No se detectaron keywords</p>
-                                                        ) : (
-                                                            result.found_keywords.map((kw, idx) => (
-                                                                <Badge key={idx} className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 text-xs">
-                                                                    {kw}
-                                                                </Badge>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-
-                                            <Card className="bg-amber-500/5 border-amber-500/20">
-                                                <CardHeader className="pb-2 sm:pb-3 px-4 sm:px-6 pt-4 sm:pt-6">
-                                                    <CardTitle className="text-sm sm:text-lg flex items-center gap-2">
-                                                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                                                            <Search className="w-3 h-3 sm:w-4 sm:h-4 text-amber-500" />
-                                                        </div>
-                                                        <span className="truncate">Keywords faltantes</span>
-                                                    </CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                                                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                                                        {result.missing_keywords.length === 0 ? (
-                                                            <p className="text-muted-foreground text-xs sm:text-sm">¡Tu CV tiene todas las keywords!</p>
-                                                        ) : (
-                                                            result.missing_keywords.map((kw, idx) => (
-                                                                <Badge key={idx} variant="outline" className="border-amber-500/30 text-amber-600 hover:bg-amber-500/10 text-xs">
-                                                                    {kw}
-                                                                </Badge>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    )}
-
-                                    {/* Quick Wins Tab */}
-                                    {activeTab === 'quick' && (
-                                        <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-                                            <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
-                                                <CardTitle className="text-sm sm:text-lg flex items-center gap-2">
-                                                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                        <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-                                                    </div>
-                                                    Acciones rápidas para mejorar
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                                                <div className="space-y-2 sm:space-y-3">
-                                                    {result.quick_wins.map((win, idx) => (
-                                                        <motion.div
-                                                            key={idx}
-                                                            className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                                                            initial={{ opacity: 0, x: -20 }}
-                                                            animate={{ opacity: 1, x: 0 }}
-                                                            transition={{ delay: idx * 0.05 }}
-                                                        >
-                                                            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 shrink-0" />
-                                                            <span className="text-sm sm:text-base leading-relaxed">{win}</span>
-                                                        </motion.div>
-                                                    ))}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    )}
-
-                                    {/* Tips Tab */}
-                                    {activeTab === 'tips' && (
-                                        <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-                                            <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
-                                                <CardTitle className="text-sm sm:text-lg flex items-center gap-2">
-                                                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                                                        <LayoutTemplate className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-                                                    </div>
-                                                    Consejos detallados
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                                    <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed text-sm sm:text-base">
-                                                        {result.detailed_tips || 'No hay consejos adicionales disponibles.'}
-                                                    </p>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    )}
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
-
-                        {/* Analyze Another - Mobile-first button */}
-                        <div className="text-center pt-4 sm:pt-6">
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setFile(null);
-                                    setResult(null);
-                                }}
-                                className="gap-2 rounded-xl text-sm sm:text-base h-10 sm:h-11 w-full sm:w-auto"
-                            >
-                                <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                Analizar otro CV
-                            </Button>
-                        </div>
-                    </motion.div>
-                )}
-            </div>
+                            <ResetButton onReset={handleReset} />
+                        </motion.div>
+                    )}
+                </motion.div>
+            </main>
         </div>
     );
 }
+
+export default ATSChecker;

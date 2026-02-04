@@ -71,12 +71,11 @@ const templateMeta: Record<string, { category: string; color: string; tags: stri
     professional: { category: 'Corporativo', color: 'bg-zinc-800', tags: ['Clean', 'ATS-Ready'], skeleton: 'classic' },
     creative: { category: 'Diseño', color: 'bg-stone-800', tags: ['Editorial', 'Bold'], skeleton: 'modern' },
     harvard: { category: 'Académico', color: 'bg-slate-800', tags: ['Ivy League', 'Standard'], skeleton: 'classic' },
-    minimal: { category: 'Moderno', color: 'bg-neutral-200', tags: ['Minimal', 'Light'], skeleton: 'split' },
-    tech: { category: 'Tecnología', color: 'bg-zinc-900', tags: ['Dev', 'Code'], skeleton: 'modern' },
-    bian: { category: 'Académico', color: 'bg-slate-700', tags: ['Formal', 'Classic'], skeleton: 'classic' },
-    finance: { category: 'Corporativo', color: 'bg-slate-900', tags: ['Finance', 'Premium'], skeleton: 'classic' },
-    health: { category: 'Salud', color: 'bg-teal-900', tags: ['Health', 'Clean'], skeleton: 'split' },
-    education: { category: 'Educación', color: 'bg-indigo-950', tags: ['Teaching', 'Warm'], skeleton: 'classic' }
+    pure: { category: 'Moderno', color: 'bg-stone-100', tags: ['Swiss', 'Whitespace'], skeleton: 'split' },
+    terminal: { category: 'Tecnología', color: 'bg-slate-950', tags: ['Code', 'Monospace'], skeleton: 'modern' },
+    care: { category: 'Diseño', color: 'bg-orange-100', tags: ['Warm', 'Human'], skeleton: 'split' },
+    capital: { category: 'Corporativo', color: 'bg-blue-950', tags: ['Finance', 'Data'], skeleton: 'classic' },
+    scholar: { category: 'Académico', color: 'bg-red-900', tags: ['Research', 'Publications'], skeleton: 'classic' }
 };
 
 export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {

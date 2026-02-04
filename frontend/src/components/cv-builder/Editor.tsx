@@ -111,7 +111,15 @@ export function Editor({
                 body: JSON.stringify(data),
             });
 
-            if (!res.ok) throw new Error('Failed to optimize content');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const detail = errorData.detail;
+                const errorMessage =
+                    typeof detail === 'string'
+                        ? detail
+                        : detail?.message || detail?.error || 'Failed to optimize content';
+                throw new Error(errorMessage);
+            }
 
             const optimizedData = await res.json();
 
@@ -168,8 +176,27 @@ export function Editor({
         setIsOptimizing(true);
         toast.info("Comprimiendo CV a una página...");
         try {
-            await optimizeContent('summary', 'shrink');
-            await optimizeContent('experience', 'shrink');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            const res = await fetch(`${apiUrl}/api/optimize-cv?target=one_page&section=all`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const detail = errorData.detail;
+                const errorMessage =
+                    typeof detail === 'string'
+                        ? detail
+                        : detail?.message || detail?.error || 'Failed to optimize content';
+                throw new Error(errorMessage);
+            }
+
+            const optimizedData = await res.json();
+            onChange(ensureIds(optimizedData));
             toast.success("CV comprimido. Revisá el preview.");
         } catch (error) {
             toast.error("Error al comprimir.");
@@ -360,7 +387,7 @@ export function Editor({
                                     <span>Asistente IA</span>
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => optimizeContent('summary', 'refine')}>
+                                <DropdownMenuItem onClick={() => optimizeContent('summary', 'shrink')}>
                                     <Scissors className="w-4 h-4 mr-2" />
                                     <span>Resumir Perfil</span>
                                 </DropdownMenuItem>

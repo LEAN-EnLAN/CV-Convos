@@ -108,21 +108,6 @@ export function TemplateConfigurator({ config, onChange }: TemplateConfiguratorP
                                 ))}
                             </div>
                         </div>
-
-                        {/* Background Color Toggle */}
-                        <div className="flex items-center justify-between pt-2">
-                            <div>
-                                <Label className="text-[10px] uppercase opacity-60 font-bold tracking-wide">Fondo Oscuro</Label>
-                                <p className="text-[9px] text-muted-foreground">Cambiar a fondo oscuro</p>
-                            </div>
-                            <Switch
-                                checked={config.colors.background !== 'oklch(1 0 0)'}
-                                onCheckedChange={(checked: boolean) => {
-                                    updateConfig('colors.background', checked ? 'oklch(0.15 0.02 280)' : 'oklch(1 0 0)');
-                                    updateConfig('colors.text', checked ? 'oklch(0.95 0 0)' : 'oklch(0.15 0.02 280)');
-                                }}
-                            />
-                        </div>
                     </AccordionContent>
                 </AccordionItem>
 
@@ -277,6 +262,22 @@ export function TemplateConfigurator({ config, onChange }: TemplateConfiguratorP
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        {/* Escala de Texto */}
+                        <div className="space-y-3 pt-2">
+                            <div className="flex justify-between items-center">
+                                <Label className="text-[10px] uppercase opacity-60 font-bold tracking-wide">Escala de Texto</Label>
+                                <span className="text-[10px] font-mono text-muted-foreground">{Math.round((config.layout.fontSize || 1.0) * 100)}%</span>
+                            </div>
+                            <Slider
+                                value={[config.layout.fontSize || 1.0]}
+                                onValueChange={([val]: number[]) => updateConfig('layout.fontSize', val)}
+                                min={0.7}
+                                max={1.3}
+                                step={0.05}
+                                className="w-full"
+                            />
                         </div>
                     </AccordionContent>
                 </AccordionItem>

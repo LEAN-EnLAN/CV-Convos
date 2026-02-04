@@ -114,12 +114,11 @@ export const TEMPLATE_DISPLAY_NAMES: Record<CVTemplate, string> = {
     professional: 'Executive',
     creative: 'Studio',
     harvard: 'Ivy',
-    minimal: 'Pure',
-    tech: 'Terminal',
-    bian: 'Direct',
-    finance: 'Capital',
-    health: 'Care',
-    education: 'Scholar'
+    pure: 'Swiss',
+    terminal: 'Code',
+    care: 'Care',
+    capital: 'Capital',
+    scholar: 'Scholar'
 };
 
 /**

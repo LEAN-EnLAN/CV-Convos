@@ -20,17 +20,25 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="CV Builder IA API", lifespan=lifespan)
 
-# Configure CORS for production
+# Configure CORS
 ALLOWED_ORIGINS = [
     "https://cv-convos.vercel.app",
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
+
+# Add CORS_ORIGINS from settings if not already in the list
+if settings.CORS_ORIGINS:
+    for origin in settings.CORS_ORIGINS.split(","):
+        origin = origin.strip()
+        if origin and origin not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(origin)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS if settings.ENVIRONMENT == "development" else ["https://cv-convos.vercel.app"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

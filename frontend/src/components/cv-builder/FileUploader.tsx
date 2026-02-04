@@ -82,7 +82,12 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || 'Error al generar el CV');
+                const detail = errorData.detail;
+                const errorMessage =
+                    typeof detail === 'string'
+                        ? detail
+                        : detail?.message || detail?.error || 'Error al generar el CV';
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();

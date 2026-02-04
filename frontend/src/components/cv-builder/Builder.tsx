@@ -1,17 +1,16 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { CVData, CVTemplate } from '@/types/cv';
+import { CVData, CVTemplate, TemplateConfig } from '@/types/cv';
 import { Editor } from './Editor';
 import { ProfessionalTemplate } from './templates/ProfessionalTemplate';
 import { HarvardTemplate } from './templates/HarvardTemplate';
-import { MinimalTemplate } from './templates/MinimalTemplate';
 import { CreativeTemplate } from './templates/CreativeTemplate';
-import { TechTemplate } from './templates/TechTemplate';
-import { BianTemplate } from './templates/BianTemplate';
-import { FinanceTemplate } from './templates/FinanceTemplate';
-import { HealthTemplate } from './templates/HealthTemplate';
-import { EducationTemplate } from './templates/EducationTemplate';
+import { PureTemplate } from './templates/PureTemplate';
+import { TerminalTemplate } from './templates/TerminalTemplate';
+import { CareTemplate } from './templates/CareTemplate';
+import { CapitalTemplate } from './templates/CapitalTemplate';
+import { ScholarTemplate } from './templates/ScholarTemplate';
 
 import { useReactToPrint } from 'react-to-print';
 import { useCVHistory } from '@/hooks/use-cv-history';
@@ -22,6 +21,7 @@ import { Header, templateOptions } from './header/Header';
 import { cn } from '@/lib/utils';
 import { useAutoSave } from '@/hooks/use-auto-save';
 import { FloatingProgress } from './FloatingProgress';
+import { TEMPLATE_FONT_PRESETS, getTemplateFontPreset } from '@/lib/cv-templates/template-fonts';
 
 interface BuilderProps {
     initialData: CVData;
@@ -122,12 +122,18 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
     const [activeView, setActiveView] = useState<'editor' | 'preview'>('editor');
     const [scale, setScale] = useState(1);
     const [pages, setPages] = useState(1);
+    const [printScale, setPrintScale] = useState(1);
     const previewContainerRef = useRef<HTMLDivElement>(null);
+    const printRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
+    const templateFontsRef = useRef<Record<CVTemplate, TemplateConfig['fonts']>>({
+        ...TEMPLATE_FONT_PRESETS
+    });
+    const initialFontsAppliedRef = useRef(false);
 
     // React to Print logic
     const handlePrint = useReactToPrint({
-        contentRef,
+        contentRef: printRef,
         documentTitle: 'CV_' + (data.personalInfo.fullName.replace(/\s+/g, '_') || 'Curriculum'),
     });
 
@@ -152,14 +158,57 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
         const updatePages = () => {
             if (contentRef.current) {
                 const height = contentRef.current.offsetHeight;
+                if (!height) return;
                 const pageHeight = 1122; // A4 height in pixels
                 setPages(Math.ceil(height / pageHeight));
+                setPrintScale(height > pageHeight ? pageHeight / height : 1);
             }
         };
 
         const timer = setTimeout(updatePages, 500); // Debounce
         return () => clearTimeout(timer);
     }, [data, template]);
+
+    // Mantener fuentes por plantilla y aplicar preset inicial si no hay personalizacion previa
+    useEffect(() => {
+        if (!data.config?.fonts) return;
+        templateFontsRef.current[template] = { ...data.config.fonts };
+    }, [data.config?.fonts, template]);
+
+    useEffect(() => {
+        if (initialFontsAppliedRef.current) return;
+        const currentFonts = data.config?.fonts;
+        if (!currentFonts) return;
+        const isDefaultFonts =
+            currentFonts.heading === DEFAULT_CONFIG.fonts.heading &&
+            currentFonts.body === DEFAULT_CONFIG.fonts.body;
+        if (isDefaultFonts) {
+            const presetFonts = { ...getTemplateFontPreset(template) };
+            setData({
+                ...data,
+                config: {
+                    ...data.config,
+                    fonts: presetFonts
+                }
+            });
+        }
+        initialFontsAppliedRef.current = true;
+    }, [data, template, setData]);
+
+    const handleTemplateChange = (nextTemplate: CVTemplate) => {
+        if (nextTemplate === template) return;
+        const nextFonts = {
+            ...(templateFontsRef.current[nextTemplate] || getTemplateFontPreset(nextTemplate))
+        };
+        setTemplate(nextTemplate);
+        setData({
+            ...data,
+            config: {
+                ...data.config,
+                fonts: nextFonts
+            }
+        });
+    };
 
     const currentTemplate = templateOptions.find(t => t.id === template);
     const progress = useMemo(() => calculateCVProgress(data), [data]);
@@ -172,12 +221,12 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
         const templates: Record<string, React.ComponentType<{ data: CVData }>> = {
             professional: ProfessionalTemplate,
             harvard: HarvardTemplate,
-            minimal: MinimalTemplate,
-            tech: TechTemplate,
-            bian: BianTemplate,
-            finance: FinanceTemplate,
-            health: HealthTemplate,
-            education: EducationTemplate,
+            creative: CreativeTemplate,
+            pure: PureTemplate,
+            terminal: TerminalTemplate,
+            care: CareTemplate,
+            capital: CapitalTemplate,
+            scholar: ScholarTemplate,
         };
         return templates[template] || CreativeTemplate;
     }, [template]);
@@ -197,7 +246,7 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
                     data={data}
                     setData={setData}
                     template={template}
-                    setTemplate={setTemplate}
+                    setTemplate={handleTemplateChange}
                     onReset={onReset}
                     activeView={activeView}
                     setActiveView={setActiveView}
@@ -257,6 +306,7 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
                             >
                                 {/* Visual Page Breaks */}
                                 <div className="absolute inset-0 pointer-events-none no-print">
+                                    {pages > 1 && <div className="cv-page-break-overlay" />}
                                     {Array.from({ length: pages - 1 }).map((_, i) => (
                                         <div
                                             key={i}
@@ -271,14 +321,21 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
                                 </div>
 
                                 <div
-                                    ref={contentRef}
-                                    data-cv-preview
-                                    className={cn(
-                                        "bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] print:shadow-none overflow-hidden",
-                                        "cv-density-" + (data.config?.layout.density || 'standard')
-                                    )}
+                                    ref={printRef}
+                                    className="cv-print-frame"
+                                    style={{ '--cv-print-scale': printScale } as React.CSSProperties}
                                 >
-                                    <TemplateComponent data={data} />
+                                    <div
+                                        ref={contentRef}
+                                        data-cv-preview
+                                        className={cn(
+                                            "cv-print-content bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] print:shadow-none",
+                                            "cv-density-" + (data.config?.layout.density || 'standard')
+                                        )}
+                                        style={{ minHeight: '1122px' }}
+                                    >
+                                        <TemplateComponent data={data} />
+                                    </div>
                                 </div>
                             </div>
                         </div>

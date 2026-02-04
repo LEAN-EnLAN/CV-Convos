@@ -7,9 +7,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatInput } from './ChatInput';
 import { ChatMessage } from './ChatMessage';
 import { useChat } from '@/contexts/ChatContext';
-import { ExtractionPreview } from './ExtractionPreview';
 import { TypingIndicator } from './TypingIndicator';
 import { PhaseIndicator } from './PhaseIndicator';
+import { NotificationContainer } from '@/components/notifications';
+import { ExtractionNotification } from '@/components/notifications/ExtractionNotification';
 import {
   RotateCcw,
   Expand,
@@ -19,7 +20,6 @@ import {
   FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DataExtraction } from '@/types/chat';
 
 interface ChatContainerProps {
   className?: string;
@@ -40,7 +40,6 @@ export function ChatContainer({
 }: ChatContainerProps) {
   const { state, actions } = useChat();
   const [showCVPreview, setShowCVPreview] = useState(desktopShowPreview);
-  const [showExtractionPreview, setShowExtractionPreview] = useState(true);
   const [mobileTab, setMobileTab] = useState<'chat' | 'preview'>('chat');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +52,11 @@ export function ChatContainer({
     const lastMsg = state.messages[state.messages.length - 1];
     return lastMsg?.role === 'assistant' ? lastMsg.content : null;
   }, [state.messages]);
+
+  const extractionNotifications = useMemo(
+    () => state.notifications.filter((n) => n.type === 'extraction'),
+    [state.notifications]
+  );
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     if (scrollRef.current) {
@@ -70,17 +74,13 @@ export function ChatContainer({
 
   useEffect(() => {
     scrollToBottom(state.isStreaming ? 'auto' : 'smooth');
-  }, [state.messages.length, lastMessageContent, state.isStreaming, scrollToBottom]);
-
-  // Sync extraction preview visibility when new data arrives
-  const hasExtractedData = !!state.extractedData;
-  useEffect(() => {
-    if (hasExtractedData) {
-      queueMicrotask(() => {
-        setShowExtractionPreview(true);
-      });
-    }
-  }, [hasExtractedData]);
+  }, [
+    state.messages.length,
+    lastMessageContent,
+    state.isStreaming,
+    extractionNotifications.length,
+    scrollToBottom
+  ]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -89,17 +89,9 @@ export function ChatContainer({
     [actions]
   );
 
-  const handleApplyExtraction = useCallback(
-    (extraction: DataExtraction) => {
-      actions.applyExtraction(extraction);
-      setShowExtractionPreview(false);
-    },
-    [actions]
-  );
-
   return (
     <div className={cn(
-      'flex h-full w-full bg-background overflow-hidden font-sans',
+      'flex h-full w-full bg-background overflow-hidden font-sans pb-16 lg:pb-0',
       className
     )}>
       {/* LEFT PANEL: CHAT */}
@@ -158,7 +150,7 @@ export function ChatContainer({
         {/* Messages */}
         <div className="flex-1 min-h-0 relative flex flex-col">
           <ScrollArea className="h-full w-full" ref={scrollRef}>
-            <div className="px-4 md:px-6 py-6 space-y-8 max-w-2xl mx-auto">
+            <div className="px-4 md:px-6 py-6 pb-28 lg:pb-8 space-y-8 max-w-2xl mx-auto">
               {state.messages.map((message, index) => (
                 <ChatMessage
                   key={message.id}
@@ -172,29 +164,29 @@ export function ChatContainer({
                   <TypingIndicator />
                 </div>
               )}
+
+              <AnimatePresence mode="popLayout">
+                {extractionNotifications.map((notification) => (
+                  <motion.div
+                    key={notification.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{
+                      duration: 0.2,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                  >
+                    <ExtractionNotification notification={notification} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </ScrollArea>
         </div>
 
-        {/* Floating Extraction Overlay */}
-        <AnimatePresence>
-          {state.extractedData && showExtractionPreview && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute left-4 right-4 md:left-6 md:right-6 bottom-[140px] z-50"
-            >
-              <div className="rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
-                <ExtractionPreview
-                  extraction={state.extractedData}
-                  onApply={handleApplyExtraction}
-                  onDismiss={() => setShowExtractionPreview(false)}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Notification Container - toasts/alerts */}
+        <NotificationContainer position="bottom-right" maxNotifications={3} />
 
         {/* Input area */}
         <div className="shrink-0 px-4 md:px-6 py-4 border-t border-border bg-background">
@@ -242,10 +234,8 @@ export function ChatContainer({
              transition={{ duration: 0.3 }}
              className={cn(
                "flex-col flex-1 h-full bg-muted/30 relative overflow-hidden border-l border-border",
-               // Desktop logic
-               showCVPreview ? "hidden lg:flex" : "hidden",
-               // Mobile logic (override desktop hidden if tab is active)
-               mobileTab === 'preview' ? "flex w-full" : ""
+               mobileTab === 'preview' ? "flex w-full" : "hidden",
+               showCVPreview ? "lg:flex" : "lg:hidden"
              )}
            >
              {/* Mobile Header for Preview */}

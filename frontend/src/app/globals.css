@@ -55,6 +55,9 @@
 
 :root {
   --radius: 0.75rem;
+  /* Fuentes (fallback sin next/font/google para builds offline/CI) */
+  --font-outfit: Inter, Roboto, "Open Sans", Lato, Montserrat, Raleway, ui-sans-serif, system-ui;
+  --font-geist-mono: "Fira Code", "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Sentinel Design System - Unified Light Theme */
   --background: oklch(0.98 0.005 90);
@@ -286,6 +289,37 @@
 
   .break-inside-avoid {
     break-inside: avoid;
+  }
+}
+
+/* Print fit-to-page wrapper */
+.cv-print-frame {
+  position: relative;
+  width: 794px;
+  height: auto;
+  overflow: visible;
+}
+
+.cv-print-content {
+  position: static;
+  transform: none;
+  transform-origin: top left;
+}
+
+@media print {
+  .cv-print-frame {
+    width: 210mm;
+    height: 297mm;
+    overflow: hidden;
+  }
+
+  .cv-print-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 794px;
+    transform: scale(var(--cv-print-scale, 1));
+    transform-origin: top left;
   }
 }
 

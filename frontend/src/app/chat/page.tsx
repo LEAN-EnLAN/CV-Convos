@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Sparkles, MessageCircle, FileText } from 'lucide-react';
@@ -10,6 +10,9 @@ import { ChatProvider } from '@/contexts/ChatContext';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'next/navigation';
+import { getDebugData } from '@/lib/debug-utils';
+import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
 
 // =============================================================================
 // INITIAL STATE
@@ -39,10 +42,20 @@ const emptyCV: CVData = {
 
 export default function ChatPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [cvData, setCvData] = useState<CVData>(emptyCV);
   const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate>('professional');
   const [isComplete, setIsComplete] = useState(false);
   const [showCVPreview, setShowCVPreview] = useState(true);
+
+  // Debug Logic
+  useEffect(() => {
+    const isDebug = searchParams.get('debug') === 'true';
+    if (isDebug && DEBUG_UI_ENABLED) {
+      console.log('🐞 Debug Mode Activated: Pre-loading Chat Context & CV Data');
+      setCvData(getDebugData());
+    }
+  }, [searchParams]);
 
   /**
    * Handles CV data updates from the wizard
@@ -146,6 +159,7 @@ export default function ChatPage() {
               <option className="bg-popover text-popover-foreground" value="tech">TECH STACK</option>
               <option className="bg-popover text-popover-foreground" value="harvard">HARVARD</option>
               <option className="bg-popover text-popover-foreground" value="bian">MODERN BIAN</option>
+              <option className="bg-popover text-popover-foreground" value="pure">SWISS / PURE</option>
             </select>
           </div>
         </div>

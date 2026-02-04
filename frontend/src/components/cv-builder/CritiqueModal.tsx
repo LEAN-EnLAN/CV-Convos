@@ -102,7 +102,12 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('Critique API Error:', response.status, errorData);
-                throw new Error(errorData.detail || `Failed to fetch critique: ${response.status}`);
+                const detail = errorData.detail;
+                const errorMessage =
+                    typeof detail === 'string'
+                        ? detail
+                        : detail?.message || detail?.error || `Failed to fetch critique: ${response.status}`;
+                throw new Error(errorMessage);
             }
 
             const data: CritiqueResponse = await response.json();
@@ -174,8 +179,10 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
     const getSeverityInfo = (severity: string) => {
         switch (severity) {
             case 'Critical':
+            case 'Crítico':
                 return { label: 'Crítico', className: 'bg-red-500/10 text-red-400 border-red-500/20', icon: AlertTriangle };
             case 'Suggested':
+            case 'Sugerido':
                 return { label: 'Sugerido', className: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: Info };
             default:
                 return { label: 'Menor', className: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: Info };

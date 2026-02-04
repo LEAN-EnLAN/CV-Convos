@@ -432,6 +432,11 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
                 cv_data=chat_request.cv_data,
                 current_phase=chat_request.phase,
             )
+        else:
+            # ACTUALIZACIÓN CRÍTICA: Sincronizar datos del CV desde el frontend
+            # para evitar que la sesión en memoria tenga datos obsoletos
+            session.cv_data = chat_request.cv_data
+            session.current_phase = chat_request.phase
 
         # Agregar mensaje del usuario al historial
         user_message = ChatMessage(

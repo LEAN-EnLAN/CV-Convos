@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FileUploader } from '@/components/cv-builder/FileUploader';
 import { OnboardingSelection } from '@/components/cv-builder/onboarding/OnboardingSelection';
 import { WizardLayout } from '@/components/cv-builder/wizard/WizardLayout';
@@ -10,6 +10,8 @@ import { Builder } from '@/components/cv-builder/Builder';
 import { CVData, CVTemplate } from '@/types/cv';
 import { Toaster } from 'sonner';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+import { getDebugData } from '@/lib/debug-utils';
+import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
 
 type FlowState = 'onboarding' | 'wizard' | 'template-gallery' | 'upload' | 'builder';
 
@@ -26,9 +28,19 @@ const emptyCV: CVData = {
 
 export default function Home() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [flow, setFlow] = useState<FlowState>('onboarding');
     const [cvData, setCvData] = useState<CVData | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate>('creative');
+
+    // Debug Mode Bypass
+    useEffect(() => {
+        const isDebug = searchParams.get('debug') === 'true';
+        if (isDebug && DEBUG_UI_ENABLED && flow === 'onboarding') {
+            setCvData(getDebugData());
+            setFlow('builder');
+        }
+    }, [searchParams, flow]);
 
     const sanitizeData = useCallback((data: CVData): CVData => {
         return {

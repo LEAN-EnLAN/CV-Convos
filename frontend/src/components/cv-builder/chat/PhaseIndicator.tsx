@@ -43,13 +43,15 @@ export function PhaseIndicator({
           </div>
           <span className="text-[10px] font-bold text-foreground tracking-widest">{Math.round(progress)}%</span>
         </div>
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden border border-border/50">
+        <div className="h-1.5 bg-secondary/50 rounded-full overflow-hidden backdrop-blur-sm">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
-            className="h-full bg-primary"
-          />
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="h-full bg-gradient-to-r from-primary to-accent relative"
+          >
+            <div className="absolute top-0 right-0 bottom-0 w-[4px] bg-white/50 blur-[2px]" />
+          </motion.div>
         </div>
       </div>
     );

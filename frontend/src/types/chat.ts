@@ -35,6 +35,7 @@ export type ChatRole = 'user' | 'assistant' | 'system';
 export type ChatStreamEventType =
   | 'delta'
   | 'extraction'
+  | 'visual_update'
   | 'phase_change'
   | 'complete'
   | 'error';
@@ -89,6 +90,8 @@ export interface ChatState {
   extractedData: DataExtraction | null;
   error: string | null;
   jobDescription: string | null;
+  notifications: import('./notifications').NotificationItem[];
+  activeNotificationId: string | null;
 }
 
 // =============================================================================
@@ -139,11 +142,24 @@ export interface ChatErrorEvent {
 }
 
 /**
+ * Evento de streaming: actualización visual (template, colores, fuentes)
+ */
+export interface ChatVisualUpdateEvent {
+  type: 'visual_update';
+  config: {
+    templateId?: string;
+    colors?: { primary?: string; accent?: string };
+    fonts?: { heading?: string; body?: string };
+  };
+}
+
+/**
  * Unión de todos los tipos de eventos de streaming
  */
 export type ChatStreamEvent =
   | ChatDeltaEvent
   | ChatExtractionEvent
+  | ChatVisualUpdateEvent
   | ChatPhaseChangeEvent
   | ChatCompleteEvent
   | ChatErrorEvent;
@@ -230,6 +246,11 @@ export interface ChatActions {
   applyExtraction: (extraction: DataExtraction) => void;
   resetChat: () => void;
   setJobDescription: (description: string) => void;
+  showNotification: (notification: import('./notifications').CreateNotificationInput) => string;
+  dismissNotification: (id: string) => void;
+  dismissAllNotifications: () => void;
+  updateNotification: (id: string, updates: Partial<import('./notifications').NotificationItem>) => void;
+  setActiveNotification: (id: string | null) => void;
 }
 
 /**
