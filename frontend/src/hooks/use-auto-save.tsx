@@ -6,7 +6,7 @@ import { CVData } from '@/types/cv';
 const STORAGE_KEY = 'cv_builder_unsaved_data';
 const AUTOSAVE_DELAY_MS = 2000;
 
-export function useAutoSave(data: CVData) {
+export function useAutoSave(data: CVData, isEnabled = true) {
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
@@ -15,6 +15,7 @@ export function useAutoSave(data: CVData) {
 
     // Auto-save to localStorage
     useEffect(() => {
+        if (!isEnabled) return;
         const timer = setTimeout(() => {
             setIsSaving(true);
             try {
@@ -34,7 +35,7 @@ export function useAutoSave(data: CVData) {
         }, AUTOSAVE_DELAY_MS);
 
         return () => clearTimeout(timer);
-    }, [data]);
+    }, [data, isEnabled]);
 
     return {
         isSaving,

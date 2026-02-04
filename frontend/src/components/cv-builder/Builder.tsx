@@ -22,6 +22,15 @@ import { cn } from '@/lib/utils';
 import { useAutoSave } from '@/hooks/use-auto-save';
 import { FloatingProgress } from './FloatingProgress';
 import { TEMPLATE_FONT_PRESETS, getTemplateFontPreset } from '@/lib/cv-templates/template-fonts';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface BuilderProps {
     initialData: CVData;
@@ -130,6 +139,10 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
         ...TEMPLATE_FONT_PRESETS
     });
     const initialFontsAppliedRef = useRef(false);
+    const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+    const [restoreData, setRestoreData] = useState<CVData | null>(null);
+    const [restoreTimestamp, setRestoreTimestamp] = useState<Date | null>(null);
+    const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
 
     // React to Print logic
     const handlePrint = useReactToPrint({
@@ -214,7 +227,54 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
     const progress = useMemo(() => calculateCVProgress(data), [data]);
 
     // Auto-save hook
-    const { isSaving, lastSaved } = useAutoSave(data);
+    const { isSaving, lastSaved } = useAutoSave(data, autoSaveEnabled);
+
+    useEffect(() => {
+        // Revisar si existe un borrador guardado antes de habilitar el auto-save.
+        if (typeof window === 'undefined') return;
+        try {
+            const storedDraft = localStorage.getItem('cv_builder_unsaved_data');
+            if (!storedDraft) {
+                setAutoSaveEnabled(true);
+                return;
+            }
+            const parsedDraft = JSON.parse(storedDraft) as { data?: CVData; timestamp?: number };
+            if (!parsedDraft?.data) {
+                setAutoSaveEnabled(true);
+                return;
+            }
+            setRestoreData(parsedDraft.data);
+            setRestoreTimestamp(parsedDraft.timestamp ? new Date(parsedDraft.timestamp) : null);
+            setShowRestorePrompt(true);
+            setAutoSaveEnabled(false);
+        } catch (error) {
+            console.error('Failed to read saved draft', error);
+            setAutoSaveEnabled(true);
+        }
+    }, []);
+
+    const handleRestoreDraft = () => {
+        if (!restoreData) return;
+        setData({
+            ...restoreData,
+            config: restoreData.config || DEFAULT_CONFIG
+        });
+        localStorage.removeItem('cv_builder_unsaved_data');
+        localStorage.removeItem('cv_backup_latest');
+        setShowRestorePrompt(false);
+        setRestoreData(null);
+        setRestoreTimestamp(null);
+        setAutoSaveEnabled(true);
+    };
+
+    const handleDiscardDraft = () => {
+        localStorage.removeItem('cv_builder_unsaved_data');
+        localStorage.removeItem('cv_backup_latest');
+        setShowRestorePrompt(false);
+        setRestoreData(null);
+        setRestoreTimestamp(null);
+        setAutoSaveEnabled(true);
+    };
 
     // Get the appropriate template component
     const TemplateComponent = useMemo(() => {
@@ -234,6 +294,33 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
     return (
         <TooltipProvider>
             <div className="flex flex-col h-screen overflow-hidden bg-background">
+                <Dialog
+                    open={showRestorePrompt}
+                    onOpenChange={(open) => {
+                        if (!open && showRestorePrompt) {
+                            handleDiscardDraft();
+                        }
+                    }}
+                >
+                    <DialogContent showCloseButton={false} className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>¿Restaurar el último borrador?</DialogTitle>
+                            <DialogDescription>
+                                {restoreTimestamp
+                                    ? `Guardado por última vez el ${restoreTimestamp.toLocaleString()}.`
+                                    : 'Hemos encontrado un borrador guardado localmente.'}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={handleDiscardDraft}>
+                                Descartar
+                            </Button>
+                            <Button onClick={handleRestoreDraft}>
+                                Restaurar borrador
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
                 <FloatingProgress
                     percentage={progress.percentage}
                     sections={progress.sections}
