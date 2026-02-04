@@ -60,7 +60,7 @@ export function OnboardingSelection({ onSelectOption }: OnboardingSelectionProps
                                 <span className="text-background font-black text-sm">CV</span>
                             </div>
                             <div>
-                                <h1 className="text-sm font-black tracking-tighter uppercase">CV-Studio</h1>
+                                <h1 className="text-sm font-black tracking-tighter uppercase">CV-ConVos</h1>
                                 <div className="h-0.5 w-full bg-primary/40 rounded-full mt-0.5" />
                             </div>
                         </div>

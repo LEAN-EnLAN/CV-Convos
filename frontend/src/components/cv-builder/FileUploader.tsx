@@ -130,7 +130,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold tracking-tight">CV-ConVos</h1>
-                            <p className="text-xs text-muted-foreground">Tu CV, tu historia</p>
+                            <p className="text-xs text-muted-foreground">CV-ConVos: tu historia</p>
                         </div>
                     </header>
 
