@@ -36,6 +36,7 @@ from app.api.schemas import (
     CritiqueResponse,
 )
 from app.core.exceptions import (
+    APIError,
     CVProcessingError,
     FileProcessingError,
     AIServiceError,
@@ -215,6 +216,8 @@ async def critique_cv(request: Request, cv_data: CVDataInput):
             raise CVProcessingError("El servicio de IA no devolvió resultados.")
 
         return critique_results
+    except APIError:
+        raise
     except Exception as e:
         logger.exception(f"Error in critique_cv endpoint: {str(e)}")
         if "ValidationError" in str(type(e)):
@@ -237,6 +240,8 @@ async def interview_cv(
             raise CVProcessingError("No se pudo optimizar el CV para el puesto.")
 
         return result
+    except APIError:
+        raise
     except AIServiceError as e:
         raise e
     except Exception:
@@ -255,6 +260,8 @@ async def generate_linkedin_post_endpoint(request: Request, cv_data: CVDataInput
             raise CVProcessingError("No se pudo generar el post de LinkedIn.")
 
         return result
+    except APIError:
+        raise
     except AIServiceError as e:
         raise e
     except Exception:
@@ -284,6 +291,8 @@ async def generate_cover_letter_endpoint(request: Request, cover_letter_request:
             closing=result.get("closing", ""),
             signature=result.get("signature", ""),
         )
+    except APIError:
+        raise
     except AIServiceError as e:
         raise e
     except Exception:
