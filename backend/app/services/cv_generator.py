@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional, List, Literal
 from datetime import datetime
 from app.core.config import settings
 from app.core.exceptions import CVProcessingError, AIServiceError
-from app.services.ai_service import get_ai_completion, SYSTEM_RULES
+from app.services.ai_service import get_ai_completion, get_system_rules
 
 logger = logging.getLogger(__name__)
 
@@ -278,7 +278,7 @@ async def generate_complete_cv(cv_data: Dict[str, Any], template_type: str) -> D
 
         ai_response = await get_ai_completion(
             prompt=combined_prompt,
-            system_msg=SYSTEM_RULES,
+            system_msg=get_system_rules(),
             use_json=True,
         )
 

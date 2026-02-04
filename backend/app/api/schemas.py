@@ -52,6 +52,7 @@ class ChatMessage(BaseSchema):
 class DataExtraction(BaseSchema):
     """Resultado de la extracción de datos de un mensaje."""
     extracted: Dict[str, Any] = Field(default_factory=dict, description="Datos extraídos estructurados")
+    deleted_items: Optional[List[Dict[str, Any]]] = Field(None, description="Items marcados para eliminación")
     confidence: Dict[str, float] = Field(default_factory=dict, description="Scores de confianza por campo")
     needs_clarification: List[str] = Field(default_factory=list, description="Campos que necesitan aclaración")
     follow_up_questions: List[str] = Field(default_factory=list, description="Preguntas de seguimiento sugeridas")
@@ -319,6 +320,7 @@ class CVData(BaseSchema):
     languages: List[Dict[str, Any]] = []
     certifications: List[Dict[str, Any]] = []
     interests: List[Any] = []
+    tools: List[str] = []
 
     model_config = ConfigDict(
         extra="allow",

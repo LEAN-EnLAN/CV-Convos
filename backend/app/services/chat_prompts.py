@@ -43,6 +43,7 @@ REGLA DE ORO: Si puedes preguntar algo en 5 palabras, no uses 10. Tu valor es el
 
 DATA_EXTRACTION_PROMPT = """
 Task: Extract structured CV data from the user's latest message.
+CURRENT DATE: {current_date}
 
 RULES:
 1. ONLY extract information present in the LATEST user message.

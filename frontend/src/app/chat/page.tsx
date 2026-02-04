@@ -81,10 +81,26 @@ export default function ChatPage() {
    * Handles CV data updates from the wizard
    */
   const handleCVDataUpdate = useCallback((newData: Partial<CVData>) => {
-    setCvData((prev: CVData) => ({
-      ...prev,
-      ...newData,
-    }));
+    setCvData((prev: CVData) => {
+      // Special handling for config to avoid overwriting the whole object
+      if (newData.config && prev.config) {
+        return {
+          ...prev,
+          ...newData,
+          config: {
+            ...prev.config,
+            ...newData.config,
+            colors: { ...prev.config.colors, ...newData.config.colors },
+            fonts: { ...prev.config.fonts, ...newData.config.fonts },
+            layout: { ...prev.config.layout, ...newData.config.layout },
+          }
+        };
+      }
+      return {
+        ...prev,
+        ...newData,
+      };
+    });
   }, []);
 
   /**

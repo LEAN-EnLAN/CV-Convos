@@ -154,7 +154,11 @@ export function ConversationalWizard({
       setCvData((prev) => deepMerge(prev, newData));
       const configWithTemplate = newData.config as { templateId?: string } & typeof newData.config;
       if (configWithTemplate.templateId) {
-        setInternalTemplate(configWithTemplate.templateId as CVTemplate);
+        const newTemplate = configWithTemplate.templateId as CVTemplate;
+        setInternalTemplate(newTemplate);
+        if (onExternalTemplateChange) {
+          onExternalTemplateChange(newTemplate);
+        }
       }
       return;
     }
