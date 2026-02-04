@@ -3,25 +3,18 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CVData, CVTemplate, TemplateConfig } from '@/types/cv';
 import { Editor } from './Editor';
-import { ProfessionalTemplate } from './templates/ProfessionalTemplate';
-import { HarvardTemplate } from './templates/HarvardTemplate';
-import { CreativeTemplate } from './templates/CreativeTemplate';
-import { PureTemplate } from './templates/PureTemplate';
-import { TerminalTemplate } from './templates/TerminalTemplate';
-import { CareTemplate } from './templates/CareTemplate';
-import { CapitalTemplate } from './templates/CapitalTemplate';
-import { ScholarTemplate } from './templates/ScholarTemplate';
-
 import { useReactToPrint } from 'react-to-print';
 import { useCVHistory } from '@/hooks/use-cv-history';
 import { Eye } from 'lucide-react';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Header, templateOptions } from './header/Header';
+import { Header } from './header/Header';
 import { cn } from '@/lib/utils';
 import { useAutoSave } from '@/hooks/use-auto-save';
 import { FloatingProgress } from './FloatingProgress';
 import { TEMPLATE_FONT_PRESETS, getTemplateFontPreset } from '@/lib/cv-templates/template-fonts';
+import { TEMPLATE_BY_ID } from '@/lib/cv-templates/template-registry';
+import { getTemplateRenderer } from './templates/template-renderer';
 
 interface BuilderProps {
     initialData: CVData;
@@ -210,26 +203,14 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
         });
     };
 
-    const currentTemplate = templateOptions.find(t => t.id === template);
+    const currentTemplate = TEMPLATE_BY_ID[template];
     const progress = useMemo(() => calculateCVProgress(data), [data]);
 
     // Auto-save hook
     const { isSaving, lastSaved } = useAutoSave(data);
 
     // Get the appropriate template component
-    const TemplateComponent = useMemo(() => {
-        const templates: Record<string, React.ComponentType<{ data: CVData }>> = {
-            professional: ProfessionalTemplate,
-            harvard: HarvardTemplate,
-            creative: CreativeTemplate,
-            pure: PureTemplate,
-            terminal: TerminalTemplate,
-            care: CareTemplate,
-            capital: CapitalTemplate,
-            scholar: ScholarTemplate,
-        };
-        return templates[template] || CreativeTemplate;
-    }, [template]);
+    const TemplateComponent = useMemo(() => getTemplateRenderer(template), [template]);
 
     return (
         <TooltipProvider>

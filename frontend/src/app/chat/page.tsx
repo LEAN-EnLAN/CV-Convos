@@ -9,6 +9,8 @@ import { ConversationalWizard } from '@/components/cv-builder/wizard/Conversatio
 import { ChatProvider } from '@/contexts/ChatContext';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+import { TEMPLATE_DEFINITIONS } from '@/lib/cv-templates/template-registry';
+import { isValidTemplateType } from '@/lib/api/cv-generator';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import { getDebugData } from '@/lib/debug-utils';
@@ -56,6 +58,13 @@ export default function ChatPage() {
       setCvData(getDebugData());
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const storedTemplate = localStorage.getItem('cv_template');
+    if (storedTemplate && isValidTemplateType(storedTemplate)) {
+      setSelectedTemplate(storedTemplate);
+    }
+  }, []);
 
   /**
    * Handles CV data updates from the wizard
@@ -153,13 +162,15 @@ export default function ChatPage() {
               className="text-[10px] font-bold bg-background hover:bg-muted text-foreground border border-input rounded-lg px-4 py-2 outline-none focus:ring-2 ring-ring transition-all cursor-pointer min-w-[150px] appearance-none uppercase tracking-wider shadow-sm"
               style={{ textAlignLast: 'center' }}
             >
-              <option className="bg-popover text-popover-foreground" value="professional">PROFESIONAL</option>
-              <option className="bg-popover text-popover-foreground" value="minimal">MINIMALISTA</option>
-              <option className="bg-popover text-popover-foreground" value="creative">CREATIVO</option>
-              <option className="bg-popover text-popover-foreground" value="tech">TECH STACK</option>
-              <option className="bg-popover text-popover-foreground" value="harvard">HARVARD</option>
-              <option className="bg-popover text-popover-foreground" value="bian">MODERN BIAN</option>
-              <option className="bg-popover text-popover-foreground" value="pure">SWISS / PURE</option>
+              {TEMPLATE_DEFINITIONS.map((template) => (
+                <option
+                  key={template.id}
+                  className="bg-popover text-popover-foreground"
+                  value={template.id}
+                >
+                  {template.name.toUpperCase()}
+                </option>
+              ))}
             </select>
           </div>
         </div>

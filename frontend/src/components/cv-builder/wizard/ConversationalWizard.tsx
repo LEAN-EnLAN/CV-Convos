@@ -12,16 +12,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import { getTemplateFontPreset } from '@/lib/cv-templates/template-fonts';
-
-// Templates for preview
-import { ProfessionalTemplate } from '@/components/cv-builder/templates/ProfessionalTemplate';
-import { HarvardTemplate } from '@/components/cv-builder/templates/HarvardTemplate';
-import { CreativeTemplate } from '@/components/cv-builder/templates/CreativeTemplate';
-import { PureTemplate } from '@/components/cv-builder/templates/PureTemplate';
-import { TerminalTemplate } from '@/components/cv-builder/templates/TerminalTemplate';
-import { CareTemplate } from '@/components/cv-builder/templates/CareTemplate';
-import { CapitalTemplate } from '@/components/cv-builder/templates/CapitalTemplate';
-import { ScholarTemplate } from '@/components/cv-builder/templates/ScholarTemplate';
+import { getTemplateRenderer } from '@/components/cv-builder/templates/template-renderer';
 
 interface ConversationalWizardProps {
   onComplete: (data: CVData) => void;
@@ -214,18 +205,8 @@ export function ConversationalWizard({
         : baseConfig.fonts
     };
     const resolvedData = { ...data, config: resolvedConfig };
-    let template;
-    switch (selectedTemplate) {
-      case 'professional': template = <ProfessionalTemplate data={resolvedData} />; break;
-      case 'harvard': template = <HarvardTemplate data={resolvedData} />; break;
-      case 'creative': template = <CreativeTemplate data={resolvedData} />; break;
-      case 'pure': template = <PureTemplate data={resolvedData} />; break;
-      case 'terminal': template = <TerminalTemplate data={resolvedData} />; break;
-      case 'care': template = <CareTemplate data={resolvedData} />; break;
-      case 'capital': template = <CapitalTemplate data={resolvedData} />; break;
-      case 'scholar': template = <ScholarTemplate data={resolvedData} />; break;
-      default: template = <ProfessionalTemplate data={resolvedData} />;
-    }
+    const TemplateComponent = getTemplateRenderer(selectedTemplate);
+    const template = <TemplateComponent data={resolvedData} />;
 
     return (
       <div

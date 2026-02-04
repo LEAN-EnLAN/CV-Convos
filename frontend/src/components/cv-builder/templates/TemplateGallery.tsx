@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Check, Sparkles, ArrowRight, Layout, Zap, Search } from 'lucide-react';
+import { Check, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CVTemplate } from '@/types/cv';
 import { cn } from '@/lib/utils';
-import { templateOptions } from '../header/Header';
+import { TEMPLATE_DEFINITIONS, TEMPLATE_CATEGORIES, TEMPLATE_BY_ID } from '@/lib/cv-templates/template-registry';
 
 interface TemplateGalleryProps {
     onSelect: (template: CVTemplate) => void;
@@ -66,27 +65,13 @@ const ResumeSkeleton = ({ variant }: { variant: string }) => {
     return (layouts[variant] || layouts.classic) as React.ReactElement;
 };
 
-// Updated categories with better mapping - SYNCED with TemplateSelector
-const templateMeta: Record<string, { category: string; color: string; tags: string[]; skeleton: string }> = {
-    professional: { category: 'Corporativo', color: 'bg-zinc-800', tags: ['Clean', 'ATS-Ready'], skeleton: 'classic' },
-    creative: { category: 'Diseño', color: 'bg-stone-800', tags: ['Editorial', 'Bold'], skeleton: 'modern' },
-    harvard: { category: 'Académico', color: 'bg-slate-800', tags: ['Ivy League', 'Standard'], skeleton: 'classic' },
-    pure: { category: 'Moderno', color: 'bg-stone-100', tags: ['Swiss', 'Whitespace'], skeleton: 'split' },
-    terminal: { category: 'Tecnología', color: 'bg-slate-950', tags: ['Code', 'Monospace'], skeleton: 'modern' },
-    care: { category: 'Diseño', color: 'bg-orange-100', tags: ['Warm', 'Human'], skeleton: 'split' },
-    capital: { category: 'Corporativo', color: 'bg-blue-950', tags: ['Finance', 'Data'], skeleton: 'classic' },
-    scholar: { category: 'Académico', color: 'bg-red-900', tags: ['Research', 'Publications'], skeleton: 'classic' }
-};
-
 export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
     const [selectedId, setSelectedId] = useState<CVTemplate | null>(null);
     const [filter, setFilter] = useState<string>('Todas');
 
-    const categories = ['Todas', 'Corporativo', 'Académico', 'Moderno', 'Diseño', 'Tecnología'];
-
     const filteredTemplates = filter === 'Todas'
-        ? templateOptions
-        : templateOptions.filter(t => templateMeta[t.id]?.category === filter);
+        ? TEMPLATE_DEFINITIONS
+        : TEMPLATE_DEFINITIONS.filter((template) => template.category === filter);
 
     const handleSelect = (templateId: string) => {
         setSelectedId(templateId as CVTemplate);
@@ -131,7 +116,7 @@ export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
 
                         {/* Filter Tabs */}
                         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar mask-gradient-x">
-                            {categories.map(cat => (
+                        {TEMPLATE_CATEGORIES.map(cat => (
                                 <button
                                     key={cat}
                                     onClick={() => setFilter(cat)}
@@ -153,7 +138,7 @@ export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
                     <ScrollArea className="h-full w-full rounded-3xl bg-white/40 border border-slate-200/60 backdrop-blur-sm shadow-xl shadow-slate-200/40">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-8">
                             {filteredTemplates.map((template) => {
-                                const meta = templateMeta[template.id] || { category: 'General', color: 'bg-slate-500', tags: [], skeleton: 'classic' };
+                                const meta = TEMPLATE_BY_ID[template.id];
                                 const isSelected = selectedId === template.id;
 
                                 return (
@@ -161,25 +146,25 @@ export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
                                         key={template.id}
                                         onClick={() => handleSelect(template.id)}
                                         className={cn(
-                                            "group relative flex flex-col bg-white rounded-2xl overflow-hidden cursor-pointer h-[360px]",
-                                            "transition-all duration-300 ease-out",
+                                            "group relative flex flex-col bg-white rounded-3xl overflow-hidden cursor-pointer h-[360px]",
+                                            "transition-all duration-300 ease-out border border-slate-100",
                                             isSelected
-                                                ? "ring-4 ring-emerald-500/20 border-emerald-500 shadow-2xl shadow-emerald-500/20 translate-y-[-4px]"
-                                                : "border border-slate-100 shadow-sm hover:shadow-xl hover:translate-y-[-8px] hover:border-slate-200"
+                                                ? "ring-2 ring-emerald-500/30 border-emerald-400 shadow-xl shadow-emerald-500/10"
+                                                : "shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-slate-200"
                                         )}
                                     >
                                         {/* Preview Header */}
                                         <div className={cn(
                                             "h-40 relative overflow-hidden flex items-center justify-center transition-colors duration-500",
-                                            meta.color
+                                            meta?.previewColor
                                         )}>
                                             <div className="absolute inset-0 bg-black/10 mix-blend-overlay" />
                                             {/* Pattern Overlay */}
-                                            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.2)_1px,transparent_0)] bg-[length:16px_16px]" />
+                                            <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.24)_1px,transparent_0)] bg-[length:16px_16px]" />
 
-                                            <div className="relative z-10 transform transition-transform duration-500 group-hover:scale-105 group-hover:rotate-1">
-                                                <div className="w-32 h-52 bg-white rounded shadow-2xl skew-y-[-2deg] opacity-95 scale-90 border border-black/5">
-                                                    <ResumeSkeleton variant={meta.skeleton} />
+                                            <div className="relative z-10 transform transition-transform duration-500 group-hover:scale-[1.03]">
+                                                <div className="w-32 h-52 bg-white rounded-xl shadow-xl opacity-95 scale-90 border border-black/5">
+                                                    <ResumeSkeleton variant={meta?.skeleton || 'classic'} />
                                                 </div>
                                             </div>
 
@@ -198,7 +183,7 @@ export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
                                                 <div className="flex items-center justify-between mb-2">
                                                     <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors">{template.name}</h3>
                                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 hover:bg-slate-200">
-                                                        {meta.category}
+                                                        {meta?.category}
                                                     </Badge>
                                                 </div>
                                                 <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 font-medium">
@@ -206,17 +191,25 @@ export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
                                                 </p>
                                             </div>
 
-                                            <div className="pt-4 mt-4 border-t border-slate-50 flex items-center justify-between">
+                                            <div className="pt-4 mt-4 border-t border-slate-100/80 flex items-center justify-between">
                                                 <div className="flex gap-1.5 flex-wrap">
-                                                    {meta.tags.slice(0, 2).map((tag) => (
-                                                        <span key={tag} className="text-[10px] bg-slate-50 text-slate-500 px-2 py-1 rounded-md font-semibold border border-slate-100">
+                                                    {(meta?.tags || []).slice(0, 2).map((tag) => (
+                                                        <span key={tag} className="text-[10px] bg-slate-50 text-slate-600 px-2 py-1 rounded-full font-semibold border border-slate-100">
                                                             {tag}
                                                         </span>
                                                     ))}
                                                 </div>
-                                                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-slate-900 group-hover:text-white">
-                                                    <ArrowRight className="w-4 h-4" />
-                                                </div>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        onSelect(template.id);
+                                                    }}
+                                                    className="h-8 px-3 text-[11px] font-semibold text-slate-900 bg-slate-100 hover:bg-slate-900 hover:text-white"
+                                                >
+                                                    Aplicar
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
@@ -229,4 +222,3 @@ export function TemplateGallery({ onSelect, onBack }: TemplateGalleryProps) {
         </div>
     );
 }
-
