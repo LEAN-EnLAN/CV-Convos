@@ -11,7 +11,7 @@ import {
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
-  onQuickAction?: (action: string) => void;
+  onQuickAction?: (action: string) => boolean | void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -53,10 +53,10 @@ export function ChatInput({
   };
 
   const handleQuickActionClick = (action: string, text: string) => {
-    if (onQuickAction) {
-      onQuickAction(action);
+    const isHandled = onQuickAction?.(action);
+    if (!isHandled) {
+      onSendMessage(text);
     }
-    onSendMessage(text);
   };
 
   return (
