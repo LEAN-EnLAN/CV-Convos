@@ -14,6 +14,7 @@ export interface PersonalInfo {
 
 export interface Experience {
     id: string;
+    order?: number;
     company: string;
     position: string;
     startDate: string;
@@ -25,6 +26,7 @@ export interface Experience {
 
 export interface Education {
     id: string;
+    order?: number;
     institution: string;
     degree: string;
     fieldOfStudy: string;
@@ -44,6 +46,7 @@ export interface Skill {
 
 export interface Project {
     id: string;
+    order?: number;
     name: string;
     description: string;
     url?: string;
@@ -148,4 +151,3 @@ export interface CritiqueResponse {
 export interface TemplateProps {
     data: CVData;
 }
-
