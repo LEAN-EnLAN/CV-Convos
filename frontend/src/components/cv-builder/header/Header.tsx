@@ -68,7 +68,7 @@ export function Header({
                 </div>
                 <div className="hidden sm:block leading-none">
                     <h1 className="font-extrabold tracking-tight text-slate-900 text-sm">CV-ConVos</h1>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI Builder</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CV-ConVos</p>
                 </div>
             </div>
 
