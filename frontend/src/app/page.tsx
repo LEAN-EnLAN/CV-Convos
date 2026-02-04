@@ -2,12 +2,16 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { OnboardingSelection } from '@/components/cv-builder/onboarding/OnboardingSelection';
+import { ConversationalWizard } from '@/components/cv-builder/wizard/ConversationalWizard';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import { getDebugData } from '@/lib/debug-utils';
 import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
+import { ChatProvider } from '@/contexts/ChatContext';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 const WizardLayout = dynamic(
     () => import('@/components/cv-builder/wizard/WizardLayout').then((mod) => mod.WizardLayout),
@@ -53,7 +57,7 @@ const Builder = dynamic(
     }
 );
 
-type FlowState = 'onboarding' | 'wizard' | 'template-gallery' | 'upload' | 'builder';
+type FlowState = 'onboarding' | 'wizard' | 'chat' | 'template-gallery' | 'upload' | 'builder';
 
 const emptyCV: CVData = {
     personalInfo: { fullName: '', email: '', phone: '', location: '', summary: '' },
@@ -67,11 +71,13 @@ const emptyCV: CVData = {
 };
 
 export default function Home() {
-    const router = useRouter();
     const searchParams = useSearchParams();
     const [flow, setFlow] = useState<FlowState>('onboarding');
     const [cvData, setCvData] = useState<CVData | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate>('creative');
+    const [templateGallerySource, setTemplateGallerySource] = useState<
+        'upload' | 'wizard' | null
+    >(null);
 
     // Debug Mode Bypass
     useEffect(() => {
@@ -122,13 +128,14 @@ export default function Home() {
         if (option === 'existing') {
             setFlow('upload');
         } else {
-            router.push('/chat');
+            setFlow('wizard');
         }
     };
 
     const handleWizardComplete = (data: CVData) => {
         setCvData(sanitizeData(data));
-        setFlow('template-gallery');
+        setTemplateGallerySource('wizard');
+        setFlow('chat');
     };
 
     const handleTemplateSelect = (template: CVTemplate) => {
@@ -152,13 +159,35 @@ export default function Home() {
 
     const handleFileUploadSuccess = (data: CVData) => {
         setCvData(sanitizeData(data));
+        setTemplateGallerySource('upload');
+        setFlow('chat');
+    };
+
+    const handleChatDataUpdate = useCallback((data: Partial<CVData>) => {
+        setCvData(prev => {
+            const baseData = prev ?? { ...emptyCV, config: { ...DEFAULT_CONFIG } };
+            return {
+                ...baseData,
+                ...data,
+                config: data.config ?? baseData.config
+            };
+        });
+    }, []);
+
+    const handleChatComplete = (data: CVData) => {
+        setCvData(sanitizeData(data));
         setFlow('template-gallery');
+    };
+
+    const handleChatBack = () => {
+        setFlow(templateGallerySource ?? 'onboarding');
     };
 
     const handleReset = () => {
         setCvData(null);
         setFlow('onboarding');
         setSelectedTemplate('creative');
+        setTemplateGallerySource(null);
     };
 
     return (
@@ -177,8 +206,33 @@ export default function Home() {
             {flow === 'template-gallery' && cvData && (
                 <TemplateGallery
                     onSelect={handleTemplateSelect}
-                    onBack={() => setFlow('wizard')}
+                    onBack={() => setFlow(templateGallerySource ?? 'onboarding')}
                 />
+            )}
+
+            {flow === 'chat' && cvData && (
+                <div className="relative h-screen">
+                    <div className="absolute left-6 top-6 z-50">
+                        <Button
+                            variant="ghost"
+                            onClick={handleChatBack}
+                            className="px-3 hover:bg-muted"
+                        >
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Volver
+                        </Button>
+                    </div>
+                    <ChatProvider initialCVData={cvData} onCVDataUpdate={handleChatDataUpdate}>
+                        <ConversationalWizard
+                            initialData={cvData}
+                            onComplete={handleChatComplete}
+                            onBack={handleChatBack}
+                            selectedTemplate={selectedTemplate}
+                            onTemplateChange={setSelectedTemplate}
+                            showCVPreview
+                        />
+                    </ChatProvider>
+                </div>
             )}
 
             {flow === 'upload' && (
