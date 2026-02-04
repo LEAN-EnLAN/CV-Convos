@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Sparkles, MessageCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ConversationalWizard } from '@/components/cv-builder/wizard/ConversationalWizard';
 import { ChatProvider } from '@/contexts/ChatContext';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
@@ -13,6 +13,17 @@ import { cn } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import { getDebugData } from '@/lib/debug-utils';
 import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
+
+const ConversationalWizard = dynamic(
+  () => import('@/components/cv-builder/wizard/ConversationalWizard').then((mod) => mod.ConversationalWizard),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+        Cargando conversación...
+      </div>
+    ),
+  }
+);
 
 // =============================================================================
 // INITIAL STATE

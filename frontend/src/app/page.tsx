@@ -1,17 +1,57 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileUploader } from '@/components/cv-builder/FileUploader';
 import { OnboardingSelection } from '@/components/cv-builder/onboarding/OnboardingSelection';
-import { WizardLayout } from '@/components/cv-builder/wizard/WizardLayout';
-import { TemplateGallery } from '@/components/cv-builder/templates/TemplateGallery';
-import { Builder } from '@/components/cv-builder/Builder';
 import { CVData, CVTemplate } from '@/types/cv';
-import { Toaster } from 'sonner';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import { getDebugData } from '@/lib/debug-utils';
 import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
+
+const WizardLayout = dynamic(
+    () => import('@/components/cv-builder/wizard/WizardLayout').then((mod) => mod.WizardLayout),
+    {
+        loading: () => (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                Cargando asistente...
+            </div>
+        )
+    }
+);
+
+const TemplateGallery = dynamic(
+    () => import('@/components/cv-builder/templates/TemplateGallery').then((mod) => mod.TemplateGallery),
+    {
+        loading: () => (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                Cargando plantillas...
+            </div>
+        )
+    }
+);
+
+const FileUploader = dynamic(
+    () => import('@/components/cv-builder/FileUploader').then((mod) => mod.FileUploader),
+    {
+        loading: () => (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                Preparando carga...
+            </div>
+        )
+    }
+);
+
+const Builder = dynamic(
+    () => import('@/components/cv-builder/Builder').then((mod) => mod.Builder),
+    {
+        loading: () => (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                Preparando editor...
+            </div>
+        )
+    }
+);
 
 type FlowState = 'onboarding' | 'wizard' | 'template-gallery' | 'upload' | 'builder';
 
