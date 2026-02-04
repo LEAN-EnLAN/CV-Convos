@@ -43,17 +43,24 @@ def _raise_if_no_ai_provider() -> None:
 
 # --- SYSTEM PROMPTS (THE BIBLE OF TRUTH) ---
 
-SYSTEM_RULES = """
+def get_system_rules() -> str:
+    """Returns the unified system rules with current date context."""
+    now = datetime.now()
+    return f"""
 You are a TECHNICAL RESUME COMPILER. You operate under 100% factual integrity.
-- IDENTITY LOCK: Never change the candidate's Name, Email, Phone, Location, Company Names, or Job Titles.
+- CURRENT DATE: {now.strftime("%Y-%m-%d")} (Use this for relative date calculations like "2 years ago").
+- IDENTITY LOCK: Never change the candidate's Name, Email, Phone, Location, LinkedIn, or GitHub.
 - NO HALLUCINATIONS: Do not invent metrics, percentages, or achievements not explicitly stated.
 - LANGUAGE LOYALTY: You must respond in the EXACT same language as the input. 
-- FORMAT: You only output valid JSON. No conversational text.
+- FORMAT: You only output valid JSON (unless in chat mode).
+- TEMPORAL REASONING: If the user says they worked for "2 years" at a company and the current year is {now.year}, set the startDate to {now.year - 2}.
 - VERB CONJUGATION (CRITICAL):
   - If the input is in SPANISH, you MUST use FIRST PERSON SINGULAR (e.g., "Realicé", "Lideré", "Desarrollé"). 
   - NEVER use third person (e.g., "Realizó", "Lideró", "Desarrolló").
   - This is non-negotiable for Spanish CVs.
 """
+
+SYSTEM_RULES = get_system_rules()
 
 EXTRACT_CV_PROMPT = """
 Task: Convert the provided text into a structured CV JSON.
@@ -191,24 +198,26 @@ Input CV:
 
 ROLE_ALIGNMENT_PROMPT = """
 Task: REWRITE this CV to perfectly target the role: "{target_role}".
-Goal: Make the recruiter think "This is the exact person we need".
+Goal: Strategic alignment for the target position while maintaining factual integrity.
+CURRENT DATE: {current_date}
 
 Instructions:
-1. SUMMARY: Rewrite to position the candidate as a "{target_role}" expert.
-2. EXPERIENCE (CRITICAL OPTIMIZATION): 
-   - FOR RELEVANT ROLES (e.g. if target is Dev and role is Dev): EXPAND significantly. Add 3-4 distinct bullet points. Detail technologies, achievements and complexity. Make it look impressive.
-   - FOR IRRELEVANT ROLES (e.g. Freelancer, Technician, Support, etc. if not related to target): 
-     - Option A: REMOVE completely if it adds no value.
-     - Option B: MINIMIZE to a single simplified line or 1 short bullet point.
-     - EXAMPLE: If target is "Dev React" and role is "Repair Technician", minimize or delete it.
-   - SPECIFIC OVERRIDE: If the role is "Freelancer" or "Rosario Tecno" and target is logical, reduce them to the bare minimum. If role is "Pildhora", expand it.
-3. SKILLS: Reorder to put "{target_role}" relevant skills first. Add missing standard skills for this role if the candidate likely has them based on context.
-4. LANGUAGE: {language} (Match CV language).
+1. SUMMARY: Rewrite to position the candidate as a "{target_role}" expert. Highlight years of experience and core value proposition.
+2. EXPERIENCE (CRITICAL STRATEGY):
+   - RELEVANCE CHECK: For each experience item, evaluate its impact for a "{target_role}" position.
+   - HIGH RELEVANCE: Expand. Add 3-5 high-impact bullet points using action verbs and quantifying results (%, $). Detail specific technologies mentioned in the job context.
+   - LOW RELEVANCE (e.g., worked at unrelated retail/service jobs like McDonald's when targeting a Tech role):
+     - **REMOVE** the item completely if it does not contribute to the professional narrative of a "{target_role}".
+     - Exception: If removing it leaves a massive gap (> 2 years) and there's nothing else, keep it but MINIMIZE to 1 short line.
+   - IRRELEVANT/OLD: If an experience is >10 years old and not critical, remove it.
+3. SKILLS: Reorder to place "{target_role}" core skills at the top. Add inferred skills based on experience.
+4. PROJECTS: Keep and prioritize projects that demonstrate skills needed for "{target_role}".
+5. LANGUAGE: {language} (Strictly match input language).
 
-Input CV:
+Input CV JSON:
 {cv_json}
 
-Return the FULL CV JSON.
+IMPORTANT: You MUST return the FULL VALID CV JSON object. Do not omit any required sections.
 """
 
 SENTINEL_CRITIQUE_PROMPT = """
@@ -388,8 +397,10 @@ def _get_mock_fallback(prompt: str, system_msg: str, use_json: bool = True) -> A
     return {}
 
 
-async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES, use_json: bool = True):
+async def get_ai_completion(prompt: str, system_msg: str = None, use_json: bool = True):
     _raise_if_no_ai_provider()
+    if system_msg is None:
+        system_msg = get_system_rules()
     # 1. Try Groq (Primary)
     if settings.GROQ_API_KEY and settings.GROQ_API_KEY != "placeholder_key":
         loop = asyncio.get_event_loop()
@@ -585,6 +596,7 @@ def _apply_optimization_response(
                     skill_clean.append({"name": name, "level": level})
         return skill_clean or None
 
+    # 1. Summary Optimization
     if section == "summary" or target == "summarize_profile":
         new_summary = ai_response.get("personalInfo", {}).get(
             "summary"
@@ -596,16 +608,25 @@ def _apply_optimization_response(
                     new_summary = original_summary
             result_cv["personalInfo"]["summary"] = new_summary
 
+    # 2. Skills Optimization (always replace list if provided)
     elif section == "skills" or target == "suggest_skills":
         if "skills" in ai_response:
             normalized_skills = _normalize_skills_list(ai_response.get("skills"))
             if normalized_skills:
                 result_cv["skills"] = normalized_skills
 
+    # 3. One Page Optimizer (Full CV Replacement but keep contact info)
     elif target in ["one_page", "try_one_page"]:
         if "experience" in ai_response:
-            return ai_response
+            # AI returned full sections, merge them
+            for key in ["experience", "education", "skills", "projects", "languages", "certifications"]:
+                if key in ai_response and isinstance(ai_response[key], list):
+                    result_cv[key] = ai_response[key]
+            if "personalInfo" in ai_response and "summary" in ai_response["personalInfo"]:
+                result_cv["personalInfo"]["summary"] = ai_response["personalInfo"]["summary"]
+            return result_cv
 
+    # 4. Experience Optimization (Surgical description update)
     elif section == "experience":
         if "experience" in ai_response and isinstance(ai_response["experience"], list):
             original_experience = original_copy.get("experience", [])
@@ -613,6 +634,7 @@ def _apply_optimization_response(
                 original_experience, ai_response["experience"]
             )
 
+    # 5. Generic Section Optimization
     elif section in ai_response:
         result_cv[section] = ai_response[section]
 
@@ -630,7 +652,7 @@ async def optimize_cv_data(cv_data: dict, target: str, section: str):
     language_instruction = "Spanish if the input is Spanish, English if English."
 
     prompt = ""
-    system_msg = SYSTEM_RULES
+    system_msg = get_system_rules()
 
     # ROUTING LOGIC
     if section == "summary" or target == "summarize_profile":
@@ -962,28 +984,49 @@ async def optimize_for_role(cv_data: dict, target_role: str):
 
     ai_response = await get_ai_completion(
         ROLE_ALIGNMENT_PROMPT.format(
-            target_role=target_role, cv_json=cv_json, language=language_instruction
+            target_role=target_role,
+            cv_json=cv_json,
+            language=language_instruction,
+            current_date=datetime.now().strftime("%Y-%m-%d"),
         )
     )
 
-    if not ai_response:
+    if not ai_response or not isinstance(ai_response, dict):
+        logger.warning(f"Role optimization failed for role: {target_role}")
         return original_copy
 
-    # Post-processing to ensure safety
-    # Restore contact info to prevent hallucinations there
-    if "personalInfo" in ai_response and "personalInfo" in original_copy:
+    # SURGICAL MERGE: Ensure we don't lose whole sections if AI returns partial data
+    result_cv = copy.deepcopy(original_copy)
+
+    sections = [
+        "experience", "education", "skills", "projects",
+        "languages", "certifications", "interests", "tools"
+    ]
+
+    for section in sections:
+        if section in ai_response and isinstance(ai_response[section], list):
+            result_cv[section] = ai_response[section]
+
+    # Handle personalInfo summary specifically
+    if "personalInfo" in ai_response and isinstance(ai_response["personalInfo"], dict):
+        if "summary" in ai_response["personalInfo"]:
+            result_cv["personalInfo"]["summary"] = ai_response["personalInfo"]["summary"]
+        if "role" in ai_response["personalInfo"]:
+            result_cv["personalInfo"]["role"] = ai_response["personalInfo"]["role"]
+
+    # Identity Lock: Restore critical fields to avoid hallucinations
+    if "personalInfo" in original_copy:
         for field in ["fullName", "email", "phone", "location", "linkedin", "github"]:
-            ai_response["personalInfo"][field] = original_copy["personalInfo"].get(
-                field, ""
-            )
+            result_cv["personalInfo"][field] = original_copy["personalInfo"].get(field, "")
 
-        # Allow summary change
-        if "summary" not in ai_response["personalInfo"]:
-            ai_response["personalInfo"]["summary"] = original_copy["personalInfo"].get(
-                "summary", ""
-            )
-
-    return ai_response
+    # Final validation pass
+    try:
+        candidate = _ensure_cv_schema(result_cv)
+        validated = _validate_ai_payload(CVData, candidate, "optimize_for_role")
+        return validated.model_dump(by_alias=True) if validated else result_cv
+    except Exception as e:
+        logger.error(f"Validation failed in optimize_for_role: {e}")
+        return result_cv
 
 
 LINKEDIN_PROMPT = """
@@ -1920,11 +1963,14 @@ YOUR MISSION: Build a professional CV through conversation, extracting data and 
 - User describes a job → CALL update_resume_draft with experience array
 - User mentions skills → CALL update_resume_draft with skills array
 - User describes education → CALL update_resume_draft with education array
-- ANY relevant CV information → IMMEDIATELY call the function
+- User wants to REMOVE something → CALL update_resume_draft with `deletedItems` array specifying the section and the item (ID or name).
+- ANY relevant CV information (projects, languages, certifications, tools) → IMMEDIATELY call the function
 
 ### WHEN TO CALL `update_visual_identity`:
 - User asks about design/style → CALL update_visual_identity
-- User wants a different template → CALL update_visual_identity with templateId
+- User wants a different template → CALL update_visual_identity with `templateId`
+- User wants to change colors → CALL update_visual_identity with `colors` (hex codes)
+- User wants to adjust density/spacing → CALL update_visual_identity with `layout.density`
 
 ## CONVERSATION STYLE:
 1. Ask 1-2 targeted questions at a time. Never ask for lists.
@@ -1938,6 +1984,9 @@ YOUR MISSION: Build a professional CV through conversation, extracting data and 
 - 'creative': Arts/Marketing
 - 'pure': Modern Tech/Startups
 - 'terminal': Developers/DevOps
+- 'care': Healthcare/Nursing
+- 'capital': Finance/Investment
+- 'scholar': Academic/Research
 
 ## EXAMPLE INTERACTION:
 
@@ -1958,6 +2007,7 @@ REMEMBER: If you don't CALL the function, the CV preview stays EMPTY. The user w
 GROQ_SYSTEM_INSTRUCTION = """
 YOU ARE: A Senior Executive Career Coach and CV Builder Assistant.
 YOUR MISSION: Build a professional CV through conversation and ask for missing details.
+You can help the user add, update, or remove any part of their CV including work experience, education, skills, projects, languages, and certifications.
 
 IMPORTANT:
 - Do NOT mention tools or function names.
@@ -2024,9 +2074,73 @@ def get_gemini_tools():
                                     "type": "OBJECT",
                                     "properties": {
                                         "name": {"type": "STRING"},
-                                        "level": {"type": "STRING"}
+                                        "level": {"type": "STRING"},
+                                        "proficiency": {"type": "INTEGER", "description": "0-100 percentage"}
                                     }
                                 }
+                            },
+                            "projects": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "name": {"type": "STRING"},
+                                        "description": {"type": "STRING"},
+                                        "url": {"type": "STRING"},
+                                        "technologies": {
+                                            "type": "ARRAY",
+                                            "items": {"type": "STRING"}
+                                        }
+                                    }
+                                }
+                            },
+                            "languages": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "language": {"type": "STRING"},
+                                        "fluency": {"type": "STRING", "enum": ["Native", "Fluent", "Conversational", "Basic"]}
+                                    }
+                                }
+                            },
+                            "certifications": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "name": {"type": "STRING"},
+                                        "issuer": {"type": "STRING"},
+                                        "date": {"type": "STRING"}
+                                    }
+                                }
+                            },
+                            "interests": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "name": {"type": "STRING"}
+                                    }
+                                }
+                            },
+                            "tools": {
+                                "type": "ARRAY",
+                                "items": {"type": "STRING"},
+                                "description": "Software tools or systems (e.g., Jira, AWS, Git)"
+                            },
+                            "deletedItems": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "section": {"type": "STRING", "enum": ["experience", "education", "skills", "projects", "languages", "certifications", "interests", "tools"]},
+                                        "id": {"type": "STRING", "description": "The unique ID of the item to delete"},
+                                        "name": {"type": "STRING", "description": "Name/Company of the item to delete if ID is unknown"}
+                                    },
+                                    "required": ["section"]
+                                },
+                                "description": "List of items the user wants to remove from their CV"
                             }
                         }
                     }
@@ -2053,6 +2167,13 @@ def get_gemini_tools():
                                 "properties": {
                                     "heading": {"type": "STRING"},
                                     "body": {"type": "STRING"}
+                                }
+                            },
+                            "layout": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "density": {"type": "STRING", "enum": ["compact", "standard", "relaxed"]},
+                                    "fontSize": {"type": "NUMBER", "description": "Font size multiplier (0.8 to 1.4)"}
                                 }
                             }
                         }
@@ -2215,9 +2336,12 @@ async def generate_conversation_response_stream(
                             logger.info("="*60)
                             
                             if fn_name == "update_resume_draft":
+                                # Extract deletions if any
+                                deleted_items = fn_args.pop("deletedItems", None)
                                 normalized_payload = _normalize_extracted_payload(fn_args)
                                 last_extraction = DataExtraction(
                                     extracted=normalized_payload,
+                                    deleted_items=deleted_items,
                                     confidence={"overall": 1.0},
                                 )
                                 yield _format_sse_event({
@@ -2427,6 +2551,7 @@ async def extract_cv_data_from_message(
             user_message=message,
             chat_history=chat_history,
             current_cv_data=cv_data_json,
+            current_date=datetime.now().strftime("%Y-%m-%d"),
         )
 
         system_msg = "Eres un extractor de datos preciso y cuidadoso."
@@ -2689,6 +2814,18 @@ def _format_chat_history(messages: List[ChatMessage]) -> str:
 def _format_sse_event(data: Dict[str, Any]) -> str:
     """Formatea un evento SSE."""
     return f"data: {json.dumps(data)}\n\n"
+
+
+def _detect_language(text: str) -> str:
+    """Detecta el idioma del texto (es/en)."""
+    spanish_indicators = [
+        "hola", "me llamo", "años", "experiencia", "educación",
+        "habilidades", "proyectos", "certificaciones", "trabaj",
+        "desarroll", "realic", "lider", "presente", "licenciatura", "ingeniería"
+    ]
+    text_lower = text.lower()
+    spanish_count = sum(1 for word in spanish_indicators if word in text_lower)
+    return "es" if spanish_count > 0 else "en"
 
 
 def _detect_language_preference(message: str, history: List[ChatMessage]) -> str:

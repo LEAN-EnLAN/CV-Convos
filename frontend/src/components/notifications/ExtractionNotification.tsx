@@ -90,11 +90,12 @@ export function ExtractionNotification({ notification }: ExtractionNotificationP
 
   const hasMeaningfulData = useMemo(() => {
     if (!extraction) return false;
-    const { extracted } = extraction;
+    const { extracted, deletedItems } = extraction;
     return (extracted.personalInfo && Object.keys(extracted.personalInfo).length > 0) ||
       (extracted.experience && extracted.experience.length > 0) ||
       (extracted.education && extracted.education.length > 0) ||
-      (extracted.skills && extracted.skills.length > 0);
+      (extracted.skills && extracted.skills.length > 0) ||
+      (deletedItems && deletedItems.length > 0);
   }, [extraction]);
 
   if (!extraction) return null;
@@ -237,6 +238,25 @@ export function ExtractionNotification({ notification }: ExtractionNotificationP
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {extraction.deletedItems && extraction.deletedItems.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-destructive uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1 h-1 bg-destructive rounded-full" /> Elementos a Eliminar
+              </h4>
+              <div className="grid grid-cols-1 gap-2">
+                {extraction.deletedItems.map((item: any, i: number) => (
+                  <div key={`del-${i}`} className="flex items-center justify-between p-3 border border-destructive/20 bg-destructive/5 rounded-xl">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold uppercase text-destructive/70">{item.section}</span>
+                      <span className="text-sm font-medium text-foreground">{item.name || item.id || 'Elemento'}</span>
+                    </div>
+                    <AlertCircle className="w-4 h-4 text-destructive" />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
       </div>

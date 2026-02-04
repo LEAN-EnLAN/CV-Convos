@@ -194,6 +194,41 @@ interface ChatProviderProps {
   onCVDataUpdate?: (data: Partial<CVData>) => void;
 }
 
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `id_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+};
+
+const levelToProficiency = (level?: string) => {
+  switch (level) {
+    case 'Beginner':
+      return 25;
+    case 'Advanced':
+      return 75;
+    case 'Expert':
+      return 90;
+    default:
+      return 50;
+  }
+};
+
+const hashString = (input: string) => {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const buildStableId = (prefix: string, parts: Array<string | undefined | null>) => {
+  const payload = parts.filter(Boolean).join('|');
+  if (!payload) return '';
+  return `${prefix}_${hashString(payload)}`;
+};
+
 export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatProviderProps) {
   const [state, dispatch] = useReducer(chatReducer, createInitialState());
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -495,40 +530,6 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
     dispatch({ type: 'RESET_CHAT' });
   }, []);
 
-  const generateId = useCallback(() => {
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-      return crypto.randomUUID();
-    }
-    return `id_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-  }, []);
-
-  const levelToProficiency = (level?: string) => {
-    switch (level) {
-      case 'Beginner':
-        return 25;
-      case 'Advanced':
-        return 75;
-      case 'Expert':
-        return 90;
-      default:
-        return 50;
-    }
-  };
-
-  const hashString = (input: string) => {
-    let hash = 0;
-    for (let i = 0; i < input.length; i += 1) {
-      hash = (hash << 5) - hash + input.charCodeAt(i);
-      hash |= 0;
-    }
-    return Math.abs(hash);
-  };
-
-  const buildStableId = (prefix: string, parts: Array<string | undefined | null>) => {
-    const payload = parts.filter(Boolean).join('|');
-    if (!payload) return '';
-    return `${prefix}_${hashString(payload)}`;
-  };
 
   const prepareExtractionForApply = useCallback((extracted: DataExtraction['extracted']) => {
     const prepared: Partial<CVData> = {};
@@ -645,17 +646,45 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
     }
 
     return prepared;
-  }, [generateId]);
+  }, []);
 
   /**
    * Aplica manualmente los datos extraídos al CV
    */
   const applyExtraction = useCallback(
     (extraction: DataExtraction) => {
-      if (extraction.extracted && onCVDataUpdate) {
-        const withIds = prepareExtractionForApply(extraction.extracted);
+      const hasExtracted = extraction.extracted && Object.keys(extraction.extracted).length > 0;
+      const deletedItems = (extraction as any).deletedItems || [];
+
+      if ((hasExtracted || deletedItems.length > 0) && onCVDataUpdate) {
+        const updatedData = prepareExtractionForApply(extraction.extracted || {});
+
+        // Manejar eliminaciones
+        if (deletedItems.length > 0) {
+          deletedItems.forEach((item: any) => {
+            const section = item.section as keyof CVData;
+            const currentList = cvDataRef.current[section];
+
+            if (Array.isArray(currentList)) {
+              const newList = currentList.filter((existingItem: any) => {
+                // Eliminar por ID si está disponible
+                if (item.id && existingItem.id) {
+                  return String(existingItem.id) !== String(item.id);
+                }
+                // Eliminar por nombre/empresa como fallback
+                if (item.name) {
+                  const existingName = String(existingItem.name || existingItem.company || existingItem).toLowerCase();
+                  return existingName !== String(item.name).toLowerCase();
+                }
+                return true;
+              });
+              (updatedData as any)[section] = newList;
+            }
+          });
+        }
+
         // Cast to unknown first to bypass strict type checking
-        onCVDataUpdate(withIds as unknown as Partial<CVData>);
+        onCVDataUpdate(updatedData as unknown as Partial<CVData>);
       }
       dispatch({ type: 'SET_EXTRACTION', payload: null });
     },
@@ -708,6 +737,7 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
 
   const hasMeaningfulExtraction = useCallback((extraction: DataExtraction): boolean => {
     const extracted = extraction.extracted || {};
+    const deletedItems = (extraction as any).deletedItems || [];
     return Boolean(
       (extracted.personalInfo && Object.keys(extracted.personalInfo).length > 0) ||
       (extracted.experience && extracted.experience.length > 0) ||
@@ -715,7 +745,8 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
       (extracted.skills && extracted.skills.length > 0) ||
       (extracted.projects && extracted.projects.length > 0) ||
       (extracted.languages && extracted.languages.length > 0) ||
-      (extracted.certifications && extracted.certifications.length > 0)
+      (extracted.certifications && extracted.certifications.length > 0) ||
+      (deletedItems.length > 0)
     );
   }, []);
 
