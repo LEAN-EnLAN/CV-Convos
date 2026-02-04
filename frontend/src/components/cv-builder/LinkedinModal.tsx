@@ -26,6 +26,7 @@ import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { toast } from 'sonner';
 import { CVData } from '@/types/cv';
 import { toPng } from 'html-to-image';
+import { buildApiUrl } from '@/lib/api/base';
 
 interface LinkedinModalProps {
     isOpen: boolean;
@@ -50,8 +51,7 @@ export function LinkedinModal({ isOpen, onClose, data }: LinkedinModalProps) {
     const fetchAIContent = async () => {
         setLoading(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            const res = await fetch(`${apiUrl}/api/generate-linkedin-post`, {
+            const res = await fetch(buildApiUrl('/api/generate-linkedin-post'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)

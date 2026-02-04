@@ -13,12 +13,11 @@ import {
   ConversationPhase,
 } from '@/types/chat';
 import { CVData } from '@/types/cv';
+import { buildApiUrl } from '@/lib/api/base';
 
 // =============================================================================
 // CONFIGURACIÓN
 // =============================================================================
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 1000;
@@ -141,7 +140,7 @@ export function sendChatMessageStream(
 
   const executeStream = async (): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+      const response = await fetch(buildApiUrl('/api/chat/stream'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -284,7 +283,7 @@ export async function sendChatMessage(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const response = await fetch(buildApiUrl('/api/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -331,7 +330,7 @@ export async function analyzeJob(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat/job-analysis`, {
+      const response = await fetch(buildApiUrl('/api/chat/job-analysis'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -376,7 +375,7 @@ export async function getNextQuestion(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat/session/${sessionId}/next-question`, {
+      const response = await fetch(buildApiUrl(`/api/chat/session/${sessionId}/next-question`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -420,7 +419,7 @@ export async function extractDataFromMessage(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat/extract`, {
+      const response = await fetch(buildApiUrl('/api/chat/extract'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -462,7 +461,7 @@ export async function getChatSession(sessionId: string): Promise<{
   created_at: string;
   updated_at: string;
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/chat/session/${sessionId}`);
+  const response = await fetch(buildApiUrl(`/api/chat/session/${sessionId}`));
 
   if (!response.ok) {
     await handleApiError(response);

@@ -25,6 +25,7 @@ import {
 } from '@/types/chat';
 import { CVData } from '@/types/cv';
 import { CheckCircle, AlertCircle, ChevronRight, Loader2 } from 'lucide-react';
+import { analyzeJob } from '@/lib/api/chat';
 
 interface JobInputModalProps {
   isOpen: boolean;
@@ -134,19 +135,7 @@ export function JobInputModal({
         cvData,
       };
 
-      const response = await fetch('/api/chat/job-analysis', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-
-      const result: JobAnalysisResponse = await response.json();
+      const result = await analyzeJob(request);
       setAnalysisResult(result);
       onSetJobDescription(jobDescription.trim());
     } catch (err) {

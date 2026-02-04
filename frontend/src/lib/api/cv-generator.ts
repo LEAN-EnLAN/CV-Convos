@@ -9,13 +9,11 @@ import {
     GenerateCompleteCVResponse,
     CVGeneratorError,
 } from '@/types/cv-generator';
+import { buildApiUrl } from '@/lib/api/base';
 
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-const API_ENDPOINT = `${API_BASE_URL}/api`;
 
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 1000;
@@ -110,7 +108,7 @@ export async function generateCompleteCV(
 
     while (attempt < retries) {
         try {
-            const response = await fetch(`${API_ENDPOINT}/generate-complete-cv`, {
+            const response = await fetch(buildApiUrl('/api/generate-complete-cv'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -149,7 +147,7 @@ export async function generateCompleteCV(
  */
 export async function checkServiceHealth(): Promise<boolean> {
     try {
-        const response = await fetch(`${API_BASE_URL}/health`);
+        const response = await fetch(buildApiUrl('/health'));
         return response.ok;
     } catch {
         return false;

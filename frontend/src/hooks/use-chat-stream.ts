@@ -17,6 +17,7 @@ import {
   DataExtraction,
   ConversationPhase,
 } from '@/types/chat';
+import { buildApiUrl } from '@/lib/api/base';
 
 // =============================================================================
 // TIPOS DEL HOOK
@@ -164,7 +165,7 @@ export function useChatStream(
       abortControllerRef.current = new AbortController();
 
       try {
-        const response = await fetch('/api/chat/stream', {
+        const response = await fetch(buildApiUrl('/api/chat/stream'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
