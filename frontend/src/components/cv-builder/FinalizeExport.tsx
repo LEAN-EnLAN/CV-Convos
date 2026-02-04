@@ -513,6 +513,15 @@ export function FinalizeExport({ data, onDownloadPDF }: FinalizeExportProps) {
                     </DialogHeader>
 
                     <div className="py-6 space-y-8">
+                        <div className="space-y-2">
+                            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                                Share/Download
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                Compartí tu CV o descargalo en el formato que prefieras.
+                            </p>
+                        </div>
+
                         {/* Share Section */}
                         <div className="space-y-4">
                             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">

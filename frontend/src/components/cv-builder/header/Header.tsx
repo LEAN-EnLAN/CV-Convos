@@ -238,6 +238,14 @@ export function Header({
                 {/* Finalize Button */}
                 <FinalizeExport data={data} onDownloadPDF={onDownloadPDF} />
 
+                <Button
+                    size="sm"
+                    onClick={onDownloadPDF}
+                    className="h-9 sm:h-10 px-3 sm:px-4 text-[11px] sm:text-sm font-bold rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all"
+                >
+                    Exportar PDF
+                </Button>
+
                 {/* Mobile Menu Trigger */}
                 <div className="lg:hidden ml-1">
                     <Sheet>
