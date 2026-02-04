@@ -261,11 +261,13 @@ export default function Home() {
             )}
 
             {flow === 'builder' && cvData && (
-                <Builder
-                    initialData={{ ...cvData, config: cvData.config || { ...DEFAULT_CONFIG } }}
-                    onReset={handleReset}
-                    initialTemplate={selectedTemplate}
-                />
+                <ChatProvider initialCVData={cvData} onCVDataUpdate={handleChatDataUpdate}>
+                    <Builder
+                        initialData={{ ...cvData, config: cvData.config || { ...DEFAULT_CONFIG } }}
+                        onReset={handleReset}
+                        initialTemplate={selectedTemplate}
+                    />
+                </ChatProvider>
             )}
         </main>
     );
