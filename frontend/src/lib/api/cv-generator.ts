@@ -12,8 +12,6 @@ import {
 } from '@/types/cv-generator';
 import { buildApiUrl } from '@/lib/api/base';
 import { parseApiErrorPayload } from '@/lib/error-utils';
-import { buildApiUrl } from '@/lib/api/base';
-import { parseApiErrorPayload } from '@/lib/error-utils';
 
 // =============================================================================
 // CONFIGURATION
