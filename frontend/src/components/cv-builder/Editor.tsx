@@ -57,6 +57,7 @@ import {
 
 import { CritiqueModal } from './CritiqueModal';
 import { ImprovementCard } from '@/types/cv';
+import { SectionEditor } from './SectionEditor';
 
 interface EditorProps {
     data: CVData;
@@ -265,6 +266,36 @@ export function Editor({
         const newArray = [...(data[field] as any[])];
         newArray.splice(index, 1);
         onChange({ ...data, [field]: newArray });
+    };
+
+    // Mantener el orden explícito para sincronizarlo con el backend.
+    const applySectionOrder = <T extends { id: string; order?: number }>(items: T[]) =>
+        items.map((item, index) => ({ ...item, order: index + 1 }));
+
+    const updateOrderedSection = (field: 'experience' | 'education' | 'projects', items: any[]) => {
+        onChange({
+            ...data,
+            [field]: applySectionOrder(items),
+        });
+    };
+
+    const addOrderedItem = (field: 'experience' | 'education' | 'projects', defaultValue: any) => {
+        const currentItems = [...(data[field] as any[])];
+        const nextItems = [
+            ...currentItems,
+            {
+                ...defaultValue,
+                id: Math.random().toString(36).substr(2, 9),
+                order: currentItems.length + 1,
+            },
+        ];
+        onChange({ ...data, [field]: nextItems });
+    };
+
+    const removeOrderedItem = (field: 'experience' | 'education' | 'projects', index: number) => {
+        const newArray = [...(data[field] as any[])];
+        newArray.splice(index, 1);
+        updateOrderedSection(field, newArray);
     };
 
     return (
@@ -618,70 +649,71 @@ export function Editor({
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-5 pb-6 pt-2">
-                                    <div className="space-y-4">
-                                        {data.experience.map((exp, index) => (
-                                            <Card key={exp.id} className="p-4 relative group hover:shadow-md transition-all border-l-4 border-l-emerald-400">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() => removeArrayItem('experience', index)}
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </Button>
-
-                                                <div className="space-y-3 pr-6">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        <Input
-                                                            placeholder="Empresa"
-                                                            value={exp.company}
-                                                            onChange={(e) => updateArrayField('experience', index, 'company', e.target.value)}
-                                                            className="h-9 text-sm font-semibold"
-                                                        />
-                                                        <Input
-                                                            placeholder="Cargo"
-                                                            value={exp.position}
-                                                            onChange={(e) => updateArrayField('experience', index, 'position', e.target.value)}
-                                                            className="h-9 text-sm"
-                                                        />
-                                                    </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        <Input
-                                                            placeholder="Inicio"
-                                                            value={exp.startDate}
-                                                            onChange={(e) => updateArrayField('experience', index, 'startDate', e.target.value)}
-                                                            className="h-8 text-xs"
-                                                        />
-                                                        <Input
-                                                            placeholder="Fin"
-                                                            value={exp.endDate}
-                                                            onChange={(e) => updateArrayField('experience', index, 'endDate', e.target.value)}
-                                                            className="h-8 text-xs"
-                                                            disabled={exp.current}
-                                                        />
-                                                    </div>
-                                                    <Textarea
-                                                        placeholder="Logros y responsabilidades..."
-                                                        value={exp.description}
-                                                        onChange={(e) => updateArrayField('experience', index, 'description', e.target.value)}
-                                                        className="min-h-[80px] text-sm resize-none"
+                                    <SectionEditor
+                                        items={data.experience}
+                                        dragHint="Arrastrá las tarjetas para reordenar o usá Enter/Espacio y flechas."
+                                        dragLabel={(_, index) => `Mover experiencia ${index + 1}`}
+                                        onReorder={(items) => updateOrderedSection('experience', items)}
+                                        onAdd={() =>
+                                            addOrderedItem('experience', {
+                                                company: '',
+                                                position: '',
+                                                startDate: '',
+                                                endDate: '',
+                                                current: false,
+                                                location: '',
+                                                description: '',
+                                            })
+                                        }
+                                        onRemove={(index) => removeOrderedItem('experience', index)}
+                                        cardClassName="border-l-4 border-l-emerald-400"
+                                        addButtonClassName="border-dashed border-emerald-300 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-400"
+                                        addLabel={
+                                            <>
+                                                <Plus className="w-4 h-4" />
+                                                Agregar Experiencia
+                                            </>
+                                        }
+                                        renderFields={(exp, index) => (
+                                            <>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <Input
+                                                        placeholder="Empresa"
+                                                        value={exp.company}
+                                                        onChange={(e) => updateArrayField('experience', index, 'company', e.target.value)}
+                                                        className="h-9 text-sm font-semibold"
+                                                    />
+                                                    <Input
+                                                        placeholder="Cargo"
+                                                        value={exp.position}
+                                                        onChange={(e) => updateArrayField('experience', index, 'position', e.target.value)}
+                                                        className="h-9 text-sm"
                                                     />
                                                 </div>
-                                            </Card>
-                                        ))}
-
-                                        <Button
-                                            onClick={() => addArrayItem('experience', {
-                                                company: '', position: '', startDate: '',
-                                                endDate: '', current: false, location: '', description: ''
-                                            })}
-                                            className="w-full h-9 border-dashed border-emerald-300 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-400 gap-2"
-                                            variant="outline"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            Agregar Experiencia
-                                        </Button>
-                                    </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <Input
+                                                        placeholder="Inicio"
+                                                        value={exp.startDate}
+                                                        onChange={(e) => updateArrayField('experience', index, 'startDate', e.target.value)}
+                                                        className="h-8 text-xs"
+                                                    />
+                                                    <Input
+                                                        placeholder="Fin"
+                                                        value={exp.endDate}
+                                                        onChange={(e) => updateArrayField('experience', index, 'endDate', e.target.value)}
+                                                        className="h-8 text-xs"
+                                                        disabled={exp.current}
+                                                    />
+                                                </div>
+                                                <Textarea
+                                                    placeholder="Logros y responsabilidades..."
+                                                    value={exp.description}
+                                                    onChange={(e) => updateArrayField('experience', index, 'description', e.target.value)}
+                                                    className="min-h-[80px] text-sm resize-none"
+                                                />
+                                            </>
+                                        )}
+                                    />
                                 </AccordionContent>
                             </AccordionItem>
 
@@ -701,57 +733,57 @@ export function Editor({
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-5 pb-6 pt-2">
-                                    <div className="space-y-4">
-                                        {data.education.map((edu, index) => (
-                                            <Card key={edu.id} className="p-4 relative group hover:shadow-md transition-all border-l-4 border-l-blue-400">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() => removeArrayItem('education', index)}
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </Button>
-
-                                                <div className="space-y-3 pr-6">
-                                                    <div className="space-y-2">
-                                                        <Input
-                                                            placeholder="Institución"
-                                                            value={edu.institution}
-                                                            onChange={(e) => updateArrayField('education', index, 'institution', e.target.value)}
-                                                            className="h-9 text-sm font-semibold"
-                                                        />
-                                                    </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        <Input
-                                                            placeholder="Título"
-                                                            value={edu.degree}
-                                                            onChange={(e) => updateArrayField('education', index, 'degree', e.target.value)}
-                                                            className="h-9 text-sm"
-                                                        />
-                                                        <Input
-                                                            placeholder="Área de estudio"
-                                                            value={edu.fieldOfStudy}
-                                                            onChange={(e) => updateArrayField('education', index, 'fieldOfStudy', e.target.value)}
-                                                            className="h-9 text-sm"
-                                                        />
-                                                    </div>
+                                    <SectionEditor
+                                        items={data.education}
+                                        dragHint="Arrastrá las tarjetas para reordenar o usá Enter/Espacio y flechas."
+                                        dragLabel={(_, index) => `Mover educación ${index + 1}`}
+                                        onReorder={(items) => updateOrderedSection('education', items)}
+                                        onAdd={() =>
+                                            addOrderedItem('education', {
+                                                institution: '',
+                                                degree: '',
+                                                fieldOfStudy: '',
+                                                startDate: '',
+                                                endDate: '',
+                                                location: '',
+                                            })
+                                        }
+                                        onRemove={(index) => removeOrderedItem('education', index)}
+                                        cardClassName="border-l-4 border-l-blue-400"
+                                        addButtonClassName="border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-400"
+                                        addLabel={
+                                            <>
+                                                <Plus className="w-4 h-4" />
+                                                Agregar Educación
+                                            </>
+                                        }
+                                        renderFields={(edu, index) => (
+                                            <>
+                                                <div className="space-y-2">
+                                                    <Input
+                                                        placeholder="Institución"
+                                                        value={edu.institution}
+                                                        onChange={(e) => updateArrayField('education', index, 'institution', e.target.value)}
+                                                        className="h-9 text-sm font-semibold"
+                                                    />
                                                 </div>
-                                            </Card>
-                                        ))}
-
-                                        <Button
-                                            onClick={() => addArrayItem('education', {
-                                                institution: '', degree: '', fieldOfStudy: '',
-                                                startDate: '', endDate: '', location: ''
-                                            })}
-                                            className="w-full h-9 border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-400 gap-2"
-                                            variant="outline"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            Agregar Educación
-                                        </Button>
-                                    </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <Input
+                                                        placeholder="Título"
+                                                        value={edu.degree}
+                                                        onChange={(e) => updateArrayField('education', index, 'degree', e.target.value)}
+                                                        className="h-9 text-sm"
+                                                    />
+                                                    <Input
+                                                        placeholder="Área de estudio"
+                                                        value={edu.fieldOfStudy}
+                                                        onChange={(e) => updateArrayField('education', index, 'fieldOfStudy', e.target.value)}
+                                                        className="h-9 text-sm"
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+                                    />
                                 </AccordionContent>
                             </AccordionItem>
 
@@ -838,44 +870,38 @@ export function Editor({
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-5 pb-6 pt-2">
-                                    <div className="space-y-4">
-                                        {data.projects.map((proj, index) => (
-                                            <Card key={proj.id} className="p-4 relative group hover:shadow-md transition-all border-l-4 border-l-indigo-400">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() => removeArrayItem('projects', index)}
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </Button>
-
-                                                <div className="space-y-3 pr-6">
-                                                    <Input
-                                                        placeholder="Nombre del proyecto"
-                                                        value={proj.name}
-                                                        onChange={(e) => updateArrayField('projects', index, 'name', e.target.value)}
-                                                        className="h-9 text-sm font-semibold"
-                                                    />
-                                                    <Textarea
-                                                        placeholder="Descripción..."
-                                                        value={proj.description}
-                                                        onChange={(e) => updateArrayField('projects', index, 'description', e.target.value)}
-                                                        className="min-h-[60px] text-sm resize-none"
-                                                    />
-                                                </div>
-                                            </Card>
-                                        ))}
-
-                                        <Button
-                                            onClick={() => addArrayItem('projects', { name: '', description: '', technologies: [] })}
-                                            className="w-full h-9 border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-400 gap-2"
-                                            variant="outline"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            Agregar Proyecto
-                                        </Button>
-                                    </div>
+                                    <SectionEditor
+                                        items={data.projects}
+                                        dragHint="Arrastrá las tarjetas para reordenar o usá Enter/Espacio y flechas."
+                                        dragLabel={(_, index) => `Mover proyecto ${index + 1}`}
+                                        onReorder={(items) => updateOrderedSection('projects', items)}
+                                        onAdd={() => addOrderedItem('projects', { name: '', description: '', technologies: [] })}
+                                        onRemove={(index) => removeOrderedItem('projects', index)}
+                                        cardClassName="border-l-4 border-l-indigo-400"
+                                        addButtonClassName="border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-400"
+                                        addLabel={
+                                            <>
+                                                <Plus className="w-4 h-4" />
+                                                Agregar Proyecto
+                                            </>
+                                        }
+                                        renderFields={(proj, index) => (
+                                            <>
+                                                <Input
+                                                    placeholder="Nombre del proyecto"
+                                                    value={proj.name}
+                                                    onChange={(e) => updateArrayField('projects', index, 'name', e.target.value)}
+                                                    className="h-9 text-sm font-semibold"
+                                                />
+                                                <Textarea
+                                                    placeholder="Descripción..."
+                                                    value={proj.description}
+                                                    onChange={(e) => updateArrayField('projects', index, 'description', e.target.value)}
+                                                    className="min-h-[60px] text-sm resize-none"
+                                                />
+                                            </>
+                                        )}
+                                    />
                                 </AccordionContent>
                             </AccordionItem>
 

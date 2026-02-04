@@ -196,6 +196,8 @@ class PersonalInfo(BaseSchema):
 
 
 class Experience(BaseSchema):
+    id: Optional[str] = Field(None, description="ID único de la experiencia")
+    order: Optional[int] = Field(None, description="Orden de la experiencia en el CV")
     company: Optional[str] = Field(None, max_length=100, examples=["Tech Corp"])
     position: Optional[str] = Field(
         None, max_length=100, examples=["Software Engineer"]
@@ -235,6 +237,8 @@ class Experience(BaseSchema):
 
 
 class Education(BaseSchema):
+    id: Optional[str] = Field(None, description="ID único de la educación")
+    order: Optional[int] = Field(None, description="Orden de la educación en el CV")
     institution: Optional[str] = Field(
         None, max_length=100, examples=["Harvard University"]
     )
@@ -297,12 +301,21 @@ class Skill(BaseSchema):
         return v
 
 
+class Project(BaseSchema):
+    id: Optional[str] = Field(None, description="ID único del proyecto")
+    order: Optional[int] = Field(None, description="Orden del proyecto en el CV")
+    name: Optional[str] = Field(None, max_length=120, examples=["Portfolio Website"])
+    description: Optional[str] = Field(None, max_length=800, examples=["Built with Next.js"])
+    url: Optional[str] = Field(None, examples=["https://example.com"])
+    technologies: Optional[List[str]] = Field(default_factory=list, examples=[["React", "Node.js"]])
+
+
 class CVData(BaseSchema):
     personalInfo: PersonalInfo
     experience: List[Experience] = []
     education: List[Education] = []
     skills: List[Skill] = []
-    projects: List[Dict[str, Any]] = []
+    projects: List[Project] = []
     languages: List[Dict[str, Any]] = []
     certifications: List[Dict[str, Any]] = []
     interests: List[Any] = []

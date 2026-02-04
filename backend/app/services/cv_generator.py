@@ -419,14 +419,38 @@ def _process_generated_cv(
     return processed
 
 
+def _sort_by_order(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Ordena por campo order si existe, manteniendo el orden original cuando falta."""
+    indexed_items = []
+    has_order = False
+    for index, item in enumerate(items):
+        if not isinstance(item, dict):
+            indexed_items.append((None, index, item))
+            continue
+        order_value = item.get("order")
+        if isinstance(order_value, int):
+            has_order = True
+        indexed_items.append((order_value if isinstance(order_value, int) else None, index, item))
+
+    if not has_order:
+        return items
+
+    indexed_items.sort(
+        key=lambda entry: (entry[0] is None, entry[0] if entry[0] is not None else entry[1], entry[1])
+    )
+    return [item for _, _, item in indexed_items]
+
+
 def _process_experience_list(experience: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Process and validate experience entries."""
     processed = []
-    for i, exp in enumerate(experience):
+    for i, exp in enumerate(_sort_by_order(experience)):
         if not isinstance(exp, dict):
             continue
+        order_value = exp.get("order")
         processed.append({
             "id": exp.get("id", f"exp_{i}"),
+            "order": order_value if isinstance(order_value, int) else i + 1,
             "company": exp.get("company", ""),
             "position": exp.get("position", ""),
             "startDate": exp.get("startDate", ""),
@@ -442,11 +466,13 @@ def _process_experience_list(experience: List[Dict[str, Any]]) -> List[Dict[str,
 def _process_education_list(education: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Process and validate education entries."""
     processed = []
-    for i, edu in enumerate(education):
+    for i, edu in enumerate(_sort_by_order(education)):
         if not isinstance(edu, dict):
             continue
+        order_value = edu.get("order")
         processed.append({
             "id": edu.get("id", f"edu_{i}"),
+            "order": order_value if isinstance(order_value, int) else i + 1,
             "institution": edu.get("institution", ""),
             "degree": edu.get("degree", ""),
             "fieldOfStudy": edu.get("fieldOfStudy", ""),
@@ -481,11 +507,13 @@ def _process_skills_list(skills: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 def _process_projects_list(projects: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Process and validate project entries."""
     processed = []
-    for i, proj in enumerate(projects):
+    for i, proj in enumerate(_sort_by_order(projects)):
         if not isinstance(proj, dict):
             continue
+        order_value = proj.get("order")
         processed.append({
             "id": proj.get("id", f"proj_{i}"),
+            "order": order_value if isinstance(order_value, int) else i + 1,
             "name": proj.get("name", ""),
             "description": proj.get("description", ""),
             "url": proj.get("url", ""),
