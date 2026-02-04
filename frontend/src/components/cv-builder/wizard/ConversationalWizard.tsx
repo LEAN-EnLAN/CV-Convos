@@ -283,14 +283,32 @@ export function ConversationalWizard({
           </div>
 
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => adjustZoom(-0.1)} className="rounded-full h-8 w-8 hover:bg-muted">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => adjustZoom(-0.1)}
+              aria-label="Reducir zoom"
+              className="rounded-full h-8 w-8 hover:bg-muted"
+            >
               <ZoomOut className="w-4 h-4" />
             </Button>
             <span className="text-[10px] font-black text-muted-foreground w-12 text-center">{Math.round(zoom * 100)}%</span>
-            <Button variant="ghost" size="icon" onClick={() => adjustZoom(0.1)} className="rounded-full h-8 w-8 hover:bg-muted">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => adjustZoom(0.1)}
+              aria-label="Aumentar zoom"
+              className="rounded-full h-8 w-8 hover:bg-muted"
+            >
               <ZoomIn className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => setZoom(0.7)} className="rounded-full h-8 w-8 hover:bg-muted ml-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setZoom(0.7)}
+              aria-label="Restablecer zoom"
+              className="rounded-full h-8 w-8 hover:bg-muted ml-1"
+            >
               <Maximize2 className="w-4 h-4" />
             </Button>
           </div>

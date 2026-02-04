@@ -214,7 +214,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
                                     role="button"
                                     aria-label="Zona de carga de archivos. Arrastrá o hacé clic para subir tus documentos."
                                 >
-                                    <input {...getInputProps()} tabIndex={-1} />
+                                    <input {...getInputProps()} tabIndex={-1} aria-label="Seleccionar archivos" />
 
                                     <div className="space-y-6">
                                         <div className={`

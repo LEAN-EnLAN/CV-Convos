@@ -113,6 +113,7 @@ export function ChatInput({
           value={message}
           onChange={handleTextareaChange}
           onKeyDown={handleKeyDown}
+          aria-label="Mensaje para el asistente"
           placeholder={placeholder}
           disabled={disabled || isLoading}
           className="min-h-[50px] max-h-[200px] w-full resize-none border-none bg-transparent py-4 pl-4 pr-24 text-sm focus-visible:ring-0 placeholder:text-foreground/40 rounded-2xl"
@@ -127,6 +128,7 @@ export function ChatInput({
                 setMessage('');
                 if (textareaRef.current) textareaRef.current.style.height = 'auto';
               }}
+              aria-label="Limpiar mensaje"
               className="h-8 w-8 rounded-full hover:bg-muted text-muted-foreground transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
@@ -137,6 +139,7 @@ export function ChatInput({
             size="icon"
             onClick={handleSend}
             disabled={!message.trim() || isLoading || disabled}
+            aria-label="Enviar mensaje"
             className="h-9 w-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all"
           >
             <SendHorizontal className="h-4 w-4" />

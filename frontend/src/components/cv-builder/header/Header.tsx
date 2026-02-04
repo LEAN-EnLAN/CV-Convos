@@ -114,7 +114,12 @@ export function Header({
                         <Tooltip delayDuration={300}>
                             <TooltipTrigger asChild>
                                 <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label="Reiniciar CV"
+                                        className="h-9 w-9 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                    >
                                         <RotateCcw className="w-4 h-4" />
                                     </Button>
                                 </DialogTrigger>
@@ -173,6 +178,7 @@ export function Header({
                                     size="icon"
                                     className="h-9 w-9 text-amber-500 hover:bg-amber-50 hover:text-amber-600 transition-colors"
                                     onClick={() => setData({ ...getDebugData(), config: data.config })}
+                                    aria-label="Cargar datos de prueba"
                                 >
                                     <Bug className="w-4 h-4" />
                                 </Button>
@@ -197,7 +203,7 @@ export function Header({
                 <div className="lg:hidden ml-1">
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-700">
+                            <Button variant="ghost" size="icon" aria-label="Abrir menú" className="h-9 w-9 text-slate-700">
                                 <Menu className="w-5 h-5" />
                             </Button>
                         </SheetTrigger>

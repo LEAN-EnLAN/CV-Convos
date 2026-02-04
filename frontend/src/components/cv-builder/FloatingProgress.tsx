@@ -376,6 +376,7 @@ export function FloatingProgress({
                             <Button
                                 onClick={handleShow}
                                 size="icon"
+                                aria-label="Mostrar progreso"
                                 className={cn(
                                     "w-14 h-14 rounded-full",
                                     "shadow-2xl",
@@ -427,6 +428,7 @@ export function FloatingProgress({
                                     <Button
                                         onClick={() => setIsMinimized(false)}
                                         size="icon"
+                                        aria-label="Expandir progreso"
                                         className={cn(
                                             "w-14 h-14 rounded-full",
                                             "shadow-2xl",
@@ -523,6 +525,7 @@ export function FloatingProgress({
                                                     variant="ghost"
                                                     className="h-8 w-8 hover:bg-muted transition-colors"
                                                     onClick={() => setIsMinimized(true)}
+                                                    aria-label="Minimizar progreso"
                                                 >
                                                     <Minimize2 className="w-4 h-4 text-muted-foreground" />
                                                 </Button>
@@ -540,6 +543,7 @@ export function FloatingProgress({
                                                     variant="ghost"
                                                     className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-colors"
                                                     onClick={handleHide}
+                                                    aria-label="Ocultar progreso"
                                                 >
                                                     <X className="w-4 h-4 text-muted-foreground" />
                                                 </Button>
@@ -626,6 +630,7 @@ export function FloatingProgress({
                                                     className="h-9 w-9 hover:bg-muted transition-colors"
                                                     onClick={onSave}
                                                     disabled={isSaving}
+                                                    aria-label="Guardar progreso"
                                                 >
                                                     <motion.div
                                                         animate={isSaving ? { rotate: 360 } : { rotate: 0 }}
@@ -650,6 +655,7 @@ export function FloatingProgress({
                                                     variant="ghost"
                                                     className="h-9 w-9 hover:bg-muted transition-colors"
                                                     onClick={onDownload}
+                                                    aria-label="Descargar CV"
                                                 >
                                                     <Download className="w-4 h-4" />
                                                 </Button>
@@ -669,6 +675,7 @@ export function FloatingProgress({
                                                     variant="ghost"
                                                     className="h-9 w-9 hover:bg-muted transition-colors"
                                                     onClick={onPreview}
+                                                    aria-label="Previsualizar CV"
                                                 >
                                                     <FileText className="w-4 h-4" />
                                                 </Button>

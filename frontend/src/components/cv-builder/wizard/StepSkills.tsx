@@ -156,12 +156,14 @@ export function StepSkills({ data, onUpdate, onBack, onComplete }: StepSkillsPro
                                 type="text"
                                 value={skill.name}
                                 onChange={(e) => updateSkill(skill.id, 'name', e.target.value)}
-                                className="bg-transparent border-none outline-none text-sm w-24 focus:border-b focus:border-primary"
+                                aria-label="Nombre de skill"
+                                className="bg-transparent border-none outline-none text-sm w-24 focus:border-b focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
                             />
                             <select
                                 value={skill.level}
                                 onChange={(e) => updateSkill(skill.id, 'level', e.target.value)}
-                                className="bg-transparent text-xs text-muted-foreground outline-none cursor-pointer"
+                                aria-label="Nivel de skill"
+                                className="bg-transparent text-xs text-muted-foreground outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
                             >
                                 <option value="Beginner">Básico</option>
                                 <option value="Intermediate">Intermedio</option>
@@ -171,7 +173,8 @@ export function StepSkills({ data, onUpdate, onBack, onComplete }: StepSkillsPro
                             <button
                                 type="button"
                                 onClick={() => removeSkill(skill.id)}
-                                className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                aria-label={`Eliminar skill ${skill.name}`}
+                                className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors focus-visible:ring-2 focus-visible:ring-destructive/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                             >
                                 <X className="w-3 h-3" />
                             </button>
