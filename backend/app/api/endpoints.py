@@ -160,7 +160,7 @@ async def generate_cv(request: Request, files: List[UploadFile] = File(...)):
 
         return cv_data
 
-    except (FileProcessingError, ValidationError) as e:
+    except (CVProcessingError, FileProcessingError, ValidationError) as e:
         # Re-raise validation and file processing errors as-is
         raise e
     except AIServiceError:
