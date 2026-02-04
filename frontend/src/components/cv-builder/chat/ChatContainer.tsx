@@ -9,8 +9,11 @@ import { ChatMessage } from './ChatMessage';
 import { useChat } from '@/contexts/ChatContext';
 import { TypingIndicator } from './TypingIndicator';
 import { PhaseIndicator } from './PhaseIndicator';
+import { JobInputModal } from './JobInputModal';
 import { NotificationContainer } from '@/components/notifications';
 import { ExtractionNotification } from '@/components/notifications/ExtractionNotification';
+import { TailoringSuggestion } from '@/types/chat';
+import { CVData } from '@/types/cv';
 import {
   RotateCcw,
   Expand,
@@ -28,7 +31,8 @@ interface ChatContainerProps {
   cvPreviewComponent?: React.ReactNode;
   onFinalizeRequest?: () => void;
   canFinalize?: boolean;
-  onCVDataUpdate?: (data: import('@/types/cv').CVData) => void;
+  cvData?: Partial<CVData>;
+  onCVDataUpdate?: (data: Partial<CVData>) => void;
 }
 
 export function ChatContainer({
@@ -37,10 +41,13 @@ export function ChatContainer({
   onFinalizeRequest,
   canFinalize = false,
   showCVPreview: desktopShowPreview = true,
+  cvData = {},
+  onCVDataUpdate,
 }: ChatContainerProps) {
   const { state, actions } = useChat();
   const [showCVPreview, setShowCVPreview] = useState(desktopShowPreview);
   const [mobileTab, setMobileTab] = useState<'chat' | 'preview'>('chat');
+  const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Sync internal state with prop if needed, or handle resize logic
@@ -87,6 +94,47 @@ export function ChatContainer({
       await actions.sendMessage(content);
     },
     [actions]
+  );
+
+  const handleQuickAction = useCallback((action: string) => {
+    if (action !== 'job_targeting') {
+      return false;
+    }
+
+    setIsJobModalOpen(true);
+    return true;
+  }, []);
+
+  const handleApplySuggestions = useCallback(
+    (suggestions: TailoringSuggestion[], optimizedCV?: Partial<CVData>) => {
+      const appliedSections = suggestions.map((suggestion) => suggestion.section).filter(Boolean);
+      const totalApplied = suggestions.length;
+
+      if (optimizedCV && onCVDataUpdate) {
+        onCVDataUpdate(optimizedCV);
+      }
+
+      actions.showNotification({
+        type: 'toast',
+        variant: 'success',
+        title: 'Sugerencias aplicadas',
+        message:
+          totalApplied > 0
+            ? `Se aplicaron ${totalApplied} sugerencias: ${appliedSections.join(', ')}.`
+            : 'No se aplicaron sugerencias.',
+        duration: 5000,
+        actions: [],
+        metadata: {
+          toast: {
+            showProgress: true,
+            pauseOnHover: true,
+          },
+        },
+        dismissible: true,
+        priority: 'normal',
+      });
+    },
+    [actions, onCVDataUpdate]
   );
 
   return (
@@ -193,6 +241,7 @@ export function ChatContainer({
           <div className="max-w-2xl mx-auto w-full">
             <ChatInput
               onSendMessage={handleSendMessage}
+              onQuickAction={handleQuickAction}
               isLoading={state.isStreaming}
               showQuickActions
             />
@@ -282,6 +331,14 @@ export function ChatContainer({
           <span className="text-[10px] font-bold uppercase tracking-wider">Vista</span>
         </button>
       </div>
+
+      <JobInputModal
+        isOpen={isJobModalOpen}
+        onClose={() => setIsJobModalOpen(false)}
+        cvData={cvData}
+        onSetJobDescription={actions.setJobDescription}
+        onApplySuggestions={handleApplySuggestions}
+      />
     </div>
   );
 }

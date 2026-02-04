@@ -49,20 +49,20 @@ function SuggestionCard({ suggestion, onApply, isApplied }: SuggestionCardProps)
   };
 
   return (
-    <div className="border border-[var(--border)] rounded-lg p-4 space-y-3 bg-[var(--bg-secondary)]">
+    <div className="border border-border rounded-lg p-4 space-y-3 bg-background">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <span
             className={cn(
               'text-xs px-2 py-0.5 rounded-full border',
-              suggestion.priority === 'high' && 'border-[var(--error)] text-[var(--error)]',
-              suggestion.priority === 'medium' && 'border-[var(--warning)] text-[var(--warning)]',
-              suggestion.priority === 'low' && 'border-[var(--text-tertiary)] text-[var(--text-secondary)]'
+              suggestion.priority === 'high' && 'border-destructive text-destructive',
+              suggestion.priority === 'medium' && 'border-amber-500 text-amber-600',
+              suggestion.priority === 'low' && 'border-muted-foreground text-muted-foreground'
             )}
           >
             {priorityLabel[suggestion.priority]}
           </span>
-          <span className="font-medium text-sm text-[var(--text-primary)]">{suggestion.section}</span>
+          <span className="font-medium text-sm text-foreground">{suggestion.section}</span>
         </div>
         <Button
           size="sm"
@@ -70,8 +70,8 @@ function SuggestionCard({ suggestion, onApply, isApplied }: SuggestionCardProps)
           className={cn(
             'h-7 text-xs',
             isApplied
-              ? 'border-[var(--success)] text-[var(--success)]'
-              : 'bg-[var(--accent-primary)] text-[var(--accent-primary-text)] hover:bg-[var(--accent-hover)]'
+              ? 'border-emerald-500 text-emerald-600'
+              : 'bg-primary text-primary-foreground hover:bg-primary/90'
           )}
           onClick={onApply}
           disabled={isApplied}
@@ -87,18 +87,18 @@ function SuggestionCard({ suggestion, onApply, isApplied }: SuggestionCardProps)
         </Button>
       </div>
 
-      <p className="text-xs text-[var(--text-secondary)]">{suggestion.reason}</p>
+      <p className="text-xs text-muted-foreground">{suggestion.reason}</p>
 
       <div className="space-y-2">
         <div
-          className="p-2 rounded text-xs line-through text-[var(--text-tertiary)] bg-[var(--bg-tertiary)]"
+          className="p-2 rounded text-xs line-through text-muted-foreground bg-muted"
         >
           {suggestion.current}
         </div>
         <div className="flex items-center justify-center">
-          <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)]" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </div>
-        <div className="p-2 rounded text-xs text-[var(--text-primary)] border border-[var(--success)]/30 bg-[var(--success)]/5">
+        <div className="p-2 rounded text-xs text-foreground border border-emerald-500/30 bg-emerald-500/5">
           {suggestion.suggested}
         </div>
       </div>
@@ -188,47 +188,52 @@ export function JobInputModal({
   }, [isAnalyzing, onClose]);
 
   const getMatchScoreColor = (score: number) => {
-    if (score >= 80) return 'text-[var(--success)]';
-    if (score >= 60) return 'text-[var(--warning)]';
-    return 'text-[var(--error)]';
+    if (score >= 80) return 'text-emerald-600';
+    if (score >= 60) return 'text-amber-600';
+    return 'text-destructive';
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col bg-[var(--bg-secondary)] border-[var(--border)]">
+      <DialogContent
+        className={cn(
+          'flex flex-col bg-background border border-border shadow-2xl',
+          'w-[94vw] max-w-2xl max-h-[92vh] sm:max-h-[90vh] p-4 sm:p-6 rounded-2xl'
+        )}
+      >
         <DialogHeader>
           <DialogTitle
-            className="flex items-center gap-2 text-[var(--text-primary)]"
+            className="flex items-center gap-2 text-foreground"
             style={{ fontFamily: 'var(--font-serif)' }}
           >
             Ajustar CV al Puesto
           </DialogTitle>
-          <DialogDescription className="text-[var(--text-secondary)]">
+          <DialogDescription className="text-muted-foreground">
             Pega la descripción del puesto al que te postulas y te ayudaré a optimizar tu CV
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 my-4">
+        <ScrollArea className="flex-1 my-4 pr-2 sm:pr-4">
           {!analysisResult ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
+                <label className="text-sm font-medium text-foreground flex items-center gap-2">
                   Descripción del puesto
                 </label>
                 <Textarea
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   placeholder="Pega aquí la descripción completa del puesto de trabajo..."
-                  className="min-h-[200px] resize-none border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus-visible:ring-[var(--border-strong)]"
+                  className="min-h-[180px] sm:min-h-[200px] resize-none border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                   disabled={isAnalyzing}
                 />
-                <p className="text-xs text-[var(--text-tertiary)]">
+                <p className="text-xs text-muted-foreground">
                   Mínimo 50 caracteres • {jobDescription.length} caracteres ingresados
                 </p>
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 p-3 border border-[var(--error)]/20 rounded-lg text-[var(--error)] text-sm bg-[var(--error)]/5">
+                <div className="flex items-center gap-2 p-3 border border-destructive/20 rounded-lg text-destructive text-sm bg-destructive/5">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   {error}
                 </div>
@@ -237,11 +242,11 @@ export function JobInputModal({
           ) : (
             <div className="space-y-6">
               {/* Score */}
-              <div className="flex items-center gap-4 p-4 bg-[var(--bg-tertiary)] rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-muted/40 rounded-lg">
                 <div className="relative w-20 h-20">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                     <path
-                      className="text-[var(--border)]"
+                      className="text-border"
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
                       stroke="currentColor"
@@ -263,8 +268,8 @@ export function JobInputModal({
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-[var(--text-primary)]">Coincidencia con el puesto</h4>
-                  <p className="text-sm text-[var(--text-secondary)]">
+                  <h4 className="font-medium text-foreground">Coincidencia con el puesto</h4>
+                  <p className="text-sm text-muted-foreground">
                     {analysisResult.matchScore >= 80
                       ? '¡Excelente coincidencia! Tu CV está bien alineado con el puesto.'
                       : analysisResult.matchScore >= 60
@@ -276,16 +281,16 @@ export function JobInputModal({
 
               {/* Skills */}
               <div className="space-y-3">
-                <h4 className="font-medium text-[var(--text-primary)]">Habilidades</h4>
+                <h4 className="font-medium text-foreground">Habilidades</h4>
 
                 {analysisResult.matchedSkills.length > 0 && (
                   <div>
-                    <p className="text-xs text-[var(--text-secondary)] mb-2">Coincidencias encontradas:</p>
+                    <p className="text-xs text-muted-foreground mb-2">Coincidencias encontradas:</p>
                     <div className="flex flex-wrap gap-1.5">
                       {analysisResult.matchedSkills.map((skill, i) => (
                         <span
                           key={i}
-                          className="px-2 py-1 text-xs rounded border border-[var(--success)]/30 text-[var(--success)] bg-[var(--success)]/5"
+                          className="px-2 py-1 text-xs rounded border border-emerald-500/30 text-emerald-600 bg-emerald-500/5"
                         >
                           {skill}
                         </span>
@@ -296,12 +301,12 @@ export function JobInputModal({
 
                 {analysisResult.missingSkills.length > 0 && (
                   <div>
-                    <p className="text-xs text-[var(--text-secondary)] mb-2">Habilidades faltantes:</p>
+                    <p className="text-xs text-muted-foreground mb-2">Habilidades faltantes:</p>
                     <div className="flex flex-wrap gap-1.5">
                       {analysisResult.missingSkills.map((skill, i) => (
                         <span
                           key={i}
-                          className="px-2 py-1 text-xs rounded border border-[var(--warning)]/30 text-[var(--warning)] bg-[var(--warning)]/5"
+                          className="px-2 py-1 text-xs rounded border border-amber-500/30 text-amber-600 bg-amber-500/5"
                         >
                           {skill}
                         </span>
@@ -315,11 +320,11 @@ export function JobInputModal({
               {analysisResult.suggestions.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-[var(--text-primary)]">Sugerencias de mejora</h4>
+                    <h4 className="font-medium text-foreground">Sugerencias de mejora</h4>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]"
+                      className="border-border text-muted-foreground hover:bg-muted"
                       onClick={handleApplyAll}
                       disabled={appliedSuggestions.size === analysisResult.suggestions.length}
                     >
@@ -343,12 +348,12 @@ export function JobInputModal({
           )}
         </ScrollArea>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 flex-col-reverse sm:flex-row sm:justify-end">
           <Button
             variant="outline"
             onClick={handleClose}
             disabled={isAnalyzing}
-            className="border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]"
+            className="border-border text-muted-foreground hover:bg-muted w-full sm:w-auto"
           >
             {analysisResult ? 'Cerrar' : 'Cancelar'}
           </Button>
@@ -357,7 +362,7 @@ export function JobInputModal({
             <Button
               onClick={handleAnalyze}
               disabled={isAnalyzing || jobDescription.length < 50}
-              className="bg-[var(--accent-primary)] text-[var(--accent-primary-text)] hover:bg-[var(--accent-hover)]"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
             >
               {isAnalyzing ? (
                 <>
@@ -379,7 +384,7 @@ export function JobInputModal({
                 );
                 handleClose();
               }}
-              className="bg-[var(--accent-primary)] text-[var(--accent-primary-text)] hover:bg-[var(--accent-hover)]"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               Confirmar cambios

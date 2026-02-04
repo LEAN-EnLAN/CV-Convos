@@ -284,6 +284,7 @@ export function ConversationalWizard({
           showPhaseIndicator={false}
           showCVPreview={false}
           cvPreviewComponent={mobilePreviewComponent}
+          cvData={cvData}
           onCVDataUpdate={handleCVDataUpdate}
           onFinalizeRequest={() => setShowFinalize(true)}
           canFinalize={true}
