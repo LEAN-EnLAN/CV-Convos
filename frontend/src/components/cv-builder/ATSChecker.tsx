@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { buildApiUrl } from '@/lib/api/base';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -1191,8 +1192,7 @@ export function ATSChecker() {
             formData.append('files', file);
             formData.append('target_industry', selectedIndustry);
 
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/ats-check`, {
+            const response = await fetch(buildApiUrl('/api/ats-check'), {
                 method: 'POST',
                 body: formData,
             });

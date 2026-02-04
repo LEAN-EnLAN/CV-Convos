@@ -22,6 +22,7 @@ import {
   CreateNotificationInput,
   DEFAULT_TOAST_DURATION,
 } from '@/types/notifications';
+import { buildApiUrl } from '@/lib/api/base';
 
 // =============================================================================
 // ESTADO INICIAL
@@ -384,7 +385,7 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
       abortControllerRef.current = new AbortController();
 
       try {
-        const response = await fetch('/api/chat/stream', {
+        const response = await fetch(buildApiUrl('/api/chat/stream'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

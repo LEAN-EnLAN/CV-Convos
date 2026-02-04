@@ -32,6 +32,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { buildApiUrl } from '@/lib/api/base';
 
 interface CritiqueModalProps {
     isOpen: boolean;
@@ -92,8 +93,7 @@ export function CritiqueModal({ isOpen, onClose, cvData, onApplyImprovement, onS
         }, 50);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/critique-cv`, {
+            const response = await fetch(buildApiUrl('/api/critique-cv'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(cvData),

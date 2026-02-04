@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { buildApiUrl } from '@/lib/api/base';
 
 interface FileUploaderProps {
     onSuccess: (data: any) => void;
@@ -98,8 +99,7 @@ export function FileUploader({ onSuccess }: FileUploaderProps) {
         files.forEach((file) => formData.append('files', file));
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/generate-cv`, {
+            const response = await fetch(buildApiUrl('/api/generate-cv'), {
                 method: 'POST',
                 body: formData,
             });

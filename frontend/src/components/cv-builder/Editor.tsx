@@ -47,6 +47,7 @@ import {
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { buildApiUrl } from '@/lib/api/base';
 import {
     Tooltip,
     TooltipContent,
@@ -102,8 +103,7 @@ export function Editor({
     const optimizeContent = async (type: string, action: string) => {
         setIsOptimizing(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            const res = await fetch(`${apiUrl}/api/optimize-cv?target=${action}&section=${type}`, {
+            const res = await fetch(buildApiUrl(`/api/optimize-cv?target=${action}&section=${type}`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -148,9 +148,8 @@ export function Editor({
         }
         setIsOptimizing(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             const res = await fetch(
-                `${apiUrl}/api/interview-cv?target_role=${encodeURIComponent(targetRole)}`,
+                buildApiUrl(`/api/interview-cv?target_role=${encodeURIComponent(targetRole)}`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -176,8 +175,7 @@ export function Editor({
         setIsOptimizing(true);
         toast.info("Comprimiendo CV a una página...");
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            const res = await fetch(`${apiUrl}/api/optimize-cv?target=one_page&section=all`, {
+            const res = await fetch(buildApiUrl('/api/optimize-cv?target=one_page&section=all'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
