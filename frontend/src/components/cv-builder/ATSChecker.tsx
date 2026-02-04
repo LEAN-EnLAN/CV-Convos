@@ -1,16 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@/components/ui/accordion';
 import {
     Upload,
     FileText,
@@ -32,9 +22,20 @@ import {
     X,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import { cn } from '@/lib/utils';
+import { resolveApiErrorMessage } from '@/lib/error-utils';
 
 // =============================================
 // Types & Interfaces
@@ -1199,7 +1200,8 @@ export function ATSChecker() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || 'Analysis failed');
+                const errorMessage = resolveApiErrorMessage(errorData, 'Analysis failed');
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();

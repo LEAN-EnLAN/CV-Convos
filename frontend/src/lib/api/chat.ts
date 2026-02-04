@@ -13,6 +13,7 @@ import {
   ConversationPhase,
 } from '@/types/chat';
 import { CVData } from '@/types/cv';
+import { parseApiErrorPayload } from '@/lib/error-utils';
 
 // =============================================================================
 // CONFIGURACIÓN
@@ -104,8 +105,7 @@ async function handleApiError(response: Response): Promise<never> {
     // Si no se puede parsear JSON, usar el status text
   }
 
-  const message = errorData.detail || errorData.message || response.statusText;
-  const code = errorData.code || `HTTP_${response.status}`;
+  const { message, code } = parseApiErrorPayload(errorData, response.status, response.statusText);
 
   throw new ChatApiError(message, code, response.status);
 }

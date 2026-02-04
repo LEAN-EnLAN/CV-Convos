@@ -1,7 +1,15 @@
 'use client';
 
 import React from 'react';
-import { CVData } from '@/types/cv';
+import {
+    User, Briefcase, GraduationCap, Code, Plus, Trash2,
+    Mail, Phone, MapPin, FileText, Sparkles, Wand2,
+    Loader2, Scissors, Zap, Undo2, Redo2,
+    Linkedin, Github, Globe, Twitter, Clock, Languages, Award, Heart,
+    Target, FileDown, Rocket, ShieldCheck, CheckCircle2, Wrench, Search
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { CVData, ImprovementCard } from '@/types/cv';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -30,13 +38,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    User, Briefcase, GraduationCap, Code, Plus, Trash2,
-    Mail, Phone, MapPin, FileText, Sparkles, Wand2,
-    Loader2, Scissors, Zap, Undo2, Redo2,
-    Linkedin, Github, Globe, Twitter, Clock, Languages, Award, Heart,
-    Target, FileDown, Rocket, ShieldCheck, CheckCircle2, Wrench, Search
-} from 'lucide-react';
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -44,7 +45,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -53,9 +53,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-
+import { resolveApiErrorMessage } from '@/lib/error-utils';
 import { CritiqueModal } from './CritiqueModal';
-import { ImprovementCard } from '@/types/cv';
 
 interface EditorProps {
     data: CVData;
@@ -111,15 +110,11 @@ export function Editor({
                 body: JSON.stringify(data),
             });
 
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                const detail = errorData.detail;
-                const errorMessage =
-                    typeof detail === 'string'
-                        ? detail
-                        : detail?.message || detail?.error || 'Failed to optimize content';
-                throw new Error(errorMessage);
-            }
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    const errorMessage = resolveApiErrorMessage(errorData, 'Failed to optimize content');
+                    throw new Error(errorMessage);
+                }
 
             const optimizedData = await res.json();
 
@@ -185,15 +180,11 @@ export function Editor({
                 body: JSON.stringify(data),
             });
 
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                const detail = errorData.detail;
-                const errorMessage =
-                    typeof detail === 'string'
-                        ? detail
-                        : detail?.message || detail?.error || 'Failed to optimize content';
-                throw new Error(errorMessage);
-            }
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    const errorMessage = resolveApiErrorMessage(errorData, 'Failed to optimize content');
+                    throw new Error(errorMessage);
+                }
 
             const optimizedData = await res.json();
             onChange(ensureIds(optimizedData));
