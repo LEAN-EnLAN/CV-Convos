@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, Form
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from app.services.parser_service import extract_text_from_file
@@ -36,14 +36,6 @@ from app.api.schemas import (
     JobAnalysisResponse,
     ChatSession,
     CritiqueResponse,
-    ATSCheckResponse,
-    OptimizeCVRequest,
-    InterviewCVRequest,
-    GenerateCompleteCVRequest,
-    GenerateCompleteCVResponse,
-    ExportCVRequest,
-    CoverLetterRequest,
-    CoverLetterResponse,
 )
 from app.core.exceptions import (
     APIError,
@@ -60,27 +52,62 @@ from app.services.session_store import store as session_store
 
 logger = logging.getLogger(__name__)
 
-
-async def _get_session(session_id: str) -> Optional[ChatSession]:
+def _get_session(session_id: str) -> Optional[ChatSession]:
     """Obtiene una sesión de chat por ID."""
-    return await session_store.get_session(session_id)
+    return session_store.get_session(session_id)
 
 
-async def _save_session(session: ChatSession) -> None:
+def _save_session(session: ChatSession) -> None:
     """Guarda una sesión de chat."""
-    await session_store.save_session(session)
+    session_store.save_session(session)
 
 
-async def _update_session_cv_data(session_id: str, new_data: Dict[str, Any]) -> None:
+def _update_session_cv_data(session_id: str, new_data: Dict[str, Any]) -> None:
     """Actualiza los datos del CV en una sesión."""
-    session = await _get_session(session_id)
+    session = _get_session(session_id)
     if session:
         # Deep merge de los datos
         current_cv = session.cv_data
         merged = _deep_merge(current_cv, new_data)
         session.cv_data = merged
         session.updated_at = datetime.utcnow()
-        await _save_session(session)
+        _save_session(session)
+
+
+class CoverLetterRequest(BaseModel):
+    cv_data: dict
+    job_description: Optional[str] = None
+    company_name: str
+    recipient_name: str
+    tone: str = "formal"
+
+
+class CoverLetterResponse(BaseModel):
+    opening: str
+    body: str
+    closing: str
+    signature: str
+
+
+class GenerateCompleteCVRequest(BaseModel):
+    """Request model for complete CV generation."""
+    cv_data: Dict[str, Any]
+    template_type: str = Field(..., description="Template type: professional, harvard, minimal, creative, tech, bian, finance, health, education")
+
+
+class GenerateCompleteCVResponse(BaseModel):
+    """Response model for complete CV generation."""
+    data: Dict[str, Any]
+    metadata: Dict[str, Any]
+    template_type: str
+    generated_at: str
+
+
+class ExportCVRequest(BaseModel):
+    """Request model for exportación de CV."""
+    cv_data: Dict[str, Any]
+    template_id: str = Field(..., description="ID de la plantilla usada")
+    format: str = Field(..., description="Formato de exportación: pdf, docx, txt, json")
 
 
 router = APIRouter()
@@ -89,9 +116,7 @@ MAX_FILE_SIZE_MB = 12
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 
-@router.post(
-    "/generate-cv", response_model=CVData, response_model_by_alias=True, tags=["cv-gen"]
-)
+@router.post("/generate-cv", response_model=CVData, response_model_by_alias=True, tags=["cv-gen"])
 @limiter.limit("10/minute")
 async def generate_cv(request: Request, files: List[UploadFile] = File(...)):
     """
@@ -119,9 +144,7 @@ async def generate_cv(request: Request, files: List[UploadFile] = File(...)):
             filename = file.filename or "unknown"
 
             if len(content) > MAX_FILE_SIZE_BYTES:
-                raise FileProcessingError(
-                    f"El archivo {filename} supera el límite de {MAX_FILE_SIZE_MB} MB"
-                )
+                raise FileProcessingError(f"El archivo {filename} supera el límite de {MAX_FILE_SIZE_MB} MB")
 
             if not filename.lower().endswith((".pdf", ".docx", ".txt")):
                 raise FileProcessingError(f"Unsupported file type: {filename}")
@@ -155,9 +178,7 @@ async def generate_cv(request: Request, files: List[UploadFile] = File(...)):
         raise InternalServerError("Error interno al procesar el CV. Intentá de nuevo.")
 
 
-@router.post(
-    "/optimize-cv", response_model=CVData, response_model_by_alias=True, tags=["cv-gen"]
-)
+@router.post("/optimize-cv", response_model=CVData, response_model_by_alias=True, tags=["cv-gen"])
 @limiter.limit("10/minute")
 async def optimize_cv(
     request: Request, cv_data: CVDataInput, target: str = "shrink", section: str = "all"
@@ -210,12 +231,8 @@ async def critique_cv(request: Request, cv_data: CVDataInput):
     except Exception as e:
         logger.exception(f"Error in critique_cv endpoint: {str(e)}")
         if "ValidationError" in str(type(e)):
-            raise CVProcessingError(
-                "La IA devolvió un formato incompatible. Probá de nuevo."
-            )
-        raise InternalServerError(
-            "Error interno al procesar el análisis. Intentá de nuevo."
-        )
+            raise CVProcessingError("La IA devolvió un formato incompatible. Probá de nuevo.")
+        raise InternalServerError("Error interno al procesar el análisis. Intentá de nuevo.")
 
 
 @router.post("/interview-cv", response_model=CVData, response_model_by_alias=True)
@@ -239,9 +256,7 @@ async def interview_cv(
         raise e
     except Exception:
         logger.exception("Unexpected error in interview_cv")
-        raise InternalServerError(
-            "Error al optimizar el CV para el puesto. Intentá de nuevo."
-        )
+        raise InternalServerError("Error al optimizar el CV para el puesto. Intentá de nuevo.")
 
 
 @router.post("/generate-linkedin-post")
@@ -261,20 +276,16 @@ async def generate_linkedin_post_endpoint(request: Request, cv_data: CVDataInput
         raise e
     except Exception:
         logger.exception("Unexpected error in generate_linkedin_post_endpoint")
-        raise InternalServerError(
-            "Error al generar el post de LinkedIn. Intentá de nuevo."
-        )
+        raise InternalServerError("Error al generar el post de LinkedIn. Intentá de nuevo.")
 
 
 @router.post("/generate-cover-letter", response_model=CoverLetterResponse)
 @limiter.limit("10/minute")
-async def generate_cover_letter_endpoint(
-    request: Request, cover_letter_request: CoverLetterRequest
-):
+async def generate_cover_letter_endpoint(request: Request, cover_letter_request: CoverLetterRequest):
     """Generate a personalized cover letter based on CV data and job info."""
     try:
         result = await generate_cover_letter(
-            cv_data=cover_letter_request.cv_data.model_dump(by_alias=True),
+            cv_data=cover_letter_request.cv_data,
             company_name=cover_letter_request.company_name,
             recipient_name=cover_letter_request.recipient_name,
             job_description=cover_letter_request.job_description or "",
@@ -296,9 +307,7 @@ async def generate_cover_letter_endpoint(
         raise e
     except Exception:
         logger.exception("Unexpected error in generate_cover_letter_endpoint")
-        raise InternalServerError(
-            "Error al generar la carta de presentación. Intentá de nuevo."
-        )
+        raise InternalServerError("Error al generar la carta de presentación. Intentá de nuevo.")
 
 
 @router.get("/templates", response_model=List[TemplateConfig], tags=["cv-gen"])
@@ -310,12 +319,7 @@ async def get_templates(request: Request):
     return registry.get_all_templates()
 
 
-@router.post(
-    "/generate-complete-cv",
-    response_model=GenerateCompleteCVResponse,
-    response_model_by_alias=True,
-    tags=["cv-gen"],
-)
+@router.post("/generate-complete-cv", response_model=GenerateCompleteCVResponse, response_model_by_alias=True, tags=["cv-gen"])
 @limiter.limit("10/minute")
 async def generate_complete_cv_endpoint(
     request: Request, cv_request: GenerateCompleteCVRequest
@@ -346,7 +350,7 @@ async def generate_complete_cv_endpoint(
 
         # Generate complete CV
         result = await generate_complete_cv(
-            cv_data=cv_request.cv_data.model_dump(by_alias=True),
+            cv_data=cv_request.cv_data,
             template_type=cv_request.template_type,
         )
 
@@ -354,7 +358,7 @@ async def generate_complete_cv_endpoint(
             data=result["data"],
             metadata=result["metadata"],
             template_type=result["template_type"],
-            generated_at=result["generated_at"],
+            generated_at=result["generatedAt"],
         )
 
     except (CVProcessingError, ValidationError) as e:
@@ -372,14 +376,12 @@ async def export_cv_endpoint(request: Request, export_request: ExportCVRequest):
     """Exporta un CV en el formato solicitado."""
     try:
         content, filename, media_type = build_export_payload(
-            cv_data=export_request.cv_data.model_dump(by_alias=True),
+            cv_data=export_request.cv_data,
             template_id=export_request.template_id,
             export_format=export_request.format.lower(),
         )
         headers = {"Content-Disposition": f"attachment; filename={filename}"}
-        return StreamingResponse(
-            io.BytesIO(content), media_type=media_type, headers=headers
-        )
+        return StreamingResponse(io.BytesIO(content), media_type=media_type, headers=headers)
     except (CVProcessingError, ValidationError) as e:
         raise e
     except Exception:
@@ -387,12 +389,22 @@ async def export_cv_endpoint(request: Request, export_request: ExportCVRequest):
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-@router.post(
-    "/ats-check",
-    response_model=ATSCheckResponse,
-    response_model_by_alias=True,
-    tags=["cv-gen"],
-)
+class ATSCheckResponse(BaseModel):
+    ats_score: int
+    grade: str
+    summary: str
+    format_score: int
+    keyword_score: int
+    completeness_score: int
+    found_keywords: List[str]
+    missing_keywords: List[str]
+    industry_recommendation: str
+    issues: List[dict]
+    quick_wins: List[str]
+    detailed_tips: str
+
+
+@router.post("/ats-check", response_model=ATSCheckResponse, response_model_by_alias=True, tags=["cv-gen"])
 @limiter.limit("10/minute")
 async def ats_check(
     request: Request,
@@ -400,6 +412,10 @@ async def ats_check(
     target_industry: str = Query(
         "general",
         description="Target industry: tech, finance, healthcare, creative, education, general",
+    ),
+    improvement_context: Optional[str] = Form(
+        None,
+        description="Contexto opcional para asegurar consistencia en mejoras previas",
     ),
 ):
     """Analyze a CV PDF/DOCX for ATS compatibility."""
@@ -413,11 +429,6 @@ async def ats_check(
             content = await file.read()
             filename = file.filename or "unknown"
 
-            if len(content) > MAX_FILE_SIZE_BYTES:
-                raise FileProcessingError(
-                    f"El archivo {filename} supera el límite de {MAX_FILE_SIZE_MB} MB"
-                )
-
             if not filename.lower().endswith((".pdf", ".docx", ".txt")):
                 raise FileProcessingError(f"Unsupported file type: {filename}")
 
@@ -430,30 +441,24 @@ async def ats_check(
         if not combined_text.strip():
             raise FileProcessingError("Could not extract text from files")
 
-        combined_text = combined_text[:20000]
-
-        result = await analyze_ats(combined_text, target_industry)
+        result = await analyze_ats(combined_text, target_industry, improvement_context)
 
         if not result:
             raise CVProcessingError("ATS analysis failed")
 
         return ATSCheckResponse(
-            atsScore=result.get("atsScore") or result.get("ats_score", 50),
+            ats_score=result.get("ats_score", 50),
             grade=result.get("grade", "C"),
             summary=result.get("summary", "CV analysed"),
-            formatScore=result.get("formatScore") or result.get("format_score", 50),
-            keywordScore=result.get("keywordScore") or result.get("keyword_score", 50),
-            completenessScore=result.get("completenessScore")
-            or result.get("completeness_score", 50),
-            foundKeywords=result.get("foundKeywords")
-            or result.get("found_keywords", []),
-            missingKeywords=result.get("missingKeywords")
-            or result.get("missing_keywords", []),
-            industryRecommendation=result.get("industryRecommendation")
-            or result.get("industry_recommendation", "general"),
+            format_score=result.get("format_score", 50),
+            keyword_score=result.get("keyword_score", 50),
+            completeness_score=result.get("completeness_score", 50),
+            found_keywords=result.get("found_keywords", []),
+            missing_keywords=result.get("missing_keywords", []),
+            industry_recommendation=result.get("industry_recommendation", "general"),
             issues=result.get("issues", []),
-            quickWins=result.get("quickWins") or result.get("quick_wins", []),
-            detailedTips=result.get("detailedTips") or result.get("detailed_tips", ""),
+            quick_wins=result.get("quick_wins", []),
+            detailed_tips=result.get("detailed_tips", ""),
         )
 
     except (FileProcessingError, ValidationError) as e:
@@ -470,7 +475,6 @@ async def ats_check(
 # CHAT ENDPOINTS
 # =============================================================================
 
-
 @router.post("/chat/stream")
 @limiter.limit("10/minute")
 async def chat_stream(request: Request, chat_request: ChatRequest):
@@ -482,13 +486,12 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
     """
     try:
         # Obtener o crear sesión
-        session = await _get_session(chat_request.session_id)
+        session = _get_session(chat_request.session_id)
         if not session:
             session = ChatSession(
                 session_id=chat_request.session_id,
                 cv_data=chat_request.cv_data,
                 current_phase=chat_request.phase,
-                job_description=chat_request.job_description,
             )
         else:
             # ACTUALIZACIÓN CRÍTICA: Sincronizar datos del CV desde el frontend
@@ -506,7 +509,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
         session.messages.append(user_message)
 
         # Guardar sesión
-        await _save_session(session)
+        _save_session(session)
 
         async def event_generator():
             """Generador de eventos SSE."""
@@ -522,7 +525,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
 
                 # Actualizar sesión al completar
                 session.updated_at = datetime.utcnow()
-                await _save_session(session)
+                _save_session(session)
 
             except Exception as e:
                 logger.error(f"Error in stream generator: {e}")
@@ -553,13 +556,12 @@ async def chat(request: Request, chat_request: ChatRequest):
     """
     try:
         # Obtener o crear sesión
-        session = await _get_session(chat_request.session_id)
+        session = _get_session(chat_request.session_id)
         if not session:
             session = ChatSession(
                 session_id=chat_request.session_id,
                 cv_data=chat_request.cv_data,
                 current_phase=chat_request.phase,
-                job_description=chat_request.job_description,
             )
 
         # Agregar mensaje del usuario
@@ -590,7 +592,7 @@ async def chat(request: Request, chat_request: ChatRequest):
 
         # Actualizar datos del CV si hay extracción con alta confianza
         if extraction and extraction.extracted:
-            await _update_session_cv_data(chat_request.session_id, extraction.extracted)
+            _update_session_cv_data(chat_request.session_id, extraction.extracted)
 
         # Actualizar fase si cambió
         new_phase = result.get("new_phase")
@@ -607,7 +609,7 @@ async def chat(request: Request, chat_request: ChatRequest):
         )
         session.messages.append(assistant_message)
         session.updated_at = datetime.utcnow()
-        await _save_session(session)
+        _save_session(session)
 
         return ChatResponse(
             message=assistant_message,
@@ -621,9 +623,7 @@ async def chat(request: Request, chat_request: ChatRequest):
         raise InternalServerError("Error en el servicio de chat. Intentá de nuevo.")
 
 
-@router.post(
-    "/chat/extract", response_model=DataExtraction, response_model_by_alias=True
-)
+@router.post("/chat/extract", response_model=DataExtraction, response_model_by_alias=True)
 @limiter.limit("10/minute")
 async def chat_extract(request: Request, chat_request: ChatRequest):
     """
@@ -632,7 +632,7 @@ async def chat_extract(request: Request, chat_request: ChatRequest):
     Útil para extraer información sin generar una respuesta conversacional.
     """
     try:
-        session = await _get_session(chat_request.session_id)
+        session = _get_session(chat_request.session_id)
         history = session.messages if session else []
 
         extraction = await extract_cv_data_from_message(
@@ -651,16 +651,10 @@ async def chat_extract(request: Request, chat_request: ChatRequest):
         raise
     except Exception:
         logger.exception("Error in chat_extract endpoint")
-        raise InternalServerError(
-            "Error al extraer datos del mensaje. Intentá de nuevo."
-        )
+        raise InternalServerError("Error al extraer datos del mensaje. Intentá de nuevo.")
 
 
-@router.post(
-    "/chat/job-analysis",
-    response_model=JobAnalysisResponse,
-    response_model_by_alias=True,
-)
+@router.post("/chat/job-analysis", response_model=JobAnalysisResponse, response_model_by_alias=True)
 @limiter.limit("10/minute")
 async def chat_job_analysis(request: Request, job_request: JobAnalysisRequest):
     """
@@ -694,7 +688,7 @@ async def get_chat_session(request: Request, session_id: str):
 
     Incluye historial de mensajes y datos del CV acumulados.
     """
-    session = await _get_session(session_id)
+    session = _get_session(session_id)
 
     if not session:
         # Crear nueva sesión si no existe
@@ -703,7 +697,7 @@ async def get_chat_session(request: Request, session_id: str):
             cv_data={},
             current_phase=ConversationPhase.WELCOME,
         )
-        await _save_session(session)
+        _save_session(session)
 
     return {
         "sessionId": session.session_id,
@@ -723,7 +717,7 @@ async def get_next_question(request: Request, session_id: str):
 
     Basado en el estado actual del CV y la fase de la conversación.
     """
-    session = await _get_session(session_id)
+    session = _get_session(session_id)
 
     if not session:
         raise NotFoundError("No se encontró la sesión solicitada.")
@@ -739,15 +733,12 @@ async def get_next_question(request: Request, session_id: str):
 
     except Exception:
         logger.exception("Error in get_next_question endpoint")
-        raise InternalServerError(
-            "Error al generar la siguiente pregunta. Intentá de nuevo."
-        )
+        raise InternalServerError("Error al generar la siguiente pregunta. Intentá de nuevo.")
 
 
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
-
 
 def _deep_merge(base: Dict[str, Any], update: Dict[str, Any]) -> Dict[str, Any]:
     """Realiza un merge profundo de dos diccionarios."""
@@ -756,15 +747,9 @@ def _deep_merge(base: Dict[str, Any], update: Dict[str, Any]) -> Dict[str, Any]:
     for key, value in update.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = _deep_merge(result[key], value)
-        elif (
-            key in result and isinstance(result[key], list) and isinstance(value, list)
-        ):
+        elif key in result and isinstance(result[key], list) and isinstance(value, list):
             # Para listas, agregamos elementos nuevos (evitando duplicados simples)
-            existing = {
-                json.dumps(item, sort_keys=True)
-                for item in result[key]
-                if isinstance(item, dict)
-            }
+            existing = {json.dumps(item, sort_keys=True) for item in result[key] if isinstance(item, dict)}
             for item in value:
                 if isinstance(item, dict):
                     item_key = json.dumps(item, sort_keys=True)

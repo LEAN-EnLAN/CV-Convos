@@ -42,7 +42,7 @@ Format this CV for a classic professional template:
 - Standard chronological format for experience
 """,
                 "sectionOrder": [
-                    "summary", "experience", "education", "skills", "projects", 
+                    "summary", "experience", "education", "skills", "projects",
                     "certifications", "languages", "interests", "tools"
                 ],
                 "styles": {
@@ -69,7 +69,7 @@ Format this CV for an academic/Harvard-style template:
 - Clear chronological structure
 """,
                 "sectionOrder": [
-                    "summary", "education", "experience", "projects", "skills", 
+                    "summary", "education", "experience", "projects", "skills",
                     "certifications", "languages", "interests", "tools"
                 ],
                 "styles": {
@@ -96,7 +96,7 @@ Format this CV for a creative template:
 - Modern, engaging presentation
 """,
                 "sectionOrder": [
-                    "summary", "skills", "experience", "projects", "education", 
+                    "summary", "skills", "experience", "projects", "education",
                     "certifications", "languages", "interests", "tools"
                 ],
                 "styles": {
@@ -123,7 +123,7 @@ Format this CV for a minimal template:
 - Subtle use of bold for headers
 """,
                 "sectionOrder": [
-                    "summary", "experience", "projects", "education", "skills", 
+                    "summary", "experience", "projects", "education", "skills",
                     "certifications", "languages", "interests", "tools"
                 ],
                 "styles": {
@@ -150,7 +150,7 @@ Format this CV for a tech/developer template:
 - Modern, clean layout
 """,
                 "sectionOrder": [
-                    "summary", "skills", "experience", "projects", "education", 
+                    "summary", "skills", "experience", "projects", "education",
                     "languages", "certifications", "interests", "tools"
                 ],
                 "styles": {
@@ -177,7 +177,7 @@ Format this CV for a healthcare template:
 - Medical professional appearance
 """,
                 "sectionOrder": [
-                    "summary", "experience", "education", "skills", "certifications", 
+                    "summary", "experience", "education", "skills", "certifications",
                     "projects", "languages", "interests", "tools"
                 ],
                 "styles": {
@@ -204,7 +204,7 @@ Format this CV for a finance template:
 - Attention to detail
 """,
                 "sectionOrder": [
-                    "summary", "experience", "projects", "education", "skills", 
+                    "summary", "experience", "projects", "education", "skills",
                     "certifications", "languages", "interests", "tools"
                 ],
                 "styles": {
@@ -231,7 +231,7 @@ Format this CV for an education/academic template:
 - Academic professional appearance
 """,
                 "sectionOrder": [
-                    "summary", "education", "experience", "projects", "skills", 
+                    "summary", "education", "experience", "projects", "skills",
                     "certifications", "languages", "interests", "tools"
                 ],
                 "styles": {
@@ -258,7 +258,7 @@ Format this CV for a business/consulting template:
 - Corporate, polished look
 """,
                 "sectionOrder": [
-                    "summary", "experience", "education", "skills", "projects", 
+                    "summary", "experience", "education", "skills", "projects",
                     "certifications", "languages", "interests", "tools"
                 ],
                 "styles": {
