@@ -52,26 +52,26 @@ from app.services.session_store import store as session_store
 
 logger = logging.getLogger(__name__)
 
-def _get_session(session_id: str) -> Optional[ChatSession]:
+async def _get_session(session_id: str) -> Optional[ChatSession]:
     """Obtiene una sesión de chat por ID."""
-    return session_store.get_session(session_id)
+    return await session_store.get_session(session_id)
 
 
-def _save_session(session: ChatSession) -> None:
+async def _save_session(session: ChatSession) -> None:
     """Guarda una sesión de chat."""
-    session_store.save_session(session)
+    await session_store.save_session(session)
 
 
-def _update_session_cv_data(session_id: str, new_data: Dict[str, Any]) -> None:
+async def _update_session_cv_data(session_id: str, new_data: Dict[str, Any]) -> None:
     """Actualiza los datos del CV en una sesión."""
-    session = _get_session(session_id)
+    session = await _get_session(session_id)
     if session:
         # Deep merge de los datos
         current_cv = session.cv_data
         merged = _deep_merge(current_cv, new_data)
         session.cv_data = merged
         session.updated_at = datetime.utcnow()
-        _save_session(session)
+        await _save_session(session)
 
 
 class CoverLetterRequest(BaseModel):
@@ -486,7 +486,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
     """
     try:
         # Obtener o crear sesión
-        session = _get_session(chat_request.session_id)
+        session = await _get_session(chat_request.session_id)
         if not session:
             session = ChatSession(
                 session_id=chat_request.session_id,
@@ -509,7 +509,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
         session.messages.append(user_message)
 
         # Guardar sesión
-        _save_session(session)
+        await _save_session(session)
 
         async def event_generator():
             """Generador de eventos SSE."""
@@ -525,7 +525,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
 
                 # Actualizar sesión al completar
                 session.updated_at = datetime.utcnow()
-                _save_session(session)
+                await _save_session(session)
 
             except Exception as e:
                 logger.error(f"Error in stream generator: {e}")
@@ -556,7 +556,7 @@ async def chat(request: Request, chat_request: ChatRequest):
     """
     try:
         # Obtener o crear sesión
-        session = _get_session(chat_request.session_id)
+        session = await _get_session(chat_request.session_id)
         if not session:
             session = ChatSession(
                 session_id=chat_request.session_id,
@@ -592,7 +592,7 @@ async def chat(request: Request, chat_request: ChatRequest):
 
         # Actualizar datos del CV si hay extracción con alta confianza
         if extraction and extraction.extracted:
-            _update_session_cv_data(chat_request.session_id, extraction.extracted)
+            await _update_session_cv_data(chat_request.session_id, extraction.extracted)
 
         # Actualizar fase si cambió
         new_phase = result.get("new_phase")
@@ -609,7 +609,7 @@ async def chat(request: Request, chat_request: ChatRequest):
         )
         session.messages.append(assistant_message)
         session.updated_at = datetime.utcnow()
-        _save_session(session)
+        await _save_session(session)
 
         return ChatResponse(
             message=assistant_message,
@@ -632,7 +632,7 @@ async def chat_extract(request: Request, chat_request: ChatRequest):
     Útil para extraer información sin generar una respuesta conversacional.
     """
     try:
-        session = _get_session(chat_request.session_id)
+        session = await _get_session(chat_request.session_id)
         history = session.messages if session else []
 
         extraction = await extract_cv_data_from_message(
@@ -688,7 +688,7 @@ async def get_chat_session(request: Request, session_id: str):
 
     Incluye historial de mensajes y datos del CV acumulados.
     """
-    session = _get_session(session_id)
+    session = await _get_session(session_id)
 
     if not session:
         # Crear nueva sesión si no existe
@@ -697,7 +697,7 @@ async def get_chat_session(request: Request, session_id: str):
             cv_data={},
             current_phase=ConversationPhase.WELCOME,
         )
-        _save_session(session)
+        await _save_session(session)
 
     return {
         "sessionId": session.session_id,
@@ -717,7 +717,7 @@ async def get_next_question(request: Request, session_id: str):
 
     Basado en el estado actual del CV y la fase de la conversación.
     """
-    session = _get_session(session_id)
+    session = await _get_session(session_id)
 
     if not session:
         raise NotFoundError("No se encontró la sesión solicitada.")
