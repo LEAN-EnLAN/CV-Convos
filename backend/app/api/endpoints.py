@@ -402,6 +402,7 @@ class ATSCheckResponse(BaseModel):
     issues: List[dict]
     quick_wins: List[str]
     detailed_tips: str
+    quality_debrief: Optional[str] = None
 
 
 @router.post("/ats-check", response_model=ATSCheckResponse, response_model_by_alias=True, tags=["cv-gen"])
@@ -459,6 +460,7 @@ async def ats_check(
             issues=result.get("issues", []),
             quick_wins=result.get("quick_wins", []),
             detailed_tips=result.get("detailed_tips", ""),
+            quality_debrief=result.get("quality_debrief", ""),
         )
 
     except (FileProcessingError, ValidationError) as e:

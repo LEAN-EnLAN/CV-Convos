@@ -7,7 +7,6 @@ import { OnboardingSelection } from '@/components/cv-builder/onboarding/Onboardi
 import { ConversationalWizard } from '@/components/cv-builder/wizard/ConversationalWizard';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
-import { mergeTemplateConfig } from '@/lib/cv-templates/merge-config';
 import { getDebugData } from '@/lib/debug-utils';
 import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
 import { ChatProvider } from '@/contexts/ChatContext';
@@ -84,7 +83,7 @@ export default function Home() {
         return {
             ...emptyCV,
             ...data,
-            config: mergeTemplateConfig(DEFAULT_CONFIG, data.config),
+            config: data.config || { ...DEFAULT_CONFIG },
             experience: (data.experience || []).map(e => ({
                 ...e,
                 id: e.id || Math.random().toString(36).substr(2, 9)
@@ -126,28 +125,25 @@ export default function Home() {
     }, [searchParams, flow]);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const shouldRefine = localStorage.getItem('cv_refine_after_chat') === 'true';
-        if (!shouldRefine) return;
+        if (flow !== 'onboarding') return;
+
         const storedData = localStorage.getItem('cv_data');
-        if (!storedData) {
-            localStorage.removeItem('cv_refine_after_chat');
-            return;
-        }
+        if (!storedData) return;
+
         try {
             const parsed = JSON.parse(storedData) as CVData;
-            setCvData(sanitizeData(parsed));
             const storedTemplate = localStorage.getItem('cv_template') as CVTemplate | null;
+            setCvData(sanitizeData(parsed));
             if (storedTemplate) {
                 setSelectedTemplate(storedTemplate);
             }
-            setFlow('builder');
+            if (searchParams.get('flow') === 'builder' || parsed) {
+                setFlow('builder');
+            }
         } catch (error) {
-            console.error('Error al restaurar CV desde chat', error);
-        } finally {
-            localStorage.removeItem('cv_refine_after_chat');
+            console.error('Error al leer los datos del CV desde localStorage', error);
         }
-    }, [sanitizeData]);
+    }, [flow, sanitizeData, searchParams]);
 
     const handleOnboardingSelect = (option: 'existing' | 'new') => {
         if (option === 'existing') {
@@ -191,18 +187,17 @@ export default function Home() {
     const handleChatDataUpdate = useCallback((data: Partial<CVData>) => {
         setCvData(prev => {
             const baseData = prev ?? { ...emptyCV, config: { ...DEFAULT_CONFIG } };
-            const mergedConfig = mergeTemplateConfig(baseData.config, data.config);
             return {
                 ...baseData,
                 ...data,
-                config: mergedConfig
+                config: data.config ?? baseData.config
             };
         });
     }, []);
 
     const handleChatComplete = (data: CVData) => {
         setCvData(sanitizeData(data));
-        setFlow('builder');
+        setFlow('template-gallery');
     };
 
     const handleChatBack = () => {
@@ -255,7 +250,6 @@ export default function Home() {
                             onBack={handleChatBack}
                             selectedTemplate={selectedTemplate}
                             onTemplateChange={setSelectedTemplate}
-                            onCVDataUpdate={handleChatDataUpdate}
                             showCVPreview
                         />
                     </ChatProvider>
@@ -267,13 +261,11 @@ export default function Home() {
             )}
 
             {flow === 'builder' && cvData && (
-                <ChatProvider initialCVData={cvData} onCVDataUpdate={handleChatDataUpdate}>
-                    <Builder
-                        initialData={{ ...cvData, config: cvData.config || { ...DEFAULT_CONFIG } }}
-                        onReset={handleReset}
-                        initialTemplate={selectedTemplate}
-                    />
-                </ChatProvider>
+                <Builder
+                    initialData={{ ...cvData, config: cvData.config || { ...DEFAULT_CONFIG } }}
+                    onReset={handleReset}
+                    initialTemplate={selectedTemplate}
+                />
             )}
         </main>
     );
