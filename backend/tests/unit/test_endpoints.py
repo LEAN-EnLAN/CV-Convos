@@ -60,11 +60,12 @@ def test_generate_cv_endpoint_validation(mocker):
 
     # Test with unsupported file type
     response = client.post(
-        "/api/generate-cv", files={"files": ("test.jpg", b"Image content", "image/jpeg")}
+        "/api/generate-cv",
+        files={"files": ("test.jpg", b"Image content", "image/jpeg")},
     )
     assert response.status_code == 400
-    assert "detail" in response.json()
-    assert response.json()["detail"]["error"] == "file_processing_error"
+    assert "code" in response.json()
+    assert response.json()["code"] == "file_processing_error"
 
     # Test with no files
     response = client.post("/api/generate-cv")
@@ -102,22 +103,22 @@ def test_ats_check_endpoint_validation(mocker):
         files={"files": ("test.pdf", b"PDF content", "application/pdf")},
     )
     assert response.status_code == 200
-    assert response.json()["ats_score"] == 85
+    assert response.json()["atsScore"] == 85
 
     # Test with supported TXT file
     response = client.post(
         "/api/ats-check", files={"files": ("test.txt", b"Text content", "text/plain")}
     )
     assert response.status_code == 200
-    assert response.json()["ats_score"] == 85
+    assert response.json()["atsScore"] == 85
 
     # Test with unsupported file type
     response = client.post(
         "/api/ats-check", files={"files": ("test.jpg", b"Image content", "image/jpeg")}
     )
     assert response.status_code == 400
-    assert "detail" in response.json()
-    assert response.json()["detail"]["error"] == "file_processing_error"
+    assert "code" in response.json()
+    assert response.json()["code"] == "file_processing_error"
 
 
 @pytest.mark.asyncio
@@ -141,16 +142,16 @@ async def test_custom_exceptions():
     with pytest.raises(CVProcessingError) as exc_info:
         raise CVProcessingError("Test error")
     assert exc_info.value.status_code == 422
-    assert exc_info.value.detail["error"] == "cv_processing_error"
+    assert exc_info.value.detail["code"] == "cv_processing_error"
 
     # Test FileProcessingError
     with pytest.raises(FileProcessingError) as exc_info:
         raise FileProcessingError("Test error")
     assert exc_info.value.status_code == 400
-    assert exc_info.value.detail["error"] == "file_processing_error"
+    assert exc_info.value.detail["code"] == "file_processing_error"
 
     # Test AIServiceError
     with pytest.raises(AIServiceError) as exc_info:
         raise AIServiceError("Test error")
     assert exc_info.value.status_code == 503
-    assert exc_info.value.detail["error"] == "ai_service_error"
+    assert exc_info.value.detail["code"] == "ai_service_unavailable"

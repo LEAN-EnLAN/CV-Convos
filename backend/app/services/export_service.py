@@ -39,7 +39,7 @@ SECTION_LABELS = {
 def _strip_font_name(value: Optional[str]) -> Optional[str]:
     if not value:
         return None
-    return str(value).replace('"', '').strip()
+    return str(value).replace('"', "").strip()
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
@@ -56,6 +56,16 @@ def _normalize_hex(value: str) -> Optional[str]:
     if len(hex_value) == 4:
         hex_value = "#" + "".join([c * 2 for c in hex_value[1:]])
     return hex_value
+
+
+# OKLCH color values to hex mapping (commonly used in Tailwind CSS)
+OKLCH_TO_HEX = {
+    "oklch(0.55 0.18 155)": "#10b981",  # emerald-500
+    "oklch(0.55 0.18 250)": "#3b82f6",  # blue-500
+    "oklch(0.55 0.18 30)": "#ef4444",  # red-500
+    "oklch(0.55 0.18 280)": "#8b5cf6",  # violet-500
+    "oklch(0.55 0.18 200)": "#06b6d4",  # cyan-500
+}
 
 
 def _resolve_hex_color(value: Optional[str], fallback: str) -> str:
@@ -82,7 +92,9 @@ def _get_layout_config(cv_data: Dict[str, Any]) -> Dict[str, float]:
     layout = config.get("layout") or {}
     section_gap = layout.get("sectionGap", DEFAULT_LAYOUT["sectionGap"])
     content_gap = layout.get("contentGap", DEFAULT_LAYOUT["contentGap"])
-    font_scale = _clamp(float(layout.get("fontSize", DEFAULT_LAYOUT["fontSize"])), 0.7, 1.3)
+    font_scale = _clamp(
+        float(layout.get("fontSize", DEFAULT_LAYOUT["fontSize"])), 0.7, 1.3
+    )
     return {
         "sectionGap": float(section_gap),
         "contentGap": float(content_gap),
@@ -93,11 +105,19 @@ def _get_layout_config(cv_data: Dict[str, Any]) -> Dict[str, float]:
 def _resolve_docx_fonts(cv_data: Dict[str, Any], template_id: str) -> Dict[str, str]:
     config = cv_data.get("config") or {}
     fonts = config.get("fonts") or {}
-    
+
     template_config = registry.get_template(template_id)
-    default_heading = template_config.styles.get("heading_font", "Helvetica-Bold") if template_config else "Helvetica-Bold"
-    default_body = template_config.styles.get("body_font", "Helvetica") if template_config else "Helvetica"
-    
+    default_heading = (
+        template_config.styles.get("heading_font", "Helvetica-Bold")
+        if template_config
+        else "Helvetica-Bold"
+    )
+    default_body = (
+        template_config.styles.get("body_font", "Helvetica")
+        if template_config
+        else "Helvetica"
+    )
+
     heading = _strip_font_name(fonts.get("heading")) or default_heading
     body = _strip_font_name(fonts.get("body")) or default_body
     return {"heading": heading, "body": body}
@@ -123,19 +143,21 @@ def _resolve_pdf_fonts(cv_data: Dict[str, Any], template_id: str) -> Dict[str, s
 def _resolve_colors(cv_data: Dict[str, Any], template_id: str) -> Dict[str, str]:
     config = cv_data.get("config") or {}
     colors_config = config.get("colors") or {}
-    
+
     template_config = registry.get_template(template_id)
     accent_fallback = "#111827"
-    
+
     if template_config and template_config.styles.get("accent"):
         raw_accent = template_config.styles["accent"]
         # Handle ReportLab color objects if present (legacy) or hex strings
-        if hasattr(raw_accent, 'hexval'):
-             accent_fallback = f"#{raw_accent.hexval()[2:]}"
+        if hasattr(raw_accent, "hexval"):
+            accent_fallback = f"#{raw_accent.hexval()[2:]}"
         elif isinstance(raw_accent, str):
-             accent_fallback = raw_accent
-    
-    accent = _resolve_hex_color(colors_config.get("accent") or colors_config.get("primary"), accent_fallback)
+            accent_fallback = raw_accent
+
+    accent = _resolve_hex_color(
+        colors_config.get("accent") or colors_config.get("primary"), accent_fallback
+    )
     primary = _resolve_hex_color(colors_config.get("primary"), accent)
     text = _resolve_hex_color(colors_config.get("text"), "#111827")
     return {
@@ -153,7 +175,9 @@ def _text_color_to_rgb(value: str) -> RGBColor:
     return RGBColor.from_string(value.replace("#", "").upper())
 
 
-def _apply_run_style(run, font_name: str, font_size: float, color_hex: Optional[str] = None) -> None:
+def _apply_run_style(
+    run, font_name: str, font_size: float, color_hex: Optional[str] = None
+) -> None:
     run.font.name = font_name
     run.font.size = Pt(font_size)
     if color_hex:
@@ -204,14 +228,16 @@ def build_export_payload(
     return content, file_name, EXPORT_MIME_TYPES[export_format]
 
 
-def _build_filename(cv_data: Dict[str, Any], template_id: str, export_format: str) -> str:
+def _build_filename(
+    cv_data: Dict[str, Any], template_id: str, export_format: str
+) -> str:
     personal_info = cv_data.get("personalInfo", {})
     full_name = personal_info.get("fullName") or "cv"
     safe_name = "_".join(full_name.strip().split())
-    
+
     template_config = registry.get_template(template_id)
     template_label = template_config.name if template_config else template_id
-    
+
     timestamp = datetime.utcnow().strftime("%Y%m%d")
     return f"cv_{safe_name}_{template_label}_{timestamp}.{export_format}"
 
@@ -278,7 +304,9 @@ def _build_txt_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
     return "\n".join(lines).strip().encode("utf-8")
 
 
-def _render_section_txt(cv_data: Dict[str, Any], section: str, content_gap_lines: int) -> List[str]:
+def _render_section_txt(
+    cv_data: Dict[str, Any], section: str, content_gap_lines: int
+) -> List[str]:
     lines: List[str] = []
     label = _get_section_label(cv_data, section)
 
@@ -297,7 +325,9 @@ def _render_section_txt(cv_data: Dict[str, Any], section: str, content_gap_lines
                 title = exp.get("position") or "Sin título"
                 company = exp.get("company")
                 location = exp.get("location")
-                dates = _format_date_range(exp.get("startDate"), exp.get("endDate"), exp.get("current"))
+                dates = _format_date_range(
+                    exp.get("startDate"), exp.get("endDate"), exp.get("current")
+                )
                 lines.append(f"{title}{f' · {company}' if company else ''}")
                 if location or dates:
                     meta = " | ".join([item for item in [location, dates] if item])
@@ -314,7 +344,9 @@ def _render_section_txt(cv_data: Dict[str, Any], section: str, content_gap_lines
                 degree = edu.get("degree") or "Sin título"
                 institution = edu.get("institution")
                 location = edu.get("location")
-                dates = _format_date_range(edu.get("startDate"), edu.get("endDate"), False)
+                dates = _format_date_range(
+                    edu.get("startDate"), edu.get("endDate"), False
+                )
                 lines.append(f"{degree}{f' · {institution}' if institution else ''}")
                 if location or dates:
                     meta = " | ".join([item for item in [location, dates] if item])
@@ -323,7 +355,11 @@ def _render_section_txt(cv_data: Dict[str, Any], section: str, content_gap_lines
                     lines.append(f"  {edu.get('description')}")
                 lines.extend([""] * (1 + content_gap_lines))
     elif section == "skills":
-        skills = [skill.get("name") for skill in cv_data.get("skills", []) if skill.get("name")]
+        skills = [
+            skill.get("name")
+            for skill in cv_data.get("skills", [])
+            if skill.get("name")
+        ]
         if skills:
             lines.append(label.upper())
             lines.append("-" * len(label))
@@ -342,7 +378,9 @@ def _render_section_txt(cv_data: Dict[str, Any], section: str, content_gap_lines
                 if proj.get("url"):
                     lines.append(f"  {proj.get('url')}")
                 if proj.get("technologies"):
-                    lines.append(f"  Tecnologías: {', '.join(proj.get('technologies'))}")
+                    lines.append(
+                        f"  Tecnologías: {', '.join(proj.get('technologies'))}"
+                    )
                 lines.extend([""] * (1 + content_gap_lines))
     elif section == "certifications":
         certifications = cv_data.get("certifications", [])
@@ -353,7 +391,9 @@ def _render_section_txt(cv_data: Dict[str, Any], section: str, content_gap_lines
                 title = cert.get("name") or "Certificación"
                 issuer = cert.get("issuer")
                 date = cert.get("date")
-                lines.append(f"{title}{f' · {issuer}' if issuer else ''}{f' ({date})' if date else ''}")
+                lines.append(
+                    f"{title}{f' · {issuer}' if issuer else ''}{f' ({date})' if date else ''}"
+                )
                 if cert.get("url"):
                     lines.append(f"  {cert.get('url')}")
             lines.extend([""] * (1 + content_gap_lines))
@@ -376,7 +416,15 @@ def _render_section_txt(cv_data: Dict[str, Any], section: str, content_gap_lines
         if interests:
             lines.append(label.upper())
             lines.append("-" * len(label))
-            lines.append(" • ".join([interest.get("name") for interest in interests if interest.get("name")]))
+            lines.append(
+                " • ".join(
+                    [
+                        interest.get("name")
+                        for interest in interests
+                        if interest.get("name")
+                    ]
+                )
+            )
     elif section == "tools":
         tools = cv_data.get("tools", [])
         if tools:
@@ -396,13 +444,25 @@ def _build_docx_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
     section_gap_pt = _px_to_pt(layout["sectionGap"])
     content_gap_pt = _px_to_pt(layout["contentGap"])
 
-    name_heading = document.add_heading(personal_info.get("fullName") or "Sin nombre", level=0)
-    _apply_run_style(name_heading.runs[0], fonts["heading"], 20 * layout["fontScale"], colors_config["primary"])
+    name_heading = document.add_heading(
+        personal_info.get("fullName") or "Sin nombre", level=0
+    )
+    _apply_run_style(
+        name_heading.runs[0],
+        fonts["heading"],
+        20 * layout["fontScale"],
+        colors_config["primary"],
+    )
     _apply_paragraph_spacing(name_heading, content_gap_pt)
 
     if personal_info.get("role"):
         role_paragraph = document.add_paragraph(personal_info.get("role"))
-        _apply_run_style(role_paragraph.runs[0], fonts["body"], 11 * layout["fontScale"], colors_config["text"])
+        _apply_run_style(
+            role_paragraph.runs[0],
+            fonts["body"],
+            11 * layout["fontScale"],
+            colors_config["text"],
+        )
         _apply_paragraph_spacing(role_paragraph, content_gap_pt)
 
     contact_parts = [
@@ -413,7 +473,12 @@ def _build_docx_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
     contact = " | ".join([item for item in contact_parts if item])
     if contact:
         contact_paragraph = document.add_paragraph(contact)
-        _apply_run_style(contact_paragraph.runs[0], fonts["body"], 10 * layout["fontScale"], colors_config["text"])
+        _apply_run_style(
+            contact_paragraph.runs[0],
+            fonts["body"],
+            10 * layout["fontScale"],
+            colors_config["text"],
+        )
         _apply_paragraph_spacing(contact_paragraph, content_gap_pt)
 
     link_parts = []
@@ -425,7 +490,12 @@ def _build_docx_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
         link_parts.append(f"Web: {personal_info.get('website')}")
     if link_parts:
         link_paragraph = document.add_paragraph(" | ".join(link_parts))
-        _apply_run_style(link_paragraph.runs[0], fonts["body"], 10 * layout["fontScale"], colors_config["text"])
+        _apply_run_style(
+            link_paragraph.runs[0],
+            fonts["body"],
+            10 * layout["fontScale"],
+            colors_config["text"],
+        )
         _apply_paragraph_spacing(link_paragraph, content_gap_pt)
 
     for section in TEMPLATE_SECTION_ORDER[template_id]:
@@ -466,106 +536,177 @@ def _render_section_docx(
         summary = cv_data.get("personalInfo", {}).get("summary")
         if summary:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
             paragraph = document.add_paragraph(summary)
-            _apply_run_style(paragraph.runs[0], fonts["body"], body_size, colors_config["text"])
+            _apply_run_style(
+                paragraph.runs[0], fonts["body"], body_size, colors_config["text"]
+            )
             _apply_paragraph_spacing(paragraph, content_gap_pt)
     elif section == "experience":
         experiences = cv_data.get("experience", [])
         if experiences:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
             for exp in experiences:
                 title = exp.get("position") or "Sin título"
                 company = exp.get("company")
-                dates = _format_date_range(exp.get("startDate"), exp.get("endDate"), exp.get("current"))
+                dates = _format_date_range(
+                    exp.get("startDate"), exp.get("endDate"), exp.get("current")
+                )
                 header = f"{title}{f' · {company}' if company else ''}"
                 paragraph = document.add_paragraph()
                 run = paragraph.add_run(header)
                 run.bold = True
-                _apply_run_style(run, fonts["heading"], body_size, colors_config["text"])
+                _apply_run_style(
+                    run, fonts["heading"], body_size, colors_config["text"]
+                )
                 _apply_paragraph_spacing(paragraph, content_gap_pt)
                 if dates:
                     meta = document.add_paragraph(dates)
-                    _apply_run_style(meta.runs[0], fonts["body"], body_size * 0.9, colors_config["text"])
+                    _apply_run_style(
+                        meta.runs[0],
+                        fonts["body"],
+                        body_size * 0.9,
+                        colors_config["text"],
+                    )
                     _apply_paragraph_spacing(meta, content_gap_pt)
                 if exp.get("location"):
                     location = document.add_paragraph(exp.get("location"))
-                    _apply_run_style(location.runs[0], fonts["body"], body_size * 0.9, colors_config["text"])
+                    _apply_run_style(
+                        location.runs[0],
+                        fonts["body"],
+                        body_size * 0.9,
+                        colors_config["text"],
+                    )
                     _apply_paragraph_spacing(location, content_gap_pt)
                 if exp.get("description"):
                     description = document.add_paragraph(exp.get("description"))
-                    _apply_run_style(description.runs[0], fonts["body"], body_size, colors_config["text"])
+                    _apply_run_style(
+                        description.runs[0],
+                        fonts["body"],
+                        body_size,
+                        colors_config["text"],
+                    )
                     _apply_paragraph_spacing(description, content_gap_pt)
     elif section == "education":
         education = cv_data.get("education", [])
         if education:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
             for edu in education:
                 degree = edu.get("degree") or "Sin título"
                 institution = edu.get("institution")
-                dates = _format_date_range(edu.get("startDate"), edu.get("endDate"), False)
+                dates = _format_date_range(
+                    edu.get("startDate"), edu.get("endDate"), False
+                )
                 header = f"{degree}{f' · {institution}' if institution else ''}"
                 paragraph = document.add_paragraph()
                 run = paragraph.add_run(header)
                 run.bold = True
-                _apply_run_style(run, fonts["heading"], body_size, colors_config["text"])
+                _apply_run_style(
+                    run, fonts["heading"], body_size, colors_config["text"]
+                )
                 _apply_paragraph_spacing(paragraph, content_gap_pt)
                 if dates:
                     meta = document.add_paragraph(dates)
-                    _apply_run_style(meta.runs[0], fonts["body"], body_size * 0.9, colors_config["text"])
+                    _apply_run_style(
+                        meta.runs[0],
+                        fonts["body"],
+                        body_size * 0.9,
+                        colors_config["text"],
+                    )
                     _apply_paragraph_spacing(meta, content_gap_pt)
                 if edu.get("location"):
                     location = document.add_paragraph(edu.get("location"))
-                    _apply_run_style(location.runs[0], fonts["body"], body_size * 0.9, colors_config["text"])
+                    _apply_run_style(
+                        location.runs[0],
+                        fonts["body"],
+                        body_size * 0.9,
+                        colors_config["text"],
+                    )
                     _apply_paragraph_spacing(location, content_gap_pt)
                 if edu.get("description"):
                     description = document.add_paragraph(edu.get("description"))
-                    _apply_run_style(description.runs[0], fonts["body"], body_size, colors_config["text"])
+                    _apply_run_style(
+                        description.runs[0],
+                        fonts["body"],
+                        body_size,
+                        colors_config["text"],
+                    )
                     _apply_paragraph_spacing(description, content_gap_pt)
     elif section == "skills":
-        skills = [skill.get("name") for skill in cv_data.get("skills", []) if skill.get("name")]
+        skills = [
+            skill.get("name")
+            for skill in cv_data.get("skills", [])
+            if skill.get("name")
+        ]
         if skills:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
             paragraph = document.add_paragraph(" • ".join(skills))
-            _apply_run_style(paragraph.runs[0], fonts["body"], body_size, colors_config["text"])
+            _apply_run_style(
+                paragraph.runs[0], fonts["body"], body_size, colors_config["text"]
+            )
             _apply_paragraph_spacing(paragraph, content_gap_pt)
     elif section == "projects":
         projects = cv_data.get("projects", [])
         if projects:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
             for proj in projects:
                 name = proj.get("name") or "Proyecto"
                 paragraph = document.add_paragraph()
                 run = paragraph.add_run(name)
                 run.bold = True
-                _apply_run_style(run, fonts["heading"], body_size, colors_config["text"])
+                _apply_run_style(
+                    run, fonts["heading"], body_size, colors_config["text"]
+                )
                 _apply_paragraph_spacing(paragraph, content_gap_pt)
                 if proj.get("description"):
                     description = document.add_paragraph(proj.get("description"))
-                    _apply_run_style(description.runs[0], fonts["body"], body_size, colors_config["text"])
+                    _apply_run_style(
+                        description.runs[0],
+                        fonts["body"],
+                        body_size,
+                        colors_config["text"],
+                    )
                     _apply_paragraph_spacing(description, content_gap_pt)
                 if proj.get("url"):
                     url = document.add_paragraph(proj.get("url"))
-                    _apply_run_style(url.runs[0], fonts["body"], body_size, colors_config["text"])
+                    _apply_run_style(
+                        url.runs[0], fonts["body"], body_size, colors_config["text"]
+                    )
                     _apply_paragraph_spacing(url, content_gap_pt)
                 if proj.get("technologies"):
-                    tech = document.add_paragraph(f"Tecnologías: {', '.join(proj.get('technologies'))}")
-                    _apply_run_style(tech.runs[0], fonts["body"], body_size, colors_config["text"])
+                    tech = document.add_paragraph(
+                        f"Tecnologías: {', '.join(proj.get('technologies'))}"
+                    )
+                    _apply_run_style(
+                        tech.runs[0], fonts["body"], body_size, colors_config["text"]
+                    )
                     _apply_paragraph_spacing(tech, content_gap_pt)
     elif section == "certifications":
         certifications = cv_data.get("certifications", [])
         if certifications:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
             for cert in certifications:
                 title = cert.get("name") or "Certificación"
@@ -573,17 +714,23 @@ def _render_section_docx(
                 date = cert.get("date")
                 header = f"{title}{f' · {issuer}' if issuer else ''}{f' ({date})' if date else ''}"
                 paragraph = document.add_paragraph(header)
-                _apply_run_style(paragraph.runs[0], fonts["body"], body_size, colors_config["text"])
+                _apply_run_style(
+                    paragraph.runs[0], fonts["body"], body_size, colors_config["text"]
+                )
                 _apply_paragraph_spacing(paragraph, content_gap_pt)
                 if cert.get("url"):
                     url = document.add_paragraph(cert.get("url"))
-                    _apply_run_style(url.runs[0], fonts["body"], body_size, colors_config["text"])
+                    _apply_run_style(
+                        url.runs[0], fonts["body"], body_size, colors_config["text"]
+                    )
                     _apply_paragraph_spacing(url, content_gap_pt)
     elif section == "languages":
         languages = cv_data.get("languages", [])
         if languages:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
             content = " • ".join(
                 [
@@ -593,27 +740,39 @@ def _render_section_docx(
                 ]
             )
             paragraph = document.add_paragraph(content)
-            _apply_run_style(paragraph.runs[0], fonts["body"], body_size, colors_config["text"])
+            _apply_run_style(
+                paragraph.runs[0], fonts["body"], body_size, colors_config["text"]
+            )
             _apply_paragraph_spacing(paragraph, content_gap_pt)
     elif section == "interests":
         interests = cv_data.get("interests", [])
         if interests:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
-            content = " • ".join([interest.get("name") for interest in interests if interest.get("name")])
+            content = " • ".join(
+                [interest.get("name") for interest in interests if interest.get("name")]
+            )
             paragraph = document.add_paragraph(content)
-            _apply_run_style(paragraph.runs[0], fonts["body"], body_size, colors_config["text"])
+            _apply_run_style(
+                paragraph.runs[0], fonts["body"], body_size, colors_config["text"]
+            )
             _apply_paragraph_spacing(paragraph, content_gap_pt)
     elif section == "tools":
         tools = cv_data.get("tools", [])
         if tools:
             heading = document.add_heading(label, level=1)
-            _apply_run_style(heading.runs[0], fonts["heading"], heading_size, colors_config["accent"])
+            _apply_run_style(
+                heading.runs[0], fonts["heading"], heading_size, colors_config["accent"]
+            )
             _apply_paragraph_spacing(heading, section_gap_pt)
             content = " • ".join([tool for tool in tools if tool])
             paragraph = document.add_paragraph(content)
-            _apply_run_style(paragraph.runs[0], fonts["body"], body_size, colors_config["text"])
+            _apply_run_style(
+                paragraph.runs[0], fonts["body"], body_size, colors_config["text"]
+            )
             _apply_paragraph_spacing(paragraph, content_gap_pt)
 
 
@@ -651,7 +810,14 @@ def _build_pdf_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
     )
 
     if role:
-        cursor_y = _draw_wrapped_text(pdf, role, cursor_y, style["body_font"], int(12 * style["font_scale"]), style["text"])
+        cursor_y = _draw_wrapped_text(
+            pdf,
+            role,
+            cursor_y,
+            style["body_font"],
+            int(12 * style["font_scale"]),
+            style["text"],
+        )
 
     contact_parts = [
         personal_info.get("email"),
@@ -660,7 +826,14 @@ def _build_pdf_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
     ]
     contact = " | ".join([item for item in contact_parts if item])
     if contact:
-        cursor_y = _draw_wrapped_text(pdf, contact, cursor_y, style["body_font"], int(10 * style["font_scale"]), style["text"])
+        cursor_y = _draw_wrapped_text(
+            pdf,
+            contact,
+            cursor_y,
+            style["body_font"],
+            int(10 * style["font_scale"]),
+            style["text"],
+        )
 
     link_parts = []
     if personal_info.get("linkedin"):
@@ -670,7 +843,14 @@ def _build_pdf_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
     if personal_info.get("website"):
         link_parts.append(f"Web: {personal_info.get('website')}")
     if link_parts:
-        cursor_y = _draw_wrapped_text(pdf, " | ".join(link_parts), cursor_y, style["body_font"], int(10 * style["font_scale"]), style["text"])
+        cursor_y = _draw_wrapped_text(
+            pdf,
+            " | ".join(link_parts),
+            cursor_y,
+            style["body_font"],
+            int(10 * style["font_scale"]),
+            style["text"],
+        )
 
     cursor_y -= style["section_gap"]
 
@@ -694,25 +874,62 @@ def _render_section_pdf(
 ) -> float:
     label = _get_section_label(cv_data, section)
     item_gap = max(4, style["content_gap"] * 0.5)
-    cursor_y = _draw_wrapped_text(pdf, label, cursor_y, style["heading_font"], int(12 * style["font_scale"]), style["accent"])
+    cursor_y = _draw_wrapped_text(
+        pdf,
+        label,
+        cursor_y,
+        style["heading_font"],
+        int(12 * style["font_scale"]),
+        style["accent"],
+    )
 
     if section == "summary":
         summary = cv_data.get("personalInfo", {}).get("summary")
         if summary:
-            cursor_y = _draw_wrapped_text(pdf, summary, cursor_y, style["body_font"], int(10 * style["font_scale"]), style["text"])
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                summary,
+                cursor_y,
+                style["body_font"],
+                int(10 * style["font_scale"]),
+                style["text"],
+            )
     elif section == "experience":
         experiences = cv_data.get("experience", [])
         for exp in experiences:
             title = exp.get("position") or "Sin título"
             company = exp.get("company")
             header = f"{title}{f' · {company}' if company else ''}"
-            cursor_y = _draw_wrapped_text(pdf, header, cursor_y, style["heading_font"], int(10 * style["font_scale"]), style["text"])
-            dates = _format_date_range(exp.get("startDate"), exp.get("endDate"), exp.get("current"))
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                header,
+                cursor_y,
+                style["heading_font"],
+                int(10 * style["font_scale"]),
+                style["text"],
+            )
+            dates = _format_date_range(
+                exp.get("startDate"), exp.get("endDate"), exp.get("current")
+            )
             meta = " | ".join([item for item in [exp.get("location"), dates] if item])
             if meta:
-                cursor_y = _draw_wrapped_text(pdf, meta, cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+                cursor_y = _draw_wrapped_text(
+                    pdf,
+                    meta,
+                    cursor_y,
+                    style["body_font"],
+                    int(9 * style["font_scale"]),
+                    style["text"],
+                )
             if exp.get("description"):
-                cursor_y = _draw_wrapped_text(pdf, exp.get("description"), cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+                cursor_y = _draw_wrapped_text(
+                    pdf,
+                    exp.get("description"),
+                    cursor_y,
+                    style["body_font"],
+                    int(9 * style["font_scale"]),
+                    style["text"],
+                )
             cursor_y -= item_gap
     elif section == "education":
         education = cv_data.get("education", [])
@@ -720,30 +937,90 @@ def _render_section_pdf(
             degree = edu.get("degree") or "Sin título"
             institution = edu.get("institution")
             header = f"{degree}{f' · {institution}' if institution else ''}"
-            cursor_y = _draw_wrapped_text(pdf, header, cursor_y, style["heading_font"], int(10 * style["font_scale"]), style["text"])
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                header,
+                cursor_y,
+                style["heading_font"],
+                int(10 * style["font_scale"]),
+                style["text"],
+            )
             dates = _format_date_range(edu.get("startDate"), edu.get("endDate"), False)
             meta = " | ".join([item for item in [edu.get("location"), dates] if item])
             if meta:
-                cursor_y = _draw_wrapped_text(pdf, meta, cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+                cursor_y = _draw_wrapped_text(
+                    pdf,
+                    meta,
+                    cursor_y,
+                    style["body_font"],
+                    int(9 * style["font_scale"]),
+                    style["text"],
+                )
             if edu.get("description"):
-                cursor_y = _draw_wrapped_text(pdf, edu.get("description"), cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+                cursor_y = _draw_wrapped_text(
+                    pdf,
+                    edu.get("description"),
+                    cursor_y,
+                    style["body_font"],
+                    int(9 * style["font_scale"]),
+                    style["text"],
+                )
             cursor_y -= item_gap
     elif section == "skills":
-        skills = [skill.get("name") for skill in cv_data.get("skills", []) if skill.get("name")]
+        skills = [
+            skill.get("name")
+            for skill in cv_data.get("skills", [])
+            if skill.get("name")
+        ]
         if skills:
-            cursor_y = _draw_wrapped_text(pdf, " • ".join(skills), cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                " • ".join(skills),
+                cursor_y,
+                style["body_font"],
+                int(9 * style["font_scale"]),
+                style["text"],
+            )
     elif section == "projects":
         projects = cv_data.get("projects", [])
         for proj in projects:
             name = proj.get("name") or "Proyecto"
-            cursor_y = _draw_wrapped_text(pdf, name, cursor_y, style["heading_font"], int(10 * style["font_scale"]), style["text"])
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                name,
+                cursor_y,
+                style["heading_font"],
+                int(10 * style["font_scale"]),
+                style["text"],
+            )
             if proj.get("description"):
-                cursor_y = _draw_wrapped_text(pdf, proj.get("description"), cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+                cursor_y = _draw_wrapped_text(
+                    pdf,
+                    proj.get("description"),
+                    cursor_y,
+                    style["body_font"],
+                    int(9 * style["font_scale"]),
+                    style["text"],
+                )
             if proj.get("url"):
-                cursor_y = _draw_wrapped_text(pdf, proj.get("url"), cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+                cursor_y = _draw_wrapped_text(
+                    pdf,
+                    proj.get("url"),
+                    cursor_y,
+                    style["body_font"],
+                    int(9 * style["font_scale"]),
+                    style["text"],
+                )
             if proj.get("technologies"):
                 tech = f"Tecnologías: {', '.join(proj.get('technologies'))}"
-                cursor_y = _draw_wrapped_text(pdf, tech, cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+                cursor_y = _draw_wrapped_text(
+                    pdf,
+                    tech,
+                    cursor_y,
+                    style["body_font"],
+                    int(9 * style["font_scale"]),
+                    style["text"],
+                )
             cursor_y -= item_gap
     elif section == "certifications":
         certifications = cv_data.get("certifications", [])
@@ -752,25 +1029,68 @@ def _render_section_pdf(
             issuer = cert.get("issuer")
             date = cert.get("date")
             header = f"{title}{f' · {issuer}' if issuer else ''}{f' ({date})' if date else ''}"
-            cursor_y = _draw_wrapped_text(pdf, header, cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                header,
+                cursor_y,
+                style["body_font"],
+                int(9 * style["font_scale"]),
+                style["text"],
+            )
             if cert.get("url"):
-                cursor_y = _draw_wrapped_text(pdf, cert.get("url"), cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+                cursor_y = _draw_wrapped_text(
+                    pdf,
+                    cert.get("url"),
+                    cursor_y,
+                    style["body_font"],
+                    int(9 * style["font_scale"]),
+                    style["text"],
+                )
             cursor_y -= item_gap
     elif section == "languages":
         languages = cv_data.get("languages", [])
         if languages:
-            content = " • ".join([_format_language_entry(lang) for lang in languages if lang.get("language")])
-            cursor_y = _draw_wrapped_text(pdf, content, cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+            content = " • ".join(
+                [
+                    _format_language_entry(lang)
+                    for lang in languages
+                    if lang.get("language")
+                ]
+            )
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                content,
+                cursor_y,
+                style["body_font"],
+                int(9 * style["font_scale"]),
+                style["text"],
+            )
     elif section == "interests":
         interests = cv_data.get("interests", [])
         if interests:
-            content = " • ".join([interest.get("name") for interest in interests if interest.get("name")])
-            cursor_y = _draw_wrapped_text(pdf, content, cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+            content = " • ".join(
+                [interest.get("name") for interest in interests if interest.get("name")]
+            )
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                content,
+                cursor_y,
+                style["body_font"],
+                int(9 * style["font_scale"]),
+                style["text"],
+            )
     elif section == "tools":
         tools = cv_data.get("tools", [])
         if tools:
             content = " • ".join([tool for tool in tools if tool])
-            cursor_y = _draw_wrapped_text(pdf, content, cursor_y, style["body_font"], int(9 * style["font_scale"]), style["text"])
+            cursor_y = _draw_wrapped_text(
+                pdf,
+                content,
+                cursor_y,
+                style["body_font"],
+                int(9 * style["font_scale"]),
+                style["text"],
+            )
 
     return cursor_y - style["section_gap"]
 
@@ -803,7 +1123,9 @@ def _draw_wrapped_text(
     return cursor_y
 
 
-def _wrap_text(text: str, font_name: str, font_size: int, max_width: float) -> List[str]:
+def _wrap_text(
+    text: str, font_name: str, font_size: int, max_width: float
+) -> List[str]:
     if not text:
         return []
     approx_char_width = font_size * 0.5
