@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, Form
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from app.services.parser_service import extract_text_from_file
@@ -46,31 +46,32 @@ from app.core.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from app.core.templates import registry, TemplateConfig
 from app.core.limiter import limiter
 from app.services.session_store import store as session_store
 
 logger = logging.getLogger(__name__)
 
-def _get_session(session_id: str) -> Optional[ChatSession]:
+async def _get_session(session_id: str) -> Optional[ChatSession]:
     """Obtiene una sesión de chat por ID."""
-    return session_store.get_session(session_id)
+    return await session_store.get_session(session_id)
 
 
-def _save_session(session: ChatSession) -> None:
+async def _save_session(session: ChatSession) -> None:
     """Guarda una sesión de chat."""
-    session_store.save_session(session)
+    await session_store.save_session(session)
 
 
-def _update_session_cv_data(session_id: str, new_data: Dict[str, Any]) -> None:
+async def _update_session_cv_data(session_id: str, new_data: Dict[str, Any]) -> None:
     """Actualiza los datos del CV en una sesión."""
-    session = _get_session(session_id)
+    session = await _get_session(session_id)
     if session:
         # Deep merge de los datos
         current_cv = session.cv_data
         merged = _deep_merge(current_cv, new_data)
         session.cv_data = merged
         session.updated_at = datetime.utcnow()
-        _save_session(session)
+        await _save_session(session)
 
 
 class CoverLetterRequest(BaseModel):
@@ -309,6 +310,15 @@ async def generate_cover_letter_endpoint(request: Request, cover_letter_request:
         raise InternalServerError("Error al generar la carta de presentación. Intentá de nuevo.")
 
 
+@router.get("/templates", response_model=List[TemplateConfig], tags=["cv-gen"])
+@limiter.limit("30/minute")
+async def get_templates(request: Request):
+    """
+    Get all available CV templates with their metadata.
+    """
+    return registry.get_all_templates()
+
+
 @router.post("/generate-complete-cv", response_model=GenerateCompleteCVResponse, response_model_by_alias=True, tags=["cv-gen"])
 @limiter.limit("10/minute")
 async def generate_complete_cv_endpoint(
@@ -330,22 +340,7 @@ async def generate_complete_cv_endpoint(
     """
     try:
         # Validate template type
-        valid_templates = [
-            "professional",
-            "harvard",
-            "creative",
-            "pure",
-            "terminal",
-            "care",
-            "capital",
-            "scholar",
-            "minimal",
-            "tech",
-            "bian",
-            "finance",
-            "health",
-            "education",
-        ]
+        valid_templates = registry.get_template_ids()
 
         if cv_request.template_type not in valid_templates:
             raise ValidationError(
@@ -363,7 +358,7 @@ async def generate_complete_cv_endpoint(
             data=result["data"],
             metadata=result["metadata"],
             template_type=result["template_type"],
-            generated_at=result["generatedAt"],
+            generated_at=result["generated_at"],
         )
 
     except (CVProcessingError, ValidationError) as e:
@@ -418,10 +413,6 @@ async def ats_check(
         "general",
         description="Target industry: tech, finance, healthcare, creative, education, general",
     ),
-    improvement_context: Optional[str] = Form(
-        None,
-        description="Contexto opcional para asegurar consistencia en mejoras previas",
-    ),
 ):
     """Analyze a CV PDF/DOCX for ATS compatibility."""
     combined_text = ""
@@ -433,6 +424,9 @@ async def ats_check(
         for file in files:
             content = await file.read()
             filename = file.filename or "unknown"
+
+            if len(content) > MAX_FILE_SIZE_BYTES:
+                raise FileProcessingError(f"El archivo {filename} supera el límite de {MAX_FILE_SIZE_MB} MB")
 
             if not filename.lower().endswith((".pdf", ".docx", ".txt")):
                 raise FileProcessingError(f"Unsupported file type: {filename}")
@@ -446,7 +440,9 @@ async def ats_check(
         if not combined_text.strip():
             raise FileProcessingError("Could not extract text from files")
 
-        result = await analyze_ats(combined_text, target_industry, improvement_context)
+        combined_text = combined_text[:20000]
+
+        result = await analyze_ats(combined_text, target_industry)
 
         if not result:
             raise CVProcessingError("ATS analysis failed")
@@ -491,7 +487,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
     """
     try:
         # Obtener o crear sesión
-        session = _get_session(chat_request.session_id)
+        session = await _get_session(chat_request.session_id)
         if not session:
             session = ChatSession(
                 session_id=chat_request.session_id,
@@ -514,7 +510,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
         session.messages.append(user_message)
 
         # Guardar sesión
-        _save_session(session)
+        await _save_session(session)
 
         async def event_generator():
             """Generador de eventos SSE."""
@@ -530,7 +526,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
 
                 # Actualizar sesión al completar
                 session.updated_at = datetime.utcnow()
-                _save_session(session)
+                await _save_session(session)
 
             except Exception as e:
                 logger.error(f"Error in stream generator: {e}")
@@ -561,7 +557,7 @@ async def chat(request: Request, chat_request: ChatRequest):
     """
     try:
         # Obtener o crear sesión
-        session = _get_session(chat_request.session_id)
+        session = await _get_session(chat_request.session_id)
         if not session:
             session = ChatSession(
                 session_id=chat_request.session_id,
@@ -597,7 +593,7 @@ async def chat(request: Request, chat_request: ChatRequest):
 
         # Actualizar datos del CV si hay extracción con alta confianza
         if extraction and extraction.extracted:
-            _update_session_cv_data(chat_request.session_id, extraction.extracted)
+            await _update_session_cv_data(chat_request.session_id, extraction.extracted)
 
         # Actualizar fase si cambió
         new_phase = result.get("new_phase")
@@ -614,7 +610,7 @@ async def chat(request: Request, chat_request: ChatRequest):
         )
         session.messages.append(assistant_message)
         session.updated_at = datetime.utcnow()
-        _save_session(session)
+        await _save_session(session)
 
         return ChatResponse(
             message=assistant_message,
@@ -637,7 +633,7 @@ async def chat_extract(request: Request, chat_request: ChatRequest):
     Útil para extraer información sin generar una respuesta conversacional.
     """
     try:
-        session = _get_session(chat_request.session_id)
+        session = await _get_session(chat_request.session_id)
         history = session.messages if session else []
 
         extraction = await extract_cv_data_from_message(
@@ -693,7 +689,7 @@ async def get_chat_session(request: Request, session_id: str):
 
     Incluye historial de mensajes y datos del CV acumulados.
     """
-    session = _get_session(session_id)
+    session = await _get_session(session_id)
 
     if not session:
         # Crear nueva sesión si no existe
@@ -702,7 +698,7 @@ async def get_chat_session(request: Request, session_id: str):
             cv_data={},
             current_phase=ConversationPhase.WELCOME,
         )
-        _save_session(session)
+        await _save_session(session)
 
     return {
         "sessionId": session.session_id,
@@ -722,7 +718,7 @@ async def get_next_question(request: Request, session_id: str):
 
     Basado en el estado actual del CV y la fase de la conversación.
     """
-    session = _get_session(session_id)
+    session = await _get_session(session_id)
 
     if not session:
         raise NotFoundError("No se encontró la sesión solicitada.")

@@ -16,6 +16,8 @@ from app.core.config import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
+    from app.services.session_store import store
+    await store.initialize()
     yield
 
 

@@ -146,11 +146,7 @@ export interface ChatErrorEvent {
  */
 export interface ChatVisualUpdateEvent {
   type: 'visual_update';
-  config: {
-    templateId?: string;
-    colors?: { primary?: string; accent?: string };
-    fonts?: { heading?: string; body?: string };
-  };
+  config: Partial<import('./cv').TemplateConfig>;
 }
 
 /**

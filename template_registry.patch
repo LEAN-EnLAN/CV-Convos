@@ -1,0 +1,774 @@
+diff --git a/backend/app/api/endpoints.py b/backend/app/api/endpoints.py
+index 72dca6e..4cf4d90 100644
+--- a/backend/app/api/endpoints.py
++++ b/backend/app/api/endpoints.py
+@@ -46,6 +46,7 @@ from app.core.exceptions import (
+     NotFoundError,
+     ValidationError,
+ )
++from app.core.templates import registry, TemplateConfig
+ from app.core.limiter import limiter
+ from app.services.session_store import store as session_store
+ 
+@@ -309,6 +310,15 @@ async def generate_cover_letter_endpoint(request: Request, cover_letter_request:
+         raise InternalServerError("Error al generar la carta de presentación. Intentá de nuevo.")
+ 
+ 
++@router.get("/templates", response_model=List[TemplateConfig], tags=["cv-gen"])
++@limiter.limit("30/minute")
++async def get_templates(request: Request):
++    """
++    Get all available CV templates with their metadata.
++    """
++    return registry.get_all_templates()
++
++
+ @router.post("/generate-complete-cv", response_model=GenerateCompleteCVResponse, response_model_by_alias=True, tags=["cv-gen"])
+ @limiter.limit("10/minute")
+ async def generate_complete_cv_endpoint(
+@@ -330,22 +340,7 @@ async def generate_complete_cv_endpoint(
+     """
+     try:
+         # Validate template type
+-        valid_templates = [
+-            "professional",
+-            "harvard",
+-            "creative",
+-            "pure",
+-            "terminal",
+-            "care",
+-            "capital",
+-            "scholar",
+-            "minimal",
+-            "tech",
+-            "bian",
+-            "finance",
+-            "health",
+-            "education",
+-        ]
++        valid_templates = registry.get_template_ids()
+ 
+         if cv_request.template_type not in valid_templates:
+             raise ValidationError(
+diff --git a/backend/app/core/templates.py b/backend/app/core/templates.py
+new file mode 100644
+index 0000000..da96b57
+--- /dev/null
++++ b/backend/app/core/templates.py
+@@ -0,0 +1,302 @@
++from typing import Any, Dict, List, Optional
++from pydantic import BaseModel, Field
++
++class TemplateConfig(BaseModel):
++    id: str
++    name: str
++    description: str
++    category: str
++    tags: List[str]
++    preview_color: str = Field(alias="previewColor")
++    skeleton: str
++    icon: str
++    prompt: str
++    section_order: List[str] = Field(alias="sectionOrder")
++    styles: Dict[str, Any]
++
++    class Config:
++        populate_by_name = True
++
++class TemplateRegistry:
++    def __init__(self):
++        self._templates: Dict[str, TemplateConfig] = {}
++        self._setup_templates()
++
++    def _setup_templates(self):
++        templates_data = [
++            {
++                "id": "professional",
++                "name": "Executive",
++                "description": "Diseño clásico y elegante para corporativos",
++                "category": "Corporativo",
++                "tags": ["ATS-friendly", "Clásico"],
++                "previewColor": "bg-zinc-800",
++                "skeleton": "classic",
++                "icon": "FileText",
++                "prompt": """
++Format this CV for a classic professional template:
++- Use formal, traditional structure
++- Clear section headers
++- Emphasis on experience and education
++- Conservative layout with good use of white space
++- Standard chronological format for experience
++""",
++                "sectionOrder": [
++                    "summary", "experience", "education", "skills", "projects", 
++                    "certifications", "languages", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Helvetica-Bold",
++                    "body_font": "Helvetica",
++                    "accent": "#111827",
++                }
++            },
++            {
++                "id": "harvard",
++                "name": "Ivy",
++                "description": "Estilo Ivy League, ATS-Optimized",
++                "category": "Académico",
++                "tags": ["ATS-friendly", "Research-ready"],
++                "previewColor": "bg-slate-800",
++                "skeleton": "classic",
++                "icon": "GraduationCap",
++                "prompt": """
++Format this CV for an academic/Harvard-style template:
++- Academic focus with detailed education section
++- Publications and research highlighted
++- Professional summary with career objectives
++- Detailed description of academic achievements
++- Clear chronological structure
++""",
++                "sectionOrder": [
++                    "summary", "education", "experience", "projects", "skills", 
++                    "certifications", "languages", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Times-Bold",
++                    "body_font": "Times-Roman",
++                    "accent": "#0f172a",
++                }
++            },
++            {
++                "id": "creative",
++                "name": "Studio",
++                "description": "Estilo editorial y audaz para creativos",
++                "category": "Diseño",
++                "tags": ["Modern", "Editorial"],
++                "previewColor": "bg-stone-800",
++                "skeleton": "modern",
++                "icon": "Sparkles",
++                "prompt": """
++Format this CV for a creative template:
++- Emphasize unique skills and achievements
++- Highlight projects and creative work
++- Dynamic layout suggestions
++- Showcase innovation and creativity
++- Modern, engaging presentation
++""",
++                "sectionOrder": [
++                    "summary", "skills", "experience", "projects", "education", 
++                    "certifications", "languages", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Helvetica-Bold",
++                    "body_font": "Helvetica-Oblique",
++                    "accent": "#7c3aed",
++                }
++            },
++            {
++                "id": "pure",
++                "name": "Swiss",
++                "description": "Minimalismo suizo con precisión extrema",
++                "category": "Moderno",
++                "tags": ["Minimal", "Structured"],
++                "previewColor": "bg-stone-100",
++                "skeleton": "split",
++                "icon": "Grid3X3",
++                "prompt": """
++Format this CV for a minimal template:
++- Stripped-down, clean design
++- Focus on content over decoration
++- Simple formatting with essential information only
++- Good use of spacing for readability
++- Subtle use of bold for headers
++""",
++                "sectionOrder": [
++                    "summary", "experience", "projects", "education", "skills", 
++                    "certifications", "languages", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Helvetica-Bold",
++                    "body_font": "Helvetica",
++                    "accent": "#0f172a",
++                }
++            },
++            {
++                "id": "terminal",
++                "name": "Code",
++                "description": "Elegancia técnica estilo editor de código",
++                "category": "Tecnología",
++                "tags": ["Monospace", "Developer"],
++                "previewColor": "bg-slate-950",
++                "skeleton": "modern",
++                "icon": "Code",
++                "prompt": """
++Format this CV for a tech/developer template:
++- Emphasize technical skills and projects
++- GitHub and technical contributions highlighted
++- List technologies and frameworks used
++- Focus on technical achievements
++- Modern, clean layout
++""",
++                "sectionOrder": [
++                    "summary", "skills", "experience", "projects", "education", 
++                    "languages", "certifications", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Courier-Bold",
++                    "body_font": "Courier",
++                    "accent": "#0f172a",
++                }
++            },
++            {
++                "id": "care",
++                "name": "Care",
++                "description": "Diseño cálido centrado en las personas",
++                "category": "Salud",
++                "tags": ["Warm", "People-first"],
++                "previewColor": "bg-orange-100",
++                "skeleton": "split",
++                "icon": "Users",
++                "prompt": """
++Format this CV for a healthcare template:
++- Focus on healthcare skills and certifications
++- Emphasize patient care and medical achievements
++- Professional healthcare presentation
++- Highlight clinical experience
++- Medical professional appearance
++""",
++                "sectionOrder": [
++                    "summary", "experience", "education", "skills", "certifications", 
++                    "projects", "languages", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Times-Bold",
++                    "body_font": "Times-Roman",
++                    "accent": "#0f766e",
++                }
++            },
++            {
++                "id": "capital",
++                "name": "Capital",
++                "description": "Precisión financiera y elegancia institucional",
++                "category": "Corporativo",
++                "tags": ["ATS-friendly", "Finance"],
++                "previewColor": "bg-blue-950",
++                "skeleton": "classic",
++                "icon": "Landmark",
++                "prompt": """
++Format this CV for a finance template:
++- Focus on financial skills and certifications
++- Emphasize analytical and quantitative skills
++- Highlight financial achievements with metrics
++- Professional financial presentation
++- Attention to detail
++""",
++                "sectionOrder": [
++                    "summary", "experience", "projects", "education", "skills", 
++                    "certifications", "languages", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Helvetica-Bold",
++                    "body_font": "Helvetica",
++                    "accent": "#1d4ed8",
++                }
++            },
++            {
++                "id": "scholar",
++                "name": "Scholar",
++                "description": "Plantilla académica con rigor investigativo",
++                "category": "Académico",
++                "tags": ["Research", "Publication-ready"],
++                "previewColor": "bg-red-900",
++                "skeleton": "classic",
++                "icon": "GraduationCap",
++                "prompt": """
++Format this CV for an education/academic template:
++- Emphasize teaching experience and achievements
++- Highlight educational contributions
++- Focus on academic qualifications
++- Student outcomes and achievements
++- Academic professional appearance
++""",
++                "sectionOrder": [
++                    "summary", "education", "experience", "projects", "skills", 
++                    "certifications", "languages", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Times-Bold",
++                    "body_font": "Times-Roman",
++                    "accent": "#1e293b",
++                }
++            },
++            {
++                "id": "bian",
++                "name": "Bian",
++                "description": "Diseño ejecutivo para consultoría y negocios",
++                "category": "Corporativo",
++                "tags": ["Consulting", "Business"],
++                "previewColor": "bg-emerald-900",
++                "skeleton": "classic",
++                "icon": "Briefcase",
++                "prompt": """
++Format this CV for a business/consulting template:
++- Professional business presentation
++- Emphasize business skills and achievements
++- Quantifiable results and metrics
++- Leadership and strategic thinking
++- Corporate, polished look
++""",
++                "sectionOrder": [
++                    "summary", "experience", "education", "skills", "projects", 
++                    "certifications", "languages", "interests", "tools"
++                ],
++                "styles": {
++                    "heading_font": "Helvetica-Bold",
++                    "body_font": "Helvetica",
++                    "accent": "#064e3b",
++                }
++            }
++        ]
++        for data in templates_data:
++            template = TemplateConfig(**data)
++            self._templates[template.id] = template
++
++        # Add aliases
++        self._add_alias("minimal", "pure")
++        self._add_alias("tech", "terminal")
++        self._add_alias("health", "care")
++        self._add_alias("finance", "capital")
++        self._add_alias("education", "scholar")
++
++    def _add_alias(self, alias_id: str, target_id: str):
++        if target_id in self._templates:
++            self._templates[alias_id] = self._templates[target_id]
++
++    def get_template(self, template_id: str) -> Optional[TemplateConfig]:
++        return self._templates.get(template_id)
++
++    def get_all_templates(self) -> List[TemplateConfig]:
++        # Return only unique templates (avoiding aliases in the list)
++        seen = set()
++        unique_templates = []
++        for t in self._templates.values():
++            if t.id not in seen:
++                unique_templates.append(t)
++                seen.add(t.id)
++        return unique_templates
++
++    def get_template_ids(self) -> List[str]:
++        return list(self._templates.keys())
++
++registry = TemplateRegistry()
+diff --git a/backend/app/services/cv_generator.py b/backend/app/services/cv_generator.py
+index 429eca5..2878b06 100644
+--- a/backend/app/services/cv_generator.py
++++ b/backend/app/services/cv_generator.py
+@@ -12,30 +12,10 @@ from datetime import datetime
+ from app.core.config import settings
+ from app.core.exceptions import CVProcessingError, AIServiceError
+ from app.services.ai_service import get_ai_completion, get_system_rules
++from app.core.templates import registry
+ 
+ logger = logging.getLogger(__name__)
+ 
+-# =============================================================================
+-# TEMPLATE TYPE DEFINITIONS
+-# =============================================================================
+-
+-TemplateType = Literal[
+-    "professional",
+-    "harvard",
+-    "creative",
+-    "pure",
+-    "terminal",
+-    "care",
+-    "capital",
+-    "scholar",
+-    "minimal",
+-    "tech",
+-    "bian",
+-    "finance",
+-    "health",
+-    "education",
+-]
+-
+ # =============================================================================
+ # CV GENERATION PROMPTS
+ # =============================================================================
+@@ -130,101 +110,6 @@ Return a complete CV structure with the following enhanced sections:
+ }}
+ """
+ 
+-# =============================================================================
+-# TEMPLATE-SPECIFIC FORMATTING GUIDES
+-# =============================================================================
+-
+-PROMPT_PROFESSIONAL = """
+-Format this CV for a classic professional template:
+-- Use formal, traditional structure
+-- Clear section headers
+-- Emphasis on experience and education
+-- Conservative layout with good use of white space
+-- Standard chronological format for experience
+-"""
+-PROMPT_HARVARD = """
+-Format this CV for an academic/Harvard-style template:
+-- Academic focus with detailed education section
+-- Publications and research highlighted
+-- Professional summary with career objectives
+-- Detailed description of academic achievements
+-- Clear chronological structure
+-"""
+-PROMPT_MINIMAL = """
+-Format this CV for a minimal template:
+-- Stripped-down, clean design
+-- Focus on content over decoration
+-- Simple formatting with essential information only
+-- Good use of spacing for readability
+-- Subtle use of bold for headers
+-"""
+-PROMPT_CREATIVE = """
+-Format this CV for a creative template:
+-- Emphasize unique skills and achievements
+-- Highlight projects and creative work
+-- Dynamic layout suggestions
+-- Showcase innovation and creativity
+-- Modern, engaging presentation
+-"""
+-PROMPT_TECH = """
+-Format this CV for a tech/developer template:
+-- Emphasize technical skills and projects
+-- GitHub and technical contributions highlighted
+-- List technologies and frameworks used
+-- Focus on technical achievements
+-- Modern, clean layout
+-"""
+-PROMPT_BIAN = """
+-Format this CV for a business/consulting template:
+-- Professional business presentation
+-- Emphasize business skills and achievements
+-- Quantifiable results and metrics
+-- Leadership and strategic thinking
+-- Corporate, polished look
+-"""
+-PROMPT_FINANCE = """
+-Format this CV for a finance template:
+-- Focus on financial skills and certifications
+-- Emphasize analytical and quantitative skills
+-- Highlight financial achievements with metrics
+-- Professional financial presentation
+-- Attention to detail
+-"""
+-PROMPT_HEALTH = """
+-Format this CV for a healthcare template:
+-- Focus on healthcare skills and certifications
+-- Emphasize patient care and medical achievements
+-- Professional healthcare presentation
+-- Highlight clinical experience
+-- Medical professional appearance
+-"""
+-PROMPT_EDUCATION = """
+-Format this CV for an education/academic template:
+-- Emphasize teaching experience and achievements
+-- Highlight educational contributions
+-- Focus on academic qualifications
+-- Student outcomes and achievements
+-- Academic professional appearance
+-"""
+-
+-# Mapeo de prompts para mantener compatibilidad con plantillas nuevas y legacy
+-TEMPLATE_FORMATTING_PROMPTS = {
+-    "professional": PROMPT_PROFESSIONAL,
+-    "harvard": PROMPT_HARVARD,
+-    "creative": PROMPT_CREATIVE,
+-    "pure": PROMPT_MINIMAL,
+-    "terminal": PROMPT_TECH,
+-    "care": PROMPT_HEALTH,
+-    "capital": PROMPT_FINANCE,
+-    "scholar": PROMPT_EDUCATION,
+-    "minimal": PROMPT_MINIMAL,
+-    "tech": PROMPT_TECH,
+-    "bian": PROMPT_BIAN,
+-    "finance": PROMPT_FINANCE,
+-    "health": PROMPT_HEALTH,
+-    "education": PROMPT_EDUCATION,
+-}
+-
+ # =============================================================================
+ # GENERATOR FUNCTIONS
+ # =============================================================================
+@@ -257,7 +142,8 @@ async def generate_complete_cv(cv_data: Dict[str, Any], template_type: str) -> D
+         if not cv_data or not isinstance(cv_data, dict):
+             raise CVProcessingError("Invalid CV data provided")
+ 
+-        if not template_type or template_type not in TEMPLATE_FORMATTING_PROMPTS:
++        template_config = registry.get_template(template_type)
++        if not template_config:
+             raise CVProcessingError(f"Invalid template type: {template_type}")
+ 
+         # Detect language from CV data
+@@ -270,9 +156,7 @@ async def generate_complete_cv(cv_data: Dict[str, Any], template_type: str) -> D
+         generation_prompt = CV_GENERATION_PROMPT.format(
+             language=language, cv_json=cv_json
+         )
+-        formatting_prompt = TEMPLATE_FORMATTING_PROMPTS.get(
+-            template_type, TEMPLATE_FORMATTING_PROMPTS["professional"]
+-        )
++        formatting_prompt = template_config.prompt
+ 
+         combined_prompt = f"{generation_prompt}\n\n{formatting_prompt}"
+ 
+diff --git a/backend/app/services/export_service.py b/backend/app/services/export_service.py
+index e712d41..478060b 100644
+--- a/backend/app/services/export_service.py
++++ b/backend/app/services/export_service.py
+@@ -11,6 +11,7 @@ from reportlab.lib.pagesizes import letter
+ from reportlab.pdfgen import canvas
+ 
+ from app.core.exceptions import ValidationError
++from app.core.templates import registry
+ 
+ SUPPORTED_EXPORT_FORMATS = {"pdf", "docx", "txt", "json"}
+ 
+@@ -21,108 +22,6 @@ EXPORT_MIME_TYPES = {
+     "json": "application/json",
+ }
+ 
+-TEMPLATE_DISPLAY_NAMES = {
+-    "professional": "Executive",
+-    "harvard": "Ivy",
+-    "creative": "Studio",
+-    "pure": "Swiss",
+-    "terminal": "Code",
+-    "care": "Care",
+-    "capital": "Capital",
+-    "scholar": "Scholar",
+-}
+-
+-TEMPLATE_SECTION_ORDER = {
+-    "professional": [
+-        "summary",
+-        "experience",
+-        "education",
+-        "skills",
+-        "projects",
+-        "certifications",
+-        "languages",
+-        "interests",
+-        "tools",
+-    ],
+-    "harvard": [
+-        "summary",
+-        "education",
+-        "experience",
+-        "projects",
+-        "skills",
+-        "certifications",
+-        "languages",
+-        "interests",
+-        "tools",
+-    ],
+-    "creative": [
+-        "summary",
+-        "skills",
+-        "experience",
+-        "projects",
+-        "education",
+-        "certifications",
+-        "languages",
+-        "interests",
+-        "tools",
+-    ],
+-    "pure": [
+-        "summary",
+-        "experience",
+-        "projects",
+-        "education",
+-        "skills",
+-        "certifications",
+-        "languages",
+-        "interests",
+-        "tools",
+-    ],
+-    "terminal": [
+-        "summary",
+-        "skills",
+-        "experience",
+-        "projects",
+-        "education",
+-        "languages",
+-        "certifications",
+-        "interests",
+-        "tools",
+-    ],
+-    "care": [
+-        "summary",
+-        "experience",
+-        "education",
+-        "skills",
+-        "certifications",
+-        "projects",
+-        "languages",
+-        "interests",
+-        "tools",
+-    ],
+-    "capital": [
+-        "summary",
+-        "experience",
+-        "projects",
+-        "education",
+-        "skills",
+-        "certifications",
+-        "languages",
+-        "interests",
+-        "tools",
+-    ],
+-    "scholar": [
+-        "summary",
+-        "education",
+-        "experience",
+-        "projects",
+-        "skills",
+-        "certifications",
+-        "languages",
+-        "interests",
+-        "tools",
+-    ],
+-}
+-
+ SECTION_LABELS = {
+     "summary": "Perfil Profesional",
+     "experience": "Experiencia",
+@@ -135,49 +34,6 @@ SECTION_LABELS = {
+     "tools": "Herramientas",
+ }
+ 
+-TEMPLATE_STYLES = {
+-    "professional": {
+-        "heading_font": "Helvetica-Bold",
+-        "body_font": "Helvetica",
+-        "accent": colors.HexColor("#111827"),
+-    },
+-    "harvard": {
+-        "heading_font": "Times-Bold",
+-        "body_font": "Times-Roman",
+-        "accent": colors.HexColor("#0f172a"),
+-    },
+-    "creative": {
+-        "heading_font": "Helvetica-Bold",
+-        "body_font": "Helvetica-Oblique",
+-        "accent": colors.HexColor("#7c3aed"),
+-    },
+-    "pure": {
+-        "heading_font": "Helvetica-Bold",
+-        "body_font": "Helvetica",
+-        "accent": colors.HexColor("#0f172a"),
+-    },
+-    "terminal": {
+-        "heading_font": "Courier-Bold",
+-        "body_font": "Courier",
+-        "accent": colors.HexColor("#0f172a"),
+-    },
+-    "care": {
+-        "heading_font": "Times-Bold",
+-        "body_font": "Times-Roman",
+-        "accent": colors.HexColor("#0f766e"),
+-    },
+-    "capital": {
+-        "heading_font": "Helvetica-Bold",
+-        "body_font": "Helvetica",
+-        "accent": colors.HexColor("#1d4ed8"),
+-    },
+-    "scholar": {
+-        "heading_font": "Times-Bold",
+-        "body_font": "Times-Roman",
+-        "accent": colors.HexColor("#1e293b"),
+-    },
+-}
+-
+ 
+ def build_export_payload(
+     cv_data: Dict[str, Any],
+@@ -185,7 +41,8 @@ def build_export_payload(
+     export_format: str,
+ ) -> Tuple[bytes, str, str]:
+     """Genera un archivo descargable con formato y plantilla específicos."""
+-    if template_id not in TEMPLATE_SECTION_ORDER:
++    template_config = registry.get_template(template_id)
++    if not template_config:
+         raise ValidationError(f"Plantilla no soportada: {template_id}")
+ 
+     if export_format not in SUPPORTED_EXPORT_FORMATS:
+@@ -210,7 +67,10 @@ def _build_filename(cv_data: Dict[str, Any], template_id: str, export_format: st
+     personal_info = cv_data.get("personalInfo", {})
+     full_name = personal_info.get("fullName") or "cv"
+     safe_name = "_".join(full_name.strip().split())
+-    template_label = TEMPLATE_DISPLAY_NAMES.get(template_id, template_id)
++    
++    template_config = registry.get_template(template_id)
++    template_label = template_config.name if template_config else template_id
++    
+     timestamp = datetime.utcnow().strftime("%Y%m%d")
+     return f"cv_{safe_name}_{template_label}_{timestamp}.{export_format}"
+ 
+@@ -263,7 +123,10 @@ def _build_txt_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+ 
+     lines.append("")
+ 
+-    for section in TEMPLATE_SECTION_ORDER[template_id]:
++    template_config = registry.get_template(template_id)
++    section_order = template_config.section_order if template_config else []
++
++    for section in section_order:
+         if not _is_section_visible(cv_data, section):
+             continue
+         section_lines = _render_section_txt(cv_data, section)
+@@ -386,7 +249,9 @@ def _render_section_txt(cv_data: Dict[str, Any], section: str) -> List[str]:
+ def _build_docx_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+     document = Document()
+     personal_info = cv_data.get("personalInfo", {})
+-    style = TEMPLATE_STYLES[template_id]
++    template_config = registry.get_template(template_id)
++    style = template_config.styles if template_config else {}
++    section_order = template_config.section_order if template_config else []
+ 
+     name_heading = document.add_heading(personal_info.get("fullName") or "Sin nombre", level=0)
+     name_run = name_heading.runs[0]
+@@ -418,9 +283,9 @@ def _build_docx_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+         link_parts.append(f"Web: {personal_info.get('website')}")
+     if link_parts:
+         link_paragraph = document.add_paragraph(" | ".join(link_parts))
+-        link_paragraph.runs[0].font.name = style["body_font"]
++        link_paragraph.runs[0].font.name = style.get("body_font")
+ 
+-    for section in TEMPLATE_SECTION_ORDER[template_id]:
++    for section in section_order:
+         if not _is_section_visible(cv_data, section):
+             continue
+         _render_section_docx(document, cv_data, section, style)
+@@ -561,7 +426,15 @@ def _build_pdf_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+     buffer = io.BytesIO()
+     pdf = canvas.Canvas(buffer, pagesize=letter)
+     width, height = letter
+-    style = TEMPLATE_STYLES[template_id]
++    template_config = registry.get_template(template_id)
++    
++    # Adapt styles for ReportLab
++    raw_style = template_config.styles if template_config else {}
++    style = raw_style.copy()
++    if "accent" in style and isinstance(style["accent"], str):
++        style["accent"] = colors.HexColor(style["accent"])
++    
++    section_order = template_config.section_order if template_config else []
+ 
+     pdf.setTitle("CV Export")
+     cursor_y = height - 72
+@@ -603,7 +476,7 @@ def _build_pdf_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+ 
+     cursor_y -= 12
+ 
+-    for section in TEMPLATE_SECTION_ORDER[template_id]:
++    for section in section_order:
+         if not _is_section_visible(cv_data, section):
+             continue
+         cursor_y = _render_section_pdf(pdf, cv_data, section, style, cursor_y)
+

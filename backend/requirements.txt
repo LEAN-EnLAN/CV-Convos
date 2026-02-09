@@ -17,6 +17,9 @@ limits
 tenacity
 google-genai
 reportlab
+redis
+asyncpg
+aiosqlite
 
 # Testing & Quality
 pytest==8.3.4

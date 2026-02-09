@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChatContainer } from '@/components/cv-builder/chat/ChatContainer';
-import { CVData, CVTemplate } from '@/types/cv';
+import { CVData, CVTemplate, TemplateConfig } from '@/types/cv';
 import { FileText, ZoomIn, ZoomOut, Maximize2, Layout, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UpdateApprovalModal } from './UpdateApprovalModal';
@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import { getTemplateFontPreset } from '@/lib/cv-templates/template-fonts';
 import { getTemplateRenderer } from '@/components/cv-builder/templates/template-renderer';
+import { mergeTemplateConfig } from '@/lib/cv-templates/merge-config';
 
 interface ConversationalWizardProps {
   onComplete: (data: CVData) => void;
@@ -21,6 +22,7 @@ interface ConversationalWizardProps {
   selectedTemplate?: CVTemplate;
   onTemplateChange?: (template: CVTemplate) => void;
   showCVPreview?: boolean;
+  onCVDataUpdate?: (data: Partial<CVData>) => void;
 }
 
 /**
@@ -77,6 +79,7 @@ export function ConversationalWizard({
   initialData,
   selectedTemplate: externalTemplate,
   onTemplateChange: onExternalTemplateChange,
+  onCVDataUpdate,
 }: ConversationalWizardProps) {
   const [cvData, setCvData] = useState<Partial<CVData>>(
     initialData || {
@@ -131,6 +134,16 @@ export function ConversationalWizard({
   }, [hasMeaningfulData]);
 
   useEffect(() => {
+    const configTemplate = cvData.config?.templateId as CVTemplate | undefined;
+    if (!configTemplate) return;
+    if (configTemplate === selectedTemplate) return;
+    setInternalTemplate(configTemplate);
+    if (onExternalTemplateChange) {
+      onExternalTemplateChange(configTemplate);
+    }
+  }, [cvData.config?.templateId, onExternalTemplateChange, selectedTemplate]);
+
+  useEffect(() => {
     const updatePages = () => {
       if (!previewContentRef.current) return;
       const pageHeight = 1122;
@@ -166,7 +179,41 @@ export function ConversationalWizard({
     // Content updates → queue for user approval (shows modal)
     console.log('%c[WIZARD-UPDATE]', 'color: #f59e0b', 'Queuing content update for approval');
     setPendingUpdate(newData);
-  }, []);
+  }, [onExternalTemplateChange]);
+
+  const applyDesignUpdate = useCallback((update: Partial<TemplateConfig>) => {
+    const baseConfig = cvData.config || DEFAULT_CONFIG;
+    const merged = mergeTemplateConfig(baseConfig, update);
+    setCvData((prev) => ({
+      ...prev,
+      config: merged,
+    }));
+    if (onCVDataUpdate) {
+      onCVDataUpdate({ config: merged });
+    }
+  }, [cvData.config, onCVDataUpdate]);
+
+  const handleConfigChange = useCallback((nextConfig: TemplateConfig) => {
+    applyDesignUpdate(nextConfig);
+  }, [applyDesignUpdate]);
+
+  const handleTemplateChange = useCallback((nextTemplate: CVTemplate) => {
+    const baseConfig = cvData.config || DEFAULT_CONFIG;
+    const isDefaultFonts =
+      baseConfig.fonts?.heading === DEFAULT_CONFIG.fonts.heading &&
+      baseConfig.fonts?.body === DEFAULT_CONFIG.fonts.body;
+    const nextFonts = isDefaultFonts ? getTemplateFontPreset(nextTemplate) : baseConfig.fonts;
+
+    applyDesignUpdate({
+      templateId: nextTemplate,
+      fonts: nextFonts,
+    });
+
+    setInternalTemplate(nextTemplate);
+    if (onExternalTemplateChange) {
+      onExternalTemplateChange(nextTemplate);
+    }
+  }, [applyDesignUpdate, cvData.config, onExternalTemplateChange]);
 
   const applyPendingUpdate = useCallback(() => {
     if (!pendingUpdate) return;
@@ -271,6 +318,10 @@ export function ConversationalWizard({
           cvPreviewComponent={mobilePreviewComponent}
           cvData={cvData}
           onCVDataUpdate={handleCVDataUpdate}
+          template={selectedTemplate}
+          onTemplateChange={handleTemplateChange}
+          config={(cvData.config || DEFAULT_CONFIG) as TemplateConfig}
+          onConfigChange={handleConfigChange}
           onFinalizeRequest={() => setShowFinalize(true)}
           canFinalize={true}
           className="h-full border-none"
@@ -393,9 +444,9 @@ export function ConversationalWizard({
                     <Check className="w-12 h-12 text-primary-foreground" />
                   </div>
                   <div className="space-y-3">
-                    <h2 className="text-3xl font-black text-foreground tracking-tighter leading-none uppercase italic">¿Finalizar Narrativa?</h2>
+                    <h2 className="text-3xl font-black text-foreground tracking-tighter leading-none uppercase italic">¿Pasar al editor de refinamiento?</h2>
                     <p className="text-[13px] text-muted-foreground font-medium leading-relaxed px-4">
-                      Tu trayectoria ha sido arquitecturada con éxito. ¿Deseas pasar al panel de control final?
+                      Tu CV ya tiene una base sólida. Ahora podés pulirlo con control total en el editor manual.
                     </p>
                   </div>
                   <div className="flex gap-4 pt-4">
@@ -404,13 +455,13 @@ export function ConversationalWizard({
                       className="flex-1 h-16 rounded-2xl font-black text-[10px] uppercase tracking-widest"
                       onClick={() => setShowFinalize(false)}
                     >
-                      Seguir Puliendo
+                      Seguir en el chat
                     </Button>
                     <Button
                       className="flex-1 h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20"
                       onClick={handleFinalize}
                     >
-                      Finalizar CV
+                      Ir al editor
                     </Button>
                   </div>
                 </div>

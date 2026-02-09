@@ -306,7 +306,7 @@ def _call_groq_api(prompt: str, system_msg: str, use_json: bool = True) -> Any:
 
     except Exception as e:
         logger.error(f"Groq API Error: {str(e)}")
-        return None
+        raise
 
 
 def _call_gemini_api(prompt: str, system_msg: str, use_json: bool = True) -> Any:
@@ -404,9 +404,13 @@ async def get_ai_completion(prompt: str, system_msg: str = None, use_json: bool 
     # 1. Try Groq (Primary)
     if settings.GROQ_API_KEY and settings.GROQ_API_KEY != "placeholder_key":
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None, _call_groq_api, prompt, system_msg, use_json
-        )
+        try:
+            result = await loop.run_in_executor(
+                None, _call_groq_api, prompt, system_msg, use_json
+            )
+        except Exception as e:
+            logger.warning(f"Groq API failed after retries: {e}")
+            result = None
         if result:
             return result
 
@@ -648,7 +652,7 @@ async def optimize_cv_data(cv_data: dict, target: str, section: str):
 
     # Extract template info for context
     config = cv_data.get("config", {})
-    template_id = config.get("template_id", "professional")
+    template_id = config.get("template_id") or config.get("templateId") or "professional"
     layout = config.get("layout", {})
     density = layout.get("density", "standard")
 
@@ -995,7 +999,7 @@ async def optimize_for_role(cv_data: dict, target_role: str):
 
     # Extract template info for context
     config = cv_data.get("config", {})
-    template_id = config.get("template_id", "professional")
+    template_id = config.get("template_id") or config.get("templateId") or "professional"
     layout = config.get("layout", {})
     density = layout.get("density", "standard")
 
@@ -1997,7 +2001,9 @@ YOUR MISSION: Build an elite, high-impact CV through strategic conversation. You
 - User corrects info → CALL with the new values.
 
 ### WHEN TO CALL `update_visual_identity`:
-- User asks about design, colors, or wants a "better look" → CALL with appropriate parameters.
+- User asks about template, spacing, typography, colors, or section visibility → CALL with appropriate parameters.
+- User wants a more compact or more airy layout → update `layout.density`, `sectionGap`, or `contentGap`.
+- User wants to rename section titles (e.g., "Skills" → "Tecnologías") → update `sections`.
 
 ## CONVERSATION STYLE & PERSONALITY:
 1. AUTHORITY & ADVICE: Act as a mentor. If a user provides weak info, say: "I've added this, but to make it stand out for [Role], we should quantify the impact. Did you manage a budget or a team size?"
@@ -2181,27 +2187,76 @@ def get_gemini_tools():
                         "properties": {
                             "templateId": {
                                 "type": "STRING",
-                                "enum": ["professional", "harvard", "creative", "pure", "terminal", "care", "scholar"]
+                                "enum": ["professional", "harvard", "creative", "pure", "terminal", "care", "capital", "scholar"]
                             },
                             "colors": {
                                 "type": "OBJECT",
                                 "properties": {
-                                    "primary": {"type": "STRING", "description": "Hex color for main elements"},
-                                    "accent": {"type": "STRING", "description": "Hex color for accents"}
+                                    "primary": {"type": "STRING", "description": "Hex or OKLCH color for main elements"},
+                                    "secondary": {"type": "STRING", "description": "Hex or OKLCH color for secondary elements"},
+                                    "accent": {"type": "STRING", "description": "Hex or OKLCH color for accents"},
+                                    "background": {"type": "STRING", "description": "Hex or OKLCH background color"},
+                                    "text": {"type": "STRING", "description": "Hex or OKLCH text color"}
                                 }
                             },
                             "fonts": {
                                 "type": "OBJECT",
                                 "properties": {
-                                    "heading": {"type": "STRING"},
-                                    "body": {"type": "STRING"}
+                                    "heading": {
+                                        "type": "STRING",
+                                        "enum": [
+                                            "\"Inter\"",
+                                            "\"Roboto\"",
+                                            "\"Open Sans\"",
+                                            "\"Lato\"",
+                                            "\"Montserrat\"",
+                                            "\"Playfair Display\"",
+                                            "\"Raleway\"",
+                                            "\"Source Sans Pro\"",
+                                            "\"Fira Code\"",
+                                            "\"Space Mono\""
+                                        ]
+                                    },
+                                    "body": {
+                                        "type": "STRING",
+                                        "enum": [
+                                            "\"Inter\"",
+                                            "\"Roboto\"",
+                                            "\"Open Sans\"",
+                                            "\"Lato\"",
+                                            "\"Montserrat\"",
+                                            "\"Playfair Display\"",
+                                            "\"Raleway\"",
+                                            "\"Source Sans Pro\"",
+                                            "\"Fira Code\"",
+                                            "\"Space Mono\""
+                                        ]
+                                    }
                                 }
                             },
                             "layout": {
                                 "type": "OBJECT",
                                 "properties": {
                                     "density": {"type": "STRING", "enum": ["compact", "standard", "relaxed"]},
-                                    "fontSize": {"type": "NUMBER", "description": "Font size multiplier (0.8 to 1.4)"}
+                                    "sectionGap": {"type": "NUMBER", "description": "Espaciado entre secciones en px"},
+                                    "contentGap": {"type": "NUMBER", "description": "Espaciado de contenido en px"},
+                                    "fontSize": {"type": "NUMBER", "description": "Font size multiplier (0.7 to 1.3)"},
+                                    "showExpertiseBar": {"type": "BOOLEAN"},
+                                    "expertiseBarStyle": {"type": "STRING", "enum": ["dots", "bars", "gradient"]}
+                                }
+                            },
+                            "sections": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "summary": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}},
+                                    "experience": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}},
+                                    "education": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}},
+                                    "skills": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}},
+                                    "projects": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}},
+                                    "languages": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}},
+                                    "certifications": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}},
+                                    "interests": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}},
+                                    "tools": {"type": "OBJECT", "properties": {"visible": {"type": "BOOLEAN"}, "title": {"type": "STRING"}}}
                                 }
                             }
                         }
@@ -2883,8 +2938,29 @@ def _detect_language_preference(message: str, history: List[ChatMessage]) -> str
         "presente",
     ]
 
+    english_indicators = [
+        "hello",
+        "hi",
+        "experience",
+        "education",
+        "skills",
+        "projects",
+        "certifications",
+        "worked",
+        "developer",
+        "engineer",
+        "resume",
+        "cv",
+        "current",
+        "present",
+    ]
+
     spanish_count = sum(1 for word in spanish_indicators if word in explicit_text)
-    return "es" if spanish_count > 0 else "en"
+    english_count = sum(1 for word in english_indicators if word in explicit_text)
+
+    if english_count > 0 and spanish_count == 0:
+        return "en"
+    return "es"
 
 
 def _apply_language_instruction(system_instruction: str, language_code: str) -> str:

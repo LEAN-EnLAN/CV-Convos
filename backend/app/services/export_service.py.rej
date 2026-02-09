@@ -1,0 +1,112 @@
+diff a/backend/app/services/export_service.py b/backend/app/services/export_service.py	(rejected hunks)
+@@ -135,49 +34,6 @@ SECTION_LABELS = {
+     "tools": "Herramientas",
+ }
+ 
+-TEMPLATE_STYLES = {
+-    "professional": {
+-        "heading_font": "Helvetica-Bold",
+-        "body_font": "Helvetica",
+-        "accent": colors.HexColor("#111827"),
+-    },
+-    "harvard": {
+-        "heading_font": "Times-Bold",
+-        "body_font": "Times-Roman",
+-        "accent": colors.HexColor("#0f172a"),
+-    },
+-    "creative": {
+-        "heading_font": "Helvetica-Bold",
+-        "body_font": "Helvetica-Oblique",
+-        "accent": colors.HexColor("#7c3aed"),
+-    },
+-    "pure": {
+-        "heading_font": "Helvetica-Bold",
+-        "body_font": "Helvetica",
+-        "accent": colors.HexColor("#0f172a"),
+-    },
+-    "terminal": {
+-        "heading_font": "Courier-Bold",
+-        "body_font": "Courier",
+-        "accent": colors.HexColor("#0f172a"),
+-    },
+-    "care": {
+-        "heading_font": "Times-Bold",
+-        "body_font": "Times-Roman",
+-        "accent": colors.HexColor("#0f766e"),
+-    },
+-    "capital": {
+-        "heading_font": "Helvetica-Bold",
+-        "body_font": "Helvetica",
+-        "accent": colors.HexColor("#1d4ed8"),
+-    },
+-    "scholar": {
+-        "heading_font": "Times-Bold",
+-        "body_font": "Times-Roman",
+-        "accent": colors.HexColor("#1e293b"),
+-    },
+-}
+-
+ 
+ def build_export_payload(
+     cv_data: Dict[str, Any],
+@@ -263,7 +123,10 @@ def _build_txt_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+ 
+     lines.append("")
+ 
+-    for section in TEMPLATE_SECTION_ORDER[template_id]:
++    template_config = registry.get_template(template_id)
++    section_order = template_config.section_order if template_config else []
++
++    for section in section_order:
+         if not _is_section_visible(cv_data, section):
+             continue
+         section_lines = _render_section_txt(cv_data, section)
+@@ -386,7 +249,9 @@ def _render_section_txt(cv_data: Dict[str, Any], section: str) -> List[str]:
+ def _build_docx_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+     document = Document()
+     personal_info = cv_data.get("personalInfo", {})
+-    style = TEMPLATE_STYLES[template_id]
++    template_config = registry.get_template(template_id)
++    style = template_config.styles if template_config else {}
++    section_order = template_config.section_order if template_config else []
+ 
+     name_heading = document.add_heading(personal_info.get("fullName") or "Sin nombre", level=0)
+     name_run = name_heading.runs[0]
+@@ -418,9 +283,9 @@ def _build_docx_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+         link_parts.append(f"Web: {personal_info.get('website')}")
+     if link_parts:
+         link_paragraph = document.add_paragraph(" | ".join(link_parts))
+-        link_paragraph.runs[0].font.name = style["body_font"]
++        link_paragraph.runs[0].font.name = style.get("body_font")
+ 
+-    for section in TEMPLATE_SECTION_ORDER[template_id]:
++    for section in section_order:
+         if not _is_section_visible(cv_data, section):
+             continue
+         _render_section_docx(document, cv_data, section, style)
+@@ -561,7 +426,15 @@ def _build_pdf_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+     buffer = io.BytesIO()
+     pdf = canvas.Canvas(buffer, pagesize=letter)
+     width, height = letter
+-    style = TEMPLATE_STYLES[template_id]
++    template_config = registry.get_template(template_id)
++    
++    # Adapt styles for ReportLab
++    raw_style = template_config.styles if template_config else {}
++    style = raw_style.copy()
++    if "accent" in style and isinstance(style["accent"], str):
++        style["accent"] = colors.HexColor(style["accent"])
++    
++    section_order = template_config.section_order if template_config else []
+ 
+     pdf.setTitle("CV Export")
+     cursor_y = height - 72
+@@ -603,7 +476,7 @@ def _build_pdf_export(cv_data: Dict[str, Any], template_id: str) -> bytes:
+ 
+     cursor_y -= 12
+ 
+-    for section in TEMPLATE_SECTION_ORDER[template_id]:
++    for section in section_order:
+         if not _is_section_visible(cv_data, section):
+             continue
+         cursor_y = _render_section_pdf(pdf, cv_data, section, style, cursor_y)

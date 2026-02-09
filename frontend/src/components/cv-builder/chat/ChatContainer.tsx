@@ -9,20 +9,23 @@ import { ChatMessage } from './ChatMessage';
 import { useChat } from '@/contexts/ChatContext';
 import { TypingIndicator } from './TypingIndicator';
 import { PhaseIndicator } from './PhaseIndicator';
-import { JobInputModal } from './JobInputModal';
 import { NotificationContainer } from '@/components/notifications';
 import { ExtractionNotification } from '@/components/notifications/ExtractionNotification';
-import { TailoringSuggestion } from '@/types/chat';
-import { CVData } from '@/types/cv';
+import { TemplateConfigurator } from '@/components/cv-builder/TemplateConfigurator';
+import { TemplateSelector } from '@/components/cv-builder/TemplateSelector';
+import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import {
   RotateCcw,
   Expand,
   Shrink,
   Sparkles,
+  Palette,
   MessageSquare,
   FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { CVTemplate, TemplateConfig } from '@/types/cv';
 
 interface ChatContainerProps {
   className?: string;
@@ -31,8 +34,11 @@ interface ChatContainerProps {
   cvPreviewComponent?: React.ReactNode;
   onFinalizeRequest?: () => void;
   canFinalize?: boolean;
-  cvData?: Partial<CVData>;
-  onCVDataUpdate?: (data: Partial<CVData>) => void;
+  onCVDataUpdate?: (data: import('@/types/cv').CVData) => void;
+  template?: CVTemplate;
+  onTemplateChange?: (template: CVTemplate) => void;
+  config?: TemplateConfig;
+  onConfigChange?: (config: TemplateConfig) => void;
 }
 
 export function ChatContainer({
@@ -41,14 +47,18 @@ export function ChatContainer({
   onFinalizeRequest,
   canFinalize = false,
   showCVPreview: desktopShowPreview = true,
-  cvData = {},
-  onCVDataUpdate,
+  template,
+  onTemplateChange,
+  config,
+  onConfigChange,
 }: ChatContainerProps) {
   const { state, actions } = useChat();
   const [showCVPreview, setShowCVPreview] = useState(desktopShowPreview);
-  const [mobileTab, setMobileTab] = useState<'chat' | 'preview'>('chat');
-  const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'chat' | 'preview' | 'design'>('chat');
+  const [designOpen, setDesignOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const designEnabled = Boolean(template && onTemplateChange && onConfigChange);
+  const activeConfig = config || DEFAULT_CONFIG;
 
   // Sync internal state with prop if needed, or handle resize logic
   useEffect(() => {
@@ -96,46 +106,43 @@ export function ChatContainer({
     [actions]
   );
 
-  const handleQuickAction = useCallback((action: string) => {
-    if (action !== 'job_targeting') {
-      return false;
-    }
+  const designPanelContent = designEnabled ? (
+    <div className="flex flex-col h-full bg-background">
+      <div className="shrink-0 border-b border-border px-6 py-4">
+        <h3 className="text-sm font-bold text-foreground">Diseño del CV</h3>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          Plantilla y ajustes visuales
+        </p>
+      </div>
+      <ScrollArea className="flex-1 px-6 py-4">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Plantilla</p>
+            <TemplateSelector
+              currentTemplate={template as CVTemplate}
+              onSelect={(nextTemplate) => onTemplateChange?.(nextTemplate)}
+              trigger={
+                <Button variant="outline" size="sm" className="w-full justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider">{template}</span>
+                  <span className="text-[10px] text-muted-foreground">Cambiar</span>
+                </Button>
+              }
+            />
+          </div>
 
-    setIsJobModalOpen(true);
-    return true;
-  }, []);
-
-  const handleApplySuggestions = useCallback(
-    (suggestions: TailoringSuggestion[], optimizedCV?: Partial<CVData>) => {
-      const appliedSections = suggestions.map((suggestion) => suggestion.section).filter(Boolean);
-      const totalApplied = suggestions.length;
-
-      if (optimizedCV && onCVDataUpdate) {
-        onCVDataUpdate(optimizedCV);
-      }
-
-      actions.showNotification({
-        type: 'toast',
-        variant: 'success',
-        title: 'Sugerencias aplicadas',
-        message:
-          totalApplied > 0
-            ? `Se aplicaron ${totalApplied} sugerencias: ${appliedSections.join(', ')}.`
-            : 'No se aplicaron sugerencias.',
-        duration: 5000,
-        actions: [],
-        metadata: {
-          toast: {
-            showProgress: true,
-            pauseOnHover: true,
-          },
-        },
-        dismissible: true,
-        priority: 'normal',
-      });
-    },
-    [actions, onCVDataUpdate]
-  );
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Personalización</p>
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <TemplateConfigurator
+                config={activeConfig}
+                onChange={(nextConfig) => onConfigChange?.(nextConfig)}
+              />
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
+  ) : null;
 
   return (
     <div className={cn(
@@ -171,6 +178,26 @@ export function ChatContainer({
             </div>
 
             <div className="flex items-center gap-1">
+              {designEnabled && (
+                <Sheet open={designOpen} onOpenChange={setDesignOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hidden lg:flex rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+                      aria-label="Abrir panel de diseño"
+                    >
+                      <Palette className="w-4 h-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[380px] sm:w-[420px] p-0">
+                    <SheetHeader className="sr-only">
+                      <SheetTitle>Panel de diseño</SheetTitle>
+                    </SheetHeader>
+                    {designPanelContent}
+                  </SheetContent>
+                </Sheet>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -243,7 +270,6 @@ export function ChatContainer({
           <div className="max-w-2xl mx-auto w-full">
             <ChatInput
               onSendMessage={handleSendMessage}
-              onQuickAction={handleQuickAction}
               isLoading={state.isStreaming}
               showQuickActions
             />
@@ -276,7 +302,7 @@ export function ChatContainer({
 
       {/* RIGHT PANEL: CV PREVIEW (Desktop) / TAB (Mobile) */}
       <AnimatePresence mode="wait">
-        {(showCVPreview || mobileTab === 'preview') && (
+        {(showCVPreview || mobileTab === 'preview' || mobileTab === 'design') && (
            <motion.div
              key="preview-panel"
              initial={{ opacity: 0, x: 20 }}
@@ -285,22 +311,30 @@ export function ChatContainer({
              transition={{ duration: 0.3 }}
              className={cn(
                "flex-col flex-1 h-full bg-muted/30 relative overflow-hidden border-l border-border",
-               mobileTab === 'preview' ? "flex w-full" : "hidden",
+               mobileTab === 'preview' || mobileTab === 'design' ? "flex w-full" : "hidden",
                showCVPreview ? "lg:flex" : "lg:hidden"
              )}
            >
              {/* Mobile Header for Preview */}
              <div className="lg:hidden h-14 border-b border-border bg-card flex items-center px-4 justify-between shrink-0">
-                <span className="font-bold text-sm">Vista Previa</span>
+                <span className="font-bold text-sm">
+                  {mobileTab === 'design' ? 'Diseño' : 'Vista Previa'}
+                </span>
                 <Button variant="ghost" size="sm" onClick={() => setMobileTab('chat')}>
                   <MessageSquare className="w-4 h-4 mr-2"/> Volver al Chat
                 </Button>
              </div>
 
              <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 md:p-8 lg:p-12 overflow-y-auto scrollbar-hide">
-               <div className="w-full max-w-[800px] shadow-2xl border border-border bg-card rounded-xl overflow-hidden">
-                 {cvPreviewComponent}
-               </div>
+               {mobileTab === 'design' ? (
+                 <div className="w-full max-w-[800px] shadow-2xl border border-border bg-card rounded-xl overflow-hidden">
+                   {designPanelContent}
+                 </div>
+               ) : (
+                 <div className="w-full max-w-[800px] shadow-2xl border border-border bg-card rounded-xl overflow-hidden">
+                   {cvPreviewComponent}
+                 </div>
+               )}
              </div>
            </motion.div>
         )}
@@ -332,15 +366,21 @@ export function ChatContainer({
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider">Vista</span>
         </button>
+        {designEnabled && (
+          <button
+            onClick={() => setMobileTab('design')}
+            className={cn(
+              "flex flex-col items-center gap-1 transition-colors",
+              mobileTab === 'design' ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            <div className={cn("p-1.5 rounded-lg transition-all", mobileTab === 'design' && "bg-primary/10")}>
+              <Palette className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Diseño</span>
+          </button>
+        )}
       </div>
-
-      <JobInputModal
-        isOpen={isJobModalOpen}
-        onClose={() => setIsJobModalOpen(false)}
-        cvData={cvData}
-        onSetJobDescription={actions.setJobDescription}
-        onApplySuggestions={handleApplySuggestions}
-      />
     </div>
   );
 }

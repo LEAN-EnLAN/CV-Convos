@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ChatProvider } from '@/contexts/ChatContext';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+import { mergeTemplateConfig } from '@/lib/cv-templates/merge-config';
 import { TEMPLATE_DEFINITIONS } from '@/lib/cv-templates/template-registry';
 import { isValidTemplateType } from '@/lib/api/cv-generator';
 import { cn } from '@/lib/utils';
@@ -82,23 +83,11 @@ export default function ChatPage() {
    */
   const handleCVDataUpdate = useCallback((newData: Partial<CVData>) => {
     setCvData((prev: CVData) => {
-      // Special handling for config to avoid overwriting the whole object
-      if (newData.config && prev.config) {
-        return {
-          ...prev,
-          ...newData,
-          config: {
-            ...prev.config,
-            ...newData.config,
-            colors: { ...prev.config.colors, ...newData.config.colors },
-            fonts: { ...prev.config.fonts, ...newData.config.fonts },
-            layout: { ...prev.config.layout, ...newData.config.layout },
-          }
-        };
-      }
+      const mergedConfig = mergeTemplateConfig(prev.config, newData.config);
       return {
         ...prev,
         ...newData,
+        config: mergedConfig,
       };
     });
   }, []);
@@ -109,14 +98,12 @@ export default function ChatPage() {
   const handleWizardComplete = useCallback((data: CVData) => {
     const finalData = {
       ...data,
-      config: {
-        ...DEFAULT_CONFIG,
-        ...data.config,
-      },
+      config: mergeTemplateConfig(DEFAULT_CONFIG, data.config),
     };
 
     localStorage.setItem('cv_data', JSON.stringify(finalData));
     localStorage.setItem('cv_template', selectedTemplate);
+    localStorage.setItem('cv_refine_after_chat', 'true');
 
     setCvData(finalData);
     setIsComplete(true);
@@ -215,6 +202,7 @@ export default function ChatPage() {
             onBack={handleBack}
             selectedTemplate={selectedTemplate}
             onTemplateChange={setSelectedTemplate}
+            onCVDataUpdate={handleCVDataUpdate}
             showCVPreview={showCVPreview}
           />
         </ChatProvider>

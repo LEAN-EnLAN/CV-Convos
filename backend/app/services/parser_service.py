@@ -6,7 +6,7 @@ async def parse_pdf(content: bytes) -> str:
     reader = PdfReader(io.BytesIO(content))
     text = ""
     for page in reader.pages:
-        text += page.extract_text() + "\n"
+        text += (page.extract_text() or "") + "\n"
     return text
 
 async def parse_docx(content: bytes) -> str:

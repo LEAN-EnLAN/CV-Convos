@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   SendHorizontal,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Palette
 } from 'lucide-react';
 
 interface ChatInputProps {
@@ -103,6 +104,15 @@ export function ChatInput({
             className="rounded-full bg-muted hover:bg-emerald-500 hover:text-white text-xs font-semibold h-7 px-4 whitespace-nowrap border border-border transition-all shadow-sm"
           >
             Estilo Creativo
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleQuickActionClick('design_controls', 'Quiero ajustar plantilla, colores y espaciado de mi CV')}
+            className="rounded-full bg-muted hover:bg-indigo-500 hover:text-white text-xs font-semibold h-7 px-4 whitespace-nowrap border border-border transition-all shadow-sm"
+          >
+            <Palette className="w-3 h-3 mr-2" />
+            Ajustar Diseño
           </Button>
         </div>
       )}

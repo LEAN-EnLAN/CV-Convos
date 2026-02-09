@@ -82,6 +82,7 @@ export interface SectionConfig {
 }
 
 export interface TemplateConfig {
+    templateId?: CVTemplate;
     colors: {
         primary: string;
         secondary: string;

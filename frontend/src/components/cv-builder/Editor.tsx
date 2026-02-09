@@ -111,11 +111,12 @@ export function Editor({
                 body: JSON.stringify(data),
             });
 
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({}));
-                    const errorMessage = resolveApiErrorMessage(errorData, 'Failed to optimize content');
-                    throw new Error(errorMessage);
-                }
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const errorMessage = resolveApiErrorMessage(errorData, 'No se pudo optimizar el contenido');
+                toast.error(errorMessage);
+                return;
+            }
 
             const optimizedData = await res.json();
 
@@ -152,7 +153,12 @@ export function Editor({
                     body: JSON.stringify(data),
                 }
             );
-            if (!res.ok) throw new Error('Failed');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const errorMessage = resolveApiErrorMessage(errorData, 'No se pudo optimizar el contenido');
+                toast.error(errorMessage);
+                return;
+            }
             const optimizedData = await res.json();
             onChange(ensureIds(optimizedData));
             toast.success(`CV optimizado para: ${targetRole}`);
@@ -179,11 +185,12 @@ export function Editor({
                 body: JSON.stringify(data),
             });
 
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({}));
-                    const errorMessage = resolveApiErrorMessage(errorData, 'Failed to optimize content');
-                    throw new Error(errorMessage);
-                }
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const errorMessage = resolveApiErrorMessage(errorData, 'No se pudo optimizar el contenido');
+                toast.error(errorMessage);
+                return;
+            }
 
             const optimizedData = await res.json();
             onChange(ensureIds(optimizedData));

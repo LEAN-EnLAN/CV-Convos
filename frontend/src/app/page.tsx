@@ -7,6 +7,7 @@ import { OnboardingSelection } from '@/components/cv-builder/onboarding/Onboardi
 import { ConversationalWizard } from '@/components/cv-builder/wizard/ConversationalWizard';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+import { mergeTemplateConfig } from '@/lib/cv-templates/merge-config';
 import { getDebugData } from '@/lib/debug-utils';
 import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
 import { ChatProvider } from '@/contexts/ChatContext';
@@ -79,41 +80,11 @@ export default function Home() {
         'upload' | 'wizard' | null
     >(null);
 
-    // Debug Mode Bypass
-    useEffect(() => {
-        const isDebug = searchParams.get('debug') === 'true';
-        if (isDebug && DEBUG_UI_ENABLED && flow === 'onboarding') {
-            setCvData(getDebugData());
-            setFlow('builder');
-        }
-    }, [searchParams, flow]);
-
-    useEffect(() => {
-        if (flow !== 'onboarding') return;
-
-        const storedData = localStorage.getItem('cv_data');
-        if (!storedData) return;
-
-        try {
-            const parsed = JSON.parse(storedData) as CVData;
-            const storedTemplate = localStorage.getItem('cv_template') as CVTemplate | null;
-            setCvData(sanitizeData(parsed));
-            if (storedTemplate) {
-                setSelectedTemplate(storedTemplate);
-            }
-            if (searchParams.get('flow') === 'builder' || parsed) {
-                setFlow('builder');
-            }
-        } catch (error) {
-            console.error('Error al leer los datos del CV desde localStorage', error);
-        }
-    }, [flow, sanitizeData, searchParams]);
-
     const sanitizeData = useCallback((data: CVData): CVData => {
         return {
             ...emptyCV,
             ...data,
-            config: data.config || { ...DEFAULT_CONFIG },
+            config: mergeTemplateConfig(DEFAULT_CONFIG, data.config),
             experience: (data.experience || []).map(e => ({
                 ...e,
                 id: e.id || Math.random().toString(36).substr(2, 9)
@@ -144,6 +115,39 @@ export default function Home() {
             }))
         };
     }, []);
+
+    // Debug Mode Bypass
+    useEffect(() => {
+        const isDebug = searchParams.get('debug') === 'true';
+        if (isDebug && DEBUG_UI_ENABLED && flow === 'onboarding') {
+            setCvData(getDebugData());
+            setFlow('builder');
+        }
+    }, [searchParams, flow]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const shouldRefine = localStorage.getItem('cv_refine_after_chat') === 'true';
+        if (!shouldRefine) return;
+        const storedData = localStorage.getItem('cv_data');
+        if (!storedData) {
+            localStorage.removeItem('cv_refine_after_chat');
+            return;
+        }
+        try {
+            const parsed = JSON.parse(storedData) as CVData;
+            setCvData(sanitizeData(parsed));
+            const storedTemplate = localStorage.getItem('cv_template') as CVTemplate | null;
+            if (storedTemplate) {
+                setSelectedTemplate(storedTemplate);
+            }
+            setFlow('builder');
+        } catch (error) {
+            console.error('Error al restaurar CV desde chat', error);
+        } finally {
+            localStorage.removeItem('cv_refine_after_chat');
+        }
+    }, [sanitizeData]);
 
     const handleOnboardingSelect = (option: 'existing' | 'new') => {
         if (option === 'existing') {
@@ -187,17 +191,18 @@ export default function Home() {
     const handleChatDataUpdate = useCallback((data: Partial<CVData>) => {
         setCvData(prev => {
             const baseData = prev ?? { ...emptyCV, config: { ...DEFAULT_CONFIG } };
+            const mergedConfig = mergeTemplateConfig(baseData.config, data.config);
             return {
                 ...baseData,
                 ...data,
-                config: data.config ?? baseData.config
+                config: mergedConfig
             };
         });
     }, []);
 
     const handleChatComplete = (data: CVData) => {
         setCvData(sanitizeData(data));
-        setFlow('template-gallery');
+        setFlow('builder');
     };
 
     const handleChatBack = () => {
@@ -250,6 +255,7 @@ export default function Home() {
                             onBack={handleChatBack}
                             selectedTemplate={selectedTemplate}
                             onTemplateChange={setSelectedTemplate}
+                            onCVDataUpdate={handleChatDataUpdate}
                             showCVPreview
                         />
                     </ChatProvider>

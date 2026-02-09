@@ -12,29 +12,9 @@ from datetime import datetime
 from app.core.config import settings
 from app.core.exceptions import CVProcessingError, AIServiceError
 from app.services.ai_service import get_ai_completion, get_system_rules
+from app.core.templates import registry
 
 logger = logging.getLogger(__name__)
-
-# =============================================================================
-# TEMPLATE TYPE DEFINITIONS
-# =============================================================================
-
-TemplateType = Literal[
-    "professional",
-    "harvard",
-    "creative",
-    "pure",
-    "terminal",
-    "care",
-    "capital",
-    "scholar",
-    "minimal",
-    "tech",
-    "bian",
-    "finance",
-    "health",
-    "education",
-]
 
 # =============================================================================
 # CV GENERATION PROMPTS
@@ -131,101 +111,6 @@ Return a complete CV structure with the following enhanced sections:
 """
 
 # =============================================================================
-# TEMPLATE-SPECIFIC FORMATTING GUIDES
-# =============================================================================
-
-PROMPT_PROFESSIONAL = """
-Format this CV for a classic professional template:
-- Use formal, traditional structure
-- Clear section headers
-- Emphasis on experience and education
-- Conservative layout with good use of white space
-- Standard chronological format for experience
-"""
-PROMPT_HARVARD = """
-Format this CV for an academic/Harvard-style template:
-- Academic focus with detailed education section
-- Publications and research highlighted
-- Professional summary with career objectives
-- Detailed description of academic achievements
-- Clear chronological structure
-"""
-PROMPT_MINIMAL = """
-Format this CV for a minimal template:
-- Stripped-down, clean design
-- Focus on content over decoration
-- Simple formatting with essential information only
-- Good use of spacing for readability
-- Subtle use of bold for headers
-"""
-PROMPT_CREATIVE = """
-Format this CV for a creative template:
-- Emphasize unique skills and achievements
-- Highlight projects and creative work
-- Dynamic layout suggestions
-- Showcase innovation and creativity
-- Modern, engaging presentation
-"""
-PROMPT_TECH = """
-Format this CV for a tech/developer template:
-- Emphasize technical skills and projects
-- GitHub and technical contributions highlighted
-- List technologies and frameworks used
-- Focus on technical achievements
-- Modern, clean layout
-"""
-PROMPT_BIAN = """
-Format this CV for a business/consulting template:
-- Professional business presentation
-- Emphasize business skills and achievements
-- Quantifiable results and metrics
-- Leadership and strategic thinking
-- Corporate, polished look
-"""
-PROMPT_FINANCE = """
-Format this CV for a finance template:
-- Focus on financial skills and certifications
-- Emphasize analytical and quantitative skills
-- Highlight financial achievements with metrics
-- Professional financial presentation
-- Attention to detail
-"""
-PROMPT_HEALTH = """
-Format this CV for a healthcare template:
-- Focus on healthcare skills and certifications
-- Emphasize patient care and medical achievements
-- Professional healthcare presentation
-- Highlight clinical experience
-- Medical professional appearance
-"""
-PROMPT_EDUCATION = """
-Format this CV for an education/academic template:
-- Emphasize teaching experience and achievements
-- Highlight educational contributions
-- Focus on academic qualifications
-- Student outcomes and achievements
-- Academic professional appearance
-"""
-
-# Mapeo de prompts para mantener compatibilidad con plantillas nuevas y legacy
-TEMPLATE_FORMATTING_PROMPTS = {
-    "professional": PROMPT_PROFESSIONAL,
-    "harvard": PROMPT_HARVARD,
-    "creative": PROMPT_CREATIVE,
-    "pure": PROMPT_MINIMAL,
-    "terminal": PROMPT_TECH,
-    "care": PROMPT_HEALTH,
-    "capital": PROMPT_FINANCE,
-    "scholar": PROMPT_EDUCATION,
-    "minimal": PROMPT_MINIMAL,
-    "tech": PROMPT_TECH,
-    "bian": PROMPT_BIAN,
-    "finance": PROMPT_FINANCE,
-    "health": PROMPT_HEALTH,
-    "education": PROMPT_EDUCATION,
-}
-
-# =============================================================================
 # GENERATOR FUNCTIONS
 # =============================================================================
 
@@ -257,7 +142,8 @@ async def generate_complete_cv(cv_data: Dict[str, Any], template_type: str) -> D
         if not cv_data or not isinstance(cv_data, dict):
             raise CVProcessingError("Invalid CV data provided")
 
-        if not template_type or template_type not in TEMPLATE_FORMATTING_PROMPTS:
+        template_config = registry.get_template(template_type)
+        if not template_config:
             raise CVProcessingError(f"Invalid template type: {template_type}")
 
         # Detect language from CV data
@@ -270,9 +156,7 @@ async def generate_complete_cv(cv_data: Dict[str, Any], template_type: str) -> D
         generation_prompt = CV_GENERATION_PROMPT.format(
             language=language, cv_json=cv_json
         )
-        formatting_prompt = TEMPLATE_FORMATTING_PROMPTS.get(
-            template_type, TEMPLATE_FORMATTING_PROMPTS["professional"]
-        )
+        formatting_prompt = template_config.prompt
 
         combined_prompt = f"{generation_prompt}\n\n{formatting_prompt}"
 
@@ -295,8 +179,8 @@ async def generate_complete_cv(cv_data: Dict[str, Any], template_type: str) -> D
         result = {
             "data": enhanced_cv,
             "metadata": metadata,
-            "templateType": template_type,
-            "generatedAt": datetime.utcnow().isoformat(),
+            "template_type": template_type,
+            "generated_at": datetime.utcnow().isoformat(),
         }
 
         logger.info(f"Successfully generated CV for template: {template_type}")
@@ -649,8 +533,8 @@ def _generate_cv_metadata(cv_data: Dict[str, Any], template_type: str) -> Dict[s
         sections.append("certifications")
 
     return {
-        "completenessScore": completeness_score,
-        "sectionCounts": {
+        "completeness_score": completeness_score,
+        "section_counts": {
             "experience": experience_count,
             "education": education_count,
             "skills": skills_count,
@@ -658,6 +542,6 @@ def _generate_cv_metadata(cv_data: Dict[str, Any], template_type: str) -> Dict[s
             "certifications": certifications_count,
         },
         "sections": sections,
-        "templateType": template_type,
+        "template_type": template_type,
         "version": "1.0",
     }
