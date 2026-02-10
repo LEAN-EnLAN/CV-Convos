@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional, List, Literal
 from datetime import datetime
 from app.core.config import settings
 from app.core.exceptions import CVProcessingError, AIServiceError
-from app.services.ai_service import get_ai_completion, get_system_rules
+from app.services.ai_service import get_ai_completion, SYSTEM_RULES
 from app.core.templates import registry
 
 logger = logging.getLogger(__name__)
@@ -115,7 +115,9 @@ Return a complete CV structure with the following enhanced sections:
 # =============================================================================
 
 
-async def generate_complete_cv(cv_data: Dict[str, Any], template_type: str) -> Dict[str, Any]:
+async def generate_complete_cv(
+    cv_data: Dict[str, Any], template_type: str
+) -> Dict[str, Any]:
     """
     Generate a complete CV with AI enhancement and template-specific formatting.
 
@@ -162,7 +164,7 @@ async def generate_complete_cv(cv_data: Dict[str, Any], template_type: str) -> D
 
         ai_response = await get_ai_completion(
             prompt=combined_prompt,
-            system_msg=get_system_rules(),
+            system_msg=SYSTEM_RULES,
             use_json=True,
         )
 
@@ -274,7 +276,9 @@ def _process_generated_cv(
     }
 
     # Process personal info - preserve original identity fields
-    personal_info = ai_response.get("personalInfo", original_data.get("personalInfo", {}))
+    personal_info = ai_response.get(
+        "personalInfo", original_data.get("personalInfo", {})
+    )
     identity_fields = ["fullName", "email", "phone", "location"]
     for field in identity_fields:
         if field in personal_info and personal_info[field]:
@@ -335,13 +339,19 @@ def _sort_by_order(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         order_value = item.get("order")
         if isinstance(order_value, int):
             has_order = True
-        indexed_items.append((order_value if isinstance(order_value, int) else None, index, item))
+        indexed_items.append(
+            (order_value if isinstance(order_value, int) else None, index, item)
+        )
 
     if not has_order:
         return items
 
     indexed_items.sort(
-        key=lambda entry: (entry[0] is None, entry[0] if entry[0] is not None else entry[1], entry[1])
+        key=lambda entry: (
+            entry[0] is None,
+            entry[0] if entry[0] is not None else entry[1],
+            entry[1],
+        )
     )
     return [item for _, _, item in indexed_items]
 
@@ -353,18 +363,22 @@ def _process_experience_list(experience: List[Dict[str, Any]]) -> List[Dict[str,
         if not isinstance(exp, dict):
             continue
         order_value = exp.get("order")
-        processed.append({
-            "id": exp.get("id", f"exp_{i}"),
-            "order": order_value if isinstance(order_value, int) else i + 1,
-            "company": exp.get("company", ""),
-            "position": exp.get("position", ""),
-            "startDate": exp.get("startDate", ""),
-            "endDate": exp.get("endDate", "Present"),
-            "current": exp.get("current", False),
-            "location": exp.get("location", ""),
-            "description": exp.get("description", ""),
-            "highlights": exp.get("highlights", []) if isinstance(exp.get("highlights"), list) else [],
-        })
+        processed.append(
+            {
+                "id": exp.get("id", f"exp_{i}"),
+                "order": order_value if isinstance(order_value, int) else i + 1,
+                "company": exp.get("company", ""),
+                "position": exp.get("position", ""),
+                "startDate": exp.get("startDate", ""),
+                "endDate": exp.get("endDate", "Present"),
+                "current": exp.get("current", False),
+                "location": exp.get("location", ""),
+                "description": exp.get("description", ""),
+                "highlights": exp.get("highlights", [])
+                if isinstance(exp.get("highlights"), list)
+                else [],
+            }
+        )
     return processed
 
 
@@ -375,17 +389,19 @@ def _process_education_list(education: List[Dict[str, Any]]) -> List[Dict[str, A
         if not isinstance(edu, dict):
             continue
         order_value = edu.get("order")
-        processed.append({
-            "id": edu.get("id", f"edu_{i}"),
-            "order": order_value if isinstance(order_value, int) else i + 1,
-            "institution": edu.get("institution", ""),
-            "degree": edu.get("degree", ""),
-            "fieldOfStudy": edu.get("fieldOfStudy", ""),
-            "startDate": edu.get("startDate", ""),
-            "endDate": edu.get("endDate", ""),
-            "location": edu.get("location", ""),
-            "description": edu.get("description", ""),
-        })
+        processed.append(
+            {
+                "id": edu.get("id", f"edu_{i}"),
+                "order": order_value if isinstance(order_value, int) else i + 1,
+                "institution": edu.get("institution", ""),
+                "degree": edu.get("degree", ""),
+                "fieldOfStudy": edu.get("fieldOfStudy", ""),
+                "startDate": edu.get("startDate", ""),
+                "endDate": edu.get("endDate", ""),
+                "location": edu.get("location", ""),
+                "description": edu.get("description", ""),
+            }
+        )
     return processed
 
 
@@ -399,13 +415,15 @@ def _process_skills_list(skills: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         # Normalize level
         level_normalized = _normalize_skill_level(level)
         proficiency = skill.get("proficiency", _level_to_proficiency(level_normalized))
-        processed.append({
-            "id": skill.get("id", f"skill_{i}"),
-            "name": skill.get("name", ""),
-            "level": level_normalized,
-            "proficiency": proficiency,
-            "category": skill.get("category", ""),
-        })
+        processed.append(
+            {
+                "id": skill.get("id", f"skill_{i}"),
+                "name": skill.get("name", ""),
+                "level": level_normalized,
+                "proficiency": proficiency,
+                "category": skill.get("category", ""),
+            }
+        )
     return processed
 
 
@@ -416,14 +434,18 @@ def _process_projects_list(projects: List[Dict[str, Any]]) -> List[Dict[str, Any
         if not isinstance(proj, dict):
             continue
         order_value = proj.get("order")
-        processed.append({
-            "id": proj.get("id", f"proj_{i}"),
-            "order": order_value if isinstance(order_value, int) else i + 1,
-            "name": proj.get("name", ""),
-            "description": proj.get("description", ""),
-            "url": proj.get("url", ""),
-            "technologies": proj.get("technologies", []) if isinstance(proj.get("technologies"), list) else [],
-        })
+        processed.append(
+            {
+                "id": proj.get("id", f"proj_{i}"),
+                "order": order_value if isinstance(order_value, int) else i + 1,
+                "name": proj.get("name", ""),
+                "description": proj.get("description", ""),
+                "url": proj.get("url", ""),
+                "technologies": proj.get("technologies", [])
+                if isinstance(proj.get("technologies"), list)
+                else [],
+            }
+        )
     return processed
 
 
@@ -433,29 +455,33 @@ def _process_languages_list(languages: List[Dict[str, Any]]) -> List[Dict[str, A
     for i, lang in enumerate(languages):
         if not isinstance(lang, dict):
             continue
-        processed.append({
-            "id": lang.get("id", f"lang_{i}"),
-            "language": lang.get("language", ""),
-            "fluency": lang.get("fluency", "Conversational"),
-        })
+        processed.append(
+            {
+                "id": lang.get("id", f"lang_{i}"),
+                "language": lang.get("language", ""),
+                "fluency": lang.get("fluency", "Conversational"),
+            }
+        )
     return processed
 
 
 def _process_certifications_list(
-    certifications: List[Dict[str, Any]]
+    certifications: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """Process and validate certification entries."""
     processed = []
     for i, cert in enumerate(certifications):
         if not isinstance(cert, dict):
             continue
-        processed.append({
-            "id": cert.get("id", f"cert_{i}"),
-            "name": cert.get("name", ""),
-            "issuer": cert.get("issuer", ""),
-            "date": cert.get("date", ""),
-            "url": cert.get("url", ""),
-        })
+        processed.append(
+            {
+                "id": cert.get("id", f"cert_{i}"),
+                "name": cert.get("name", ""),
+                "issuer": cert.get("issuer", ""),
+                "date": cert.get("date", ""),
+                "url": cert.get("url", ""),
+            }
+        )
     return processed
 
 
@@ -488,7 +514,9 @@ def _level_to_proficiency(level: str) -> int:
     return mapping.get(level, 50)
 
 
-def _generate_cv_metadata(cv_data: Dict[str, Any], template_type: str) -> Dict[str, Any]:
+def _generate_cv_metadata(
+    cv_data: Dict[str, Any], template_type: str
+) -> Dict[str, Any]:
     """
     Generate metadata for the CV.
 
@@ -511,9 +539,8 @@ def _generate_cv_metadata(cv_data: Dict[str, Any], template_type: str) -> Dict[s
     filled_sections = sum(
         1
         for section in required_sections
-        if cv_data.get(section) and (
-            section != "personalInfo" or bool(cv_data["personalInfo"])
-        )
+        if cv_data.get(section)
+        and (section != "personalInfo" or bool(cv_data["personalInfo"]))
     )
     completeness_score = int((filled_sections / len(required_sections)) * 100)
 
