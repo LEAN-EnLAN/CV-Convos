@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { OnboardingSelection } from '@/components/cv-builder/onboarding/OnboardingSelection';
@@ -70,7 +70,7 @@ const emptyCV: CVData = {
     interests: []
 };
 
-export default function Home() {
+function HomeContent() {
     const searchParams = useSearchParams();
     const [flow, setFlow] = useState<FlowState>('onboarding');
     const [cvData, setCvData] = useState<CVData | null>(null);
@@ -261,12 +261,29 @@ export default function Home() {
             )}
 
             {flow === 'builder' && cvData && (
-                <Builder
-                    initialData={{ ...cvData, config: cvData.config || { ...DEFAULT_CONFIG } }}
-                    onReset={handleReset}
-                    initialTemplate={selectedTemplate}
-                />
+                <ChatProvider initialCVData={cvData} onCVDataUpdate={handleChatDataUpdate}>
+                    <Builder
+                        initialData={{ ...cvData, config: cvData.config || { ...DEFAULT_CONFIG } }}
+                        onReset={handleReset}
+                        initialTemplate={selectedTemplate}
+                    />
+                </ChatProvider>
             )}
         </main>
     );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
+  );
 }

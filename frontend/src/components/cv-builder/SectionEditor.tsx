@@ -12,9 +12,9 @@ interface SortableCardProps {
     index: number;
     dragLabel: string;
     onRemove: (index: number) => void;
-    onDragStart: (id: string) => (event: React.DragEvent<HTMLDivElement>) => void;
-    onDragOver: (id: string) => (event: React.DragEvent<HTMLDivElement>) => void;
-    onDrop: (id: string) => (event: React.DragEvent<HTMLDivElement>) => void;
+    onDragStart: (id: string) => (event: React.DragEvent<HTMLElement>) => void;
+    onDragOver: (id: string) => (event: React.DragEvent<HTMLElement>) => void;
+    onDrop: (id: string) => (event: React.DragEvent<HTMLElement>) => void;
     onDragEnd: () => void;
     onKeyReorder: (direction: 'up' | 'down') => void;
     children: React.ReactNode;
@@ -122,19 +122,19 @@ export function SectionEditor<T extends { id: string }>({
         onReorder(nextItems);
     };
 
-    const handleDragStart = (id: string) => (event: React.DragEvent<HTMLDivElement>) => {
+    const handleDragStart = (id: string) => (event: React.DragEvent<HTMLElement>) => {
         setDraggedId(id);
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', id);
     };
 
-    const handleDragOver = (id: string) => (event: React.DragEvent<HTMLDivElement>) => {
+    const handleDragOver = (id: string) => (event: React.DragEvent<HTMLElement>) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
         setDragOverId(id);
     };
 
-    const handleDrop = (id: string) => (event: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = (id: string) => (event: React.DragEvent<HTMLElement>) => {
         event.preventDefault();
         const activeId = draggedId || event.dataTransfer.getData('text/plain');
         if (!activeId || activeId === id) return;

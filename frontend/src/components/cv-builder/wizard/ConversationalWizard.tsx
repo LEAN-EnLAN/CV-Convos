@@ -100,7 +100,7 @@ export function ConversationalWizard({
   const selectedTemplate = externalTemplate || internalTemplate;
 
   const hasMeaningfulData = useMemo(() => {
-    const personal = cvData.personalInfo || {};
+    const personal = (cvData.personalInfo || {}) as { fullName?: string; email?: string; phone?: string; location?: string; summary?: string; role?: string };
     return Boolean(
       personal.fullName ||
       personal.email ||
@@ -316,7 +316,6 @@ export function ConversationalWizard({
           showPhaseIndicator={false}
           showCVPreview={false}
           cvPreviewComponent={mobilePreviewComponent}
-          cvData={cvData}
           onCVDataUpdate={handleCVDataUpdate}
           template={selectedTemplate}
           onTemplateChange={handleTemplateChange}

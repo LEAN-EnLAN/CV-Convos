@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useAutoSave } from '@/hooks/use-auto-save';
 import { FloatingProgress } from './FloatingProgress';
 import { TEMPLATE_FONT_PRESETS, getTemplateFontPreset } from '@/lib/cv-templates/template-fonts';
+import { mergeTemplateConfig } from '@/lib/cv-templates/merge-config';
 import {
     Dialog,
     DialogContent,
@@ -192,10 +193,7 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
             const presetFonts = { ...getTemplateFontPreset(template) };
             setData({
                 ...data,
-                config: {
-                    ...data.config,
-                    fonts: presetFonts
-                }
+                config: mergeTemplateConfig(data.config, { fonts: presetFonts })
             });
         }
         initialFontsAppliedRef.current = true;
@@ -209,10 +207,7 @@ export function Builder({ initialData, onReset, initialTemplate }: BuilderProps)
         setTemplate(nextTemplate);
         setData({
             ...data,
-            config: {
-                ...data.config,
-                fonts: nextFonts
-            }
+            config: mergeTemplateConfig(data.config, { fonts: nextFonts })
         });
     };
 
