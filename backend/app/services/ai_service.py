@@ -36,6 +36,19 @@ MODEL_ID = "llama-3.3-70b-versatile"
 
 logger = logging.getLogger(__name__)
 
+def _is_configured_ai_key(value: Any) -> bool:
+    """Valida keys evitando truthiness engañosa de mocks en tests."""
+    return isinstance(value, str) and bool(value.strip()) and value != "placeholder_key"
+
+
+def _has_groq_key() -> bool:
+    return _is_configured_ai_key(getattr(settings, "GROQ_API_KEY", None))
+
+
+def _has_google_key() -> bool:
+    return _is_configured_ai_key(getattr(settings, "GOOGLE_API_KEY", None))
+
+
 def _raise_if_no_ai_provider() -> None:
     missing_keys = settings.missing_ai_keys()
     if len(missing_keys) == 2:
@@ -405,7 +418,7 @@ def _get_mock_fallback(prompt: str, system_msg: str, use_json: bool = True) -> A
 async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES, use_json: bool = True):
     _raise_if_no_ai_provider()
     # 1. Try Groq (Primary)
-    if settings.GROQ_API_KEY and settings.GROQ_API_KEY != "placeholder_key":
+    if _has_groq_key():
         try:
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
@@ -417,7 +430,7 @@ async def get_ai_completion(prompt: str, system_msg: str = SYSTEM_RULES, use_jso
             logger.error(f"Groq primary provider failed: {str(e)}")
 
     # 2. Try Gemini (Fallback)
-    if settings.GOOGLE_API_KEY and settings.GOOGLE_API_KEY != "placeholder_key":
+    if _has_google_key():
         logger.info("Failing over to Gemini API...")
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
@@ -2106,7 +2119,10 @@ async def generate_conversation_response(
     """
     Genera una respuesta conversacional para el chat del CV builder.
     """
-    if not settings.GOOGLE_API_KEY or settings.GOOGLE_API_KEY == "placeholder_key":
+    if (
+        (not _has_groq_key())
+        and (not _has_google_key())
+    ):
         return {
             "response": "Lo siento, el servicio de IA no está disponible en este momento.",
             "extraction": None,
@@ -2114,33 +2130,20 @@ async def generate_conversation_response(
         }
 
     try:
-        client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-        
-        gemini_history = []
-        for msg in history[-10:]:
-            role = "user" if msg.role == "user" else "model"
-            gemini_history.append(types.Content(role=role, parts=[types.Part(text=msg.content)]))
-
         language_code = _detect_language_preference(message, history)
-        supports_tools = _gemini_supports_tools(GEMINI_MODEL)
-        base_instruction = GEMINI_SYSTEM_INSTRUCTION if supports_tools else GROQ_SYSTEM_INSTRUCTION
-        system_instruction = _apply_language_instruction(base_instruction, language_code)
-
-        config_kwargs: Dict[str, Any] = {
-            "system_instruction": system_instruction,
-        }
-        if supports_tools:
-            config_kwargs["tools"] = get_gemini_tools()
-
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=message,
-            config=types.GenerateContentConfig(**config_kwargs)
+        prompt = _build_conversation_prompt(
+            message=message,
+            history=history,
+            cv_data=cv_data,
+            current_phase=current_phase,
         )
+        system_instruction = _apply_language_instruction(GROQ_SYSTEM_INSTRUCTION, language_code)
+        response = await get_ai_completion(prompt, system_instruction, use_json=False)
 
-        response_text = response.text
-        
-        # Detectar nueva fase (mantenemos la lógica de heurística por ahora o confiamos en Gemini)
+        response_text = response.get("response") if isinstance(response, dict) else str(response or "")
+        if not response_text:
+            raise AIServiceError("Empty conversation response")
+
         new_phase = _detect_phase_transition(message, response_text, current_phase, cv_data)
 
         return {
@@ -2173,6 +2176,14 @@ async def generate_conversation_response_stream(
     2. Groq LLaMA 3.3 (fallback if Gemini quota exhausted)
     3. Heuristic Engine (offline mode, last resort)
     """
+    if not _has_groq_key() and not _has_google_key():
+        yield _format_sse_event({
+            "type": "error",
+            "error": "AI service not configured. Check GROQ_API_KEY, GOOGLE_API_KEY.",
+            "code": "AI_NOT_CONFIGURED",
+        })
+        return
+
     _raise_if_no_ai_provider()
     global _gemini_quota_exhausted, _quota_error_count, _last_quota_error_time
     
@@ -2185,7 +2196,7 @@ async def generate_conversation_response_stream(
     # =========================================================================
     # STRATEGY 1: Try Gemini (if not exhausted or cooldown elapsed)
     # =========================================================================
-    if _should_retry_gemini() and settings.GOOGLE_API_KEY and settings.GOOGLE_API_KEY != "placeholder_key":
+    if _should_retry_gemini() and _has_google_key():
         try:
             logger.info("[AI-PROVIDER] Attempting Gemini Flash Lite...")
             
@@ -2318,15 +2329,37 @@ async def generate_conversation_response_stream(
     # =========================================================================
     # STRATEGY 2: Try Groq as Fallback
     # =========================================================================
-    if settings.GROQ_API_KEY and settings.GROQ_API_KEY != "placeholder_key":
+    if _has_groq_key():
         try:
             logger.info("[AI-PROVIDER] Attempting Groq LLaMA fallback...")
-            
-            # Build context for Groq (non-streaming, then emit as stream)
-            groq_messages = [{"role": "system", "content": _apply_language_instruction(GROQ_SYSTEM_INSTRUCTION, language_code)}]
-            for msg in history[-8:]:
-                groq_messages.append({"role": msg.role, "content": msg.content})
-            groq_messages.append({"role": "user", "content": message})
+
+            seeded_extraction = await extract_cv_data_from_message(
+                message=message,
+                history=history,
+                cv_data=cv_data,
+                current_phase=current_phase,
+            )
+            prompt_cv_data = _merge_cv_data_for_context(
+                cv_data,
+                seeded_extraction.extracted if seeded_extraction else None,
+            )
+            conversation_prompt = _build_conversation_prompt(
+                message=message,
+                history=history,
+                cv_data=prompt_cv_data,
+                current_phase=current_phase,
+            )
+
+            if seeded_extraction and seeded_extraction.extracted:
+                yield _format_sse_event({
+                    "type": "extraction",
+                    "extraction": seeded_extraction.model_dump(by_alias=True),
+                })
+
+            groq_messages = [
+                {"role": "system", "content": _apply_language_instruction(GROQ_SYSTEM_INSTRUCTION, language_code)},
+                {"role": "user", "content": conversation_prompt},
+            ]
             
             client = Groq(api_key=settings.GROQ_API_KEY)
             
@@ -2346,15 +2379,17 @@ async def generate_conversation_response_stream(
                     yield _format_sse_event({"type": "delta", "content": delta.content})
 
             # Extraer datos estructurados después de la respuesta (Groq no tiene tools aquí)
-            last_extraction: Optional[DataExtraction] = None
-            fallback_extraction = await extract_cv_data_from_message(
-                message=message,
-                history=history,
-                cv_data=cv_data,
-                current_phase=current_phase,
-            )
-            if fallback_extraction and fallback_extraction.extracted:
-                last_extraction = fallback_extraction
+            last_extraction: Optional[DataExtraction] = seeded_extraction
+            if not last_extraction:
+                fallback_extraction = await extract_cv_data_from_message(
+                    message=message,
+                    history=history,
+                    cv_data=cv_data,
+                    current_phase=current_phase,
+                )
+                if fallback_extraction and fallback_extraction.extracted:
+                    last_extraction = fallback_extraction
+            if last_extraction and last_extraction.extracted and not seeded_extraction:
                 yield _format_sse_event({
                     "type": "extraction",
                     "extraction": last_extraction.model_dump(by_alias=True),
@@ -2447,8 +2482,8 @@ async def extract_cv_data_from_message(
         DataExtraction con los datos extraídos y confianza
     """
     if (
-        (not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key")
-        and (not settings.GOOGLE_API_KEY or settings.GOOGLE_API_KEY == "placeholder_key")
+        (not _has_groq_key())
+        and (not _has_google_key())
     ):
         return None
 
@@ -2457,6 +2492,7 @@ async def extract_cv_data_from_message(
         cv_data_json = json.dumps(cv_data, indent=2, default=str)
 
         prompt = DATA_EXTRACTION_PROMPT.format(
+            current_date=datetime.utcnow().date().isoformat(),
             current_phase=current_phase.value,
             user_message=message,
             chat_history=chat_history,
@@ -2540,7 +2576,7 @@ async def generate_next_question(
     Returns:
         Dict con la pregunta, fase objetivo y prioridad
     """
-    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "placeholder_key":
+    if not _has_groq_key():
         return {
             "next_question": "¿Podrías contarme más sobre tu experiencia?",
             "target_phase": current_phase.value,
@@ -2743,9 +2779,10 @@ def _detect_language(text: str) -> str:
 
 def _detect_language_preference(message: str, history: List[ChatMessage]) -> str:
     """Detecta preferencia de idioma con prioridad a solicitudes explícitas."""
-    explicit_text = " ".join(
-        [message] + [msg.content for msg in history[-5:] if msg.role == "user"]
-    ).lower()
+    user_context = [message] + [msg.content for msg in history[-5:] if msg.role == "user"]
+    assistant_context = [msg.content for msg in history[-5:] if msg.role == "assistant"]
+    explicit_text = " ".join(user_context).lower()
+    full_context = " ".join(user_context + assistant_context).lower()
 
     if any(phrase in explicit_text for phrase in ["español", "espanol", "spanish", "en español", "solo español", "solo espanol", "castellano"]):
         return "es"
@@ -2766,10 +2803,42 @@ def _detect_language_preference(message: str, history: List[ChatMessage]) -> str
         "realic",
         "lider",
         "presente",
+        "mi nombre",
+        "mi name",
+        "ponelo",
+        "ponlo",
+        "hacelo",
+        "hazlo",
+        "ahora",
+        "dale",
+        "quiero",
+        "solo",
+        "sin experiencia",
+        "sin estudios",
+        "equipo",
+        "cv",
+        "curriculum",
+        "currículum",
+    ]
+    english_indicators = [
+        "hello",
+        "experience",
+        "education",
+        "skills",
+        "projects",
+        "resume",
+        "current job",
+        "teamwork",
+        "employee",
     ]
 
-    spanish_count = sum(1 for word in spanish_indicators if word in explicit_text)
-    return "es" if spanish_count > 0 else "en"
+    spanish_count = sum(1 for word in spanish_indicators if word in full_context)
+    english_count = sum(1 for word in english_indicators if word in explicit_text)
+
+    if any(token in explicit_text for token in ["mi ", "hola", "che ", "buenas", "nombre"]):
+        spanish_count += 2
+
+    return "es" if spanish_count >= english_count else "en"
 
 
 def _apply_language_instruction(system_instruction: str, language_code: str) -> str:
@@ -2778,6 +2847,110 @@ def _apply_language_instruction(system_instruction: str, language_code: str) -> 
         f"{system_instruction}\n\n"
         f"LANGUAGE OVERRIDE: Respond only in {language_name}. Do not mix languages."
     )
+
+
+def _serialize_cv_for_prompt(cv_data: Dict[str, Any]) -> str:
+    """Convierte el CV actual a JSON legible para los prompts conversacionales."""
+    safe_cv = cv_data or {}
+    return json.dumps(safe_cv, indent=2, ensure_ascii=False, default=str)
+
+
+def _fingerprint_context_item(item: Any) -> str:
+    """Crea una firma estable para deduplicar elementos del CV al construir contexto."""
+    if isinstance(item, dict):
+        relevant_keys = (
+            "id",
+            "name",
+            "company",
+            "position",
+            "institution",
+            "degree",
+            "language",
+            "issuer",
+            "startDate",
+            "endDate",
+            "description",
+        )
+        compact = {key: item.get(key) for key in relevant_keys if item.get(key) not in (None, "", [], {})}
+        if compact:
+            return json.dumps(compact, sort_keys=True, ensure_ascii=False, default=str)
+    return json.dumps(item, sort_keys=True, ensure_ascii=False, default=str)
+
+
+def _merge_cv_data_for_context(base_cv_data: Dict[str, Any], extracted: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Fusiona el estado actual del CV con extracción reciente para darle memoria al prompt."""
+    merged = copy.deepcopy(base_cv_data or {})
+    if not extracted:
+        return merged
+
+    if extracted.get("personalInfo"):
+        merged["personalInfo"] = {
+            **(merged.get("personalInfo") or {}),
+            **extracted["personalInfo"],
+        }
+
+    list_sections = (
+        "experience",
+        "education",
+        "skills",
+        "projects",
+        "languages",
+        "certifications",
+    )
+
+    for section in list_sections:
+        incoming = extracted.get(section)
+        if not incoming:
+            continue
+
+        existing_items = merged.get(section) or []
+        if not isinstance(existing_items, list):
+            existing_items = []
+
+        fingerprints = {_fingerprint_context_item(item) for item in existing_items}
+        for item in incoming:
+            fingerprint = _fingerprint_context_item(item)
+            if fingerprint in fingerprints:
+                continue
+            existing_items.append(item)
+            fingerprints.add(fingerprint)
+
+        merged[section] = existing_items
+
+    return merged
+
+
+def _build_conversation_prompt(
+    message: str,
+    history: List[ChatMessage],
+    cv_data: Dict[str, Any],
+    current_phase: ConversationPhase,
+) -> str:
+    """Construye un prompt compacto pero con memoria real del CV y la conversación."""
+    history_window = _format_chat_history(history[-8:])
+    cv_snapshot = _serialize_cv_for_prompt(cv_data)
+    phase_prompt = get_phase_prompt(current_phase.value)
+    orchestrator = CONVERSATION_ORCHESTRATOR_PROMPT.format(
+        current_phase=current_phase.value,
+        cv_data=cv_snapshot,
+        chat_history=history_window or "Sin historial previo",
+    )
+
+    return f"""
+{orchestrator}
+
+ESTRATEGIA DE ESTA FASE:
+{phase_prompt}
+
+MENSAJE ACTUAL DEL USUARIO:
+{message}
+
+REGLAS OPERATIVAS DE ESTE TURNO:
+- Si el usuario ya dio un dato útil en este mensaje, úsalo inmediatamente. No lo vuelvas a pedir.
+- Si el nombre, rol o skill principal ya está en DATOS ACTUALES, no reinicies la entrevista.
+- Si el usuario pide "hacelo", "ponelo en el CV", "now do it" o similar, redacta la mejor versión honesta posible con los datos disponibles y luego pide solo 1 dato crítico faltante.
+- Mantén respuestas de 1 o 2 oraciones. Sin saludo repetido. Sin relleno.
+""".strip()
 
 
 def _clean_text(value: Any) -> Optional[str]:
@@ -3138,6 +3311,9 @@ def _detect_phase_transition(
 
     # 3. Transición basada en completitud mínima (muy permisiva)
     completeness = _calculate_completeness(cv_data, current_phase)
+
+    if current_phase == ConversationPhase.WELCOME and completeness.get("personal_info", 0) >= 1.0:
+        return ConversationPhase.PERSONAL_INFO
     
     # Si tenemos ALGO de información en la fase actual, permitimos avanzar rápido
     if completeness.get("overall", 0) > 0.1 and current_idx < len(phase_order) - 1:

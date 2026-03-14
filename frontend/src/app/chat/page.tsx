@@ -10,6 +10,7 @@ import { ChatProvider } from '@/contexts/ChatContext';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
 import { mergeTemplateConfig } from '@/lib/cv-templates/merge-config';
+import { mergeCVData } from '@/lib/cv-data/merge-cv-data';
 import { TEMPLATE_DEFINITIONS } from '@/lib/cv-templates/template-registry';
 import { isValidTemplateType } from '@/lib/api/cv-generator';
 import { cn } from '@/lib/utils';
@@ -82,14 +83,7 @@ function ChatPageContent() {
    * Handles CV data updates from the wizard
    */
   const handleCVDataUpdate = useCallback((newData: Partial<CVData>) => {
-    setCvData((prev: CVData) => {
-      const mergedConfig = mergeTemplateConfig(prev.config, newData.config);
-      return {
-        ...prev,
-        ...newData,
-        config: mergedConfig,
-      };
-    });
+    setCvData((prev: CVData) => mergeCVData(prev, newData) as CVData);
   }, []);
 
   /**

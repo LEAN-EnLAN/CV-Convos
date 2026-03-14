@@ -1,7 +1,5 @@
 import { CVData, CVTemplate } from '@/types/cv';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-const API_ENDPOINT = `${API_BASE_URL}/api`;
+import { buildApiUrl } from '@/lib/api/base';
 
 export type ExportFormat = 'pdf' | 'docx' | 'txt' | 'json';
 
@@ -30,7 +28,7 @@ export async function exportCv(
     payload: ExportPayload,
     options: ExportOptions = {}
 ): Promise<{ blob: Blob; fileName: string }> {
-    const response = await fetch(`${API_ENDPOINT}/export-cv`, {
+    const response = await fetch(buildApiUrl('/api/export-cv'), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

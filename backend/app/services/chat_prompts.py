@@ -69,6 +69,7 @@ RULES:
 
 USER MESSAGE: {user_message}
 CURRENT PHASE: {current_phase}
+CURRENT CV DATA: {current_cv_data}
 CONVERSATION CONTEXT: {chat_history}
 
 RESPONSE FORMAT:

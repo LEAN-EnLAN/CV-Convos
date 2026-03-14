@@ -7,6 +7,7 @@ import { OnboardingSelection } from '@/components/cv-builder/onboarding/Onboardi
 import { ConversationalWizard } from '@/components/cv-builder/wizard/ConversationalWizard';
 import { CVData, CVTemplate } from '@/types/cv';
 import { DEFAULT_CONFIG } from '@/lib/cv-templates/defaults';
+import { mergeCVData } from '@/lib/cv-data/merge-cv-data';
 import { getDebugData } from '@/lib/debug-utils';
 import { DEBUG_UI_ENABLED } from '@/lib/debug-flags';
 import { ChatProvider } from '@/contexts/ChatContext';
@@ -185,14 +186,7 @@ function HomeContent() {
     };
 
     const handleChatDataUpdate = useCallback((data: Partial<CVData>) => {
-        setCvData(prev => {
-            const baseData = prev ?? { ...emptyCV, config: { ...DEFAULT_CONFIG } };
-            return {
-                ...baseData,
-                ...data,
-                config: data.config ?? baseData.config
-            };
-        });
+        setCvData(prev => mergeCVData(prev ?? { ...emptyCV, config: { ...DEFAULT_CONFIG } }, data) as CVData);
     }, []);
 
     const handleChatComplete = (data: CVData) => {

@@ -45,12 +45,21 @@ npm install
 ### Backend (Render / Railway)
 - **Root Directory:** `backend`
 - **Plan:** Docker (Dockerfile incluido)
-- **Variables:** `GROQ_API_KEY`, `CORS_ORIGINS` (URL de Vercel)
+- **Variables:** `ENVIRONMENT=production`, `GROQ_API_KEY`, `CORS_ORIGINS` (URL exacta del frontend)
+- **Health Check:** `/health`
+- **Blueprint opcional:** `render.yaml` en la raíz del repo
 
 ### Frontend (Vercel)
 - **Root Directory:** `frontend`
 - **Framework:** Next.js
 - **Variables:** `NEXT_PUBLIC_API_URL` (URL del Backend desplegado)
+
+### Checklist mínimo de producción
+
+1. Backend en Render con `ENVIRONMENT=production`.
+2. `CORS_ORIGINS` debe apuntar al dominio real del frontend, por ejemplo `https://tu-frontend.vercel.app`.
+3. Frontend con `NEXT_PUBLIC_API_URL=https://tu-backend.onrender.com`.
+4. Verificar `GET /health` y luego un POST real a `/api/chat` o `/api/generate-cv`.
 
 ## 🧪 Tests y Calidad
 - **Backend:** `cd backend && make test`

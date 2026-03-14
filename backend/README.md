@@ -66,7 +66,9 @@ Crear archivo `.env`:
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here
+ENVIRONMENT=development
 CORS_ORIGINS=http://localhost:3000
+SESSION_STORE_TYPE=sqlite
 ```
 
 Para más detalles, ver [TECH_STACK.md](./docs/TECH_STACK.md).
@@ -277,6 +279,25 @@ TEXTO DEL CV:
 ```
 
 ## 🚀 Deploy
+
+### Render
+
+El repo ahora incluye [`render.yaml`](/Users/PC/Documents/GitHub/CV-Convos/render.yaml) para levantar el backend como servicio Docker.
+
+Variables mínimas recomendadas en Render:
+
+```env
+ENVIRONMENT=production
+GROQ_API_KEY=gsk_...
+CORS_ORIGINS=https://tu-frontend.vercel.app
+SESSION_STORE_TYPE=sqlite
+```
+
+Notas:
+
+- `CORS_ORIGINS` debe ser el origen exacto del frontend, sin comodines.
+- el health check recomendado es `GET /health`.
+- si necesitás persistencia real de sesiones entre reinicios, `sqlite` no alcanza en Render; habrá que mover `SESSION_STORE_TYPE` a `redis` o `postgres`.
 
 ### Docker
 

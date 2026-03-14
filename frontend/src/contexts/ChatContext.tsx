@@ -24,6 +24,7 @@ import {
 } from '@/types/notifications';
 import { buildApiUrl } from '@/lib/api/base';
 import { getAiConfigErrorMessage } from '@/lib/ai-errors';
+import { mergeCVData } from '@/lib/cv-data/merge-cv-data';
 
 // =============================================================================
 // ESTADO INICIAL
@@ -683,6 +684,8 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
           });
         }
 
+        cvDataRef.current = mergeCVData(cvDataRef.current, updatedData);
+
         // Cast to unknown first to bypass strict type checking
         onCVDataUpdate(updatedData as unknown as Partial<CVData>);
       }
@@ -750,6 +753,25 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
     );
   }, []);
 
+  const summarizeExtraction = useCallback((extraction: DataExtraction): string => {
+    const extracted = extraction.extracted || {};
+    const sections: string[] = [];
+
+    if (extracted.personalInfo && Object.keys(extracted.personalInfo).length > 0) sections.push('datos personales');
+    if (extracted.experience?.length) sections.push('experiencia');
+    if (extracted.education?.length) sections.push('educación');
+    if (extracted.skills?.length) sections.push('skills');
+    if (extracted.projects?.length) sections.push('proyectos');
+    if (extracted.languages?.length) sections.push('idiomas');
+    if (extracted.certifications?.length) sections.push('certificaciones');
+
+    if (!sections.length) {
+      return 'Actualicé tu CV.';
+    }
+
+    return `Actualicé ${sections.join(', ')} en tu CV.`;
+  }, []);
+
   const showExtractionNotification = useCallback((extraction: DataExtraction) => {
     if (!hasMeaningfulExtraction(extraction)) return;
 
@@ -796,8 +818,42 @@ export function ChatProvider({ children, initialCVData, onCVDataUpdate }: ChatPr
     if (extractionHandledRef.current) return;
 
     extractionHandledRef.current = true;
+
+    const requiresReview = Boolean(
+      state.extractedData.needsClarification?.length ||
+      state.extractedData.followUpQuestions?.length
+    );
+
+    if (requiresReview) {
+      showExtractionNotification(state.extractedData);
+      return;
+    }
+
+    if (hasMeaningfulExtraction(state.extractedData)) {
+      applyExtraction(state.extractedData);
+      showNotification({
+        type: 'toast',
+        variant: 'success',
+        title: 'CV actualizado',
+        message: summarizeExtraction(state.extractedData),
+        duration: 2400,
+        actions: [],
+        metadata: {},
+        dismissible: true,
+        priority: 'normal',
+      });
+      return;
+    }
+
     showExtractionNotification(state.extractedData);
-  }, [state.extractedData, showExtractionNotification]);
+  }, [
+    applyExtraction,
+    hasMeaningfulExtraction,
+    showExtractionNotification,
+    showNotification,
+    state.extractedData,
+    summarizeExtraction,
+  ]);
 
   /**
    * Descarta una notificación específica

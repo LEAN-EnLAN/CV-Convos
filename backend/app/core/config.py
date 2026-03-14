@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 from dotenv import load_dotenv
 from pydantic import Field, model_validator
@@ -6,12 +7,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .exceptions import AIServiceError
 
-# Forzamos la carga del .env sobreescribiendo cualquier variable de entorno global
-load_dotenv(override=True)
+# En producción las variables reales del entorno deben prevalecer sobre `.env`.
+load_dotenv(override=False)
 
-# Limpiar variables de entorno conflictivas que pueden interferir con pydantic-settings
-for var in ['DEBUG', 'ENVIRONMENT']:
-    if var in os.environ and os.environ[var] not in ['true', 'True', 'false', 'False', '1', '0']:
+# Limpiar solo variables booleanas conflictivas que pueden interferir con pydantic-settings.
+for var in ["DEBUG"]:
+    if var in os.environ and os.environ[var] not in ["true", "True", "false", "False", "1", "0"]:
         del os.environ[var]
 
 PLACEHOLDER_API_KEY = "placeholder_key"
@@ -22,7 +23,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "CV Builder IA"
     DEBUG: bool = True
     ENVIRONMENT: str = "development"  # development, production, staging
-    CORS_ORIGINS: str = "http://localhost:3000"
+    CORS_ORIGINS: str = ""
+    SESSION_STORE_TYPE: str = "sqlite"
+    CHAT_SESSION_TTL_SECONDS: int = 60 * 60 * 24
+
+    def cors_origins_list(self) -> List[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
     def missing_ai_keys(self, keys: list[str] | None = None) -> list[str]:
         keys_to_check = keys or ["GROQ_API_KEY", "GOOGLE_API_KEY"]

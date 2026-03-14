@@ -64,8 +64,10 @@ describe('ChatContext', () => {
     });
 
     it('debe generar un sessionId único', () => {
-      renderWithProvider(<TestComponent />);
+      const firstRender = renderWithProvider(<TestComponent />);
       const sessionId1 = screen.getByTestId('session-id').textContent;
+
+      firstRender.unmount();
 
       renderWithProvider(<TestComponent />);
       const sessionId2 = screen.getByTestId('session-id').textContent;
